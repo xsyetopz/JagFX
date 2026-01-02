@@ -68,9 +68,16 @@ class ToneViewModel:
     enabled.set(false)
     pitch.clear()
     volume.clear()
-    // ... clear others
+    vibratoRate.clear()
+    vibratoDepth.clear()
+    tremoloRate.clear()
+    tremoloDepth.clear()
+    gateSilence.clear()
+    gateDuration.clear()
     duration.set(1000)
     startOffset.set(0)
+    reverbDelay.set(0)
+    reverbVolume.set(0)
     harmonics.foreach(_.clear())
 
   def toModel(): Option[Tone] =
