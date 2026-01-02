@@ -9,8 +9,8 @@ lazy val root = project
     name := "jagfx",
     version := "0.1.0-SNAPSHOT",
     scalaVersion := scala3Version,
-    Compile / mainClass := Some("jagfx.JagFXCli"),
-    executableScriptName := "jagfx-cli",
+    Compile / mainClass := Some("jagfx.Launcher"),
+    executableScriptName := "jagfx",
     libraryDependencies ++= {
       val javafxModules =
         Seq("base", "controls", "fxml", "graphics", "media", "swing", "web")
@@ -36,3 +36,31 @@ lazy val root = project
     run / connectInput := true,
     outputStrategy := Some(StdoutOutput)
   )
+
+addCommandAlias("cli", "runMain jagfx.JagFXCli")
+
+lazy val scss = taskKey[Unit]("Compile SCSS to CSS")
+scss := {
+  import scala.sys.process._
+
+  def isToolAvailable(tool: String): Boolean =
+    try Process(Seq("which", tool)).! == 0
+    catch { case _: Exception => false }
+
+  val compiler =
+    if (isToolAvailable("bunx")) "bunx"
+    else if (isToolAvailable("npx")) "npx"
+    else ""
+  if (compiler.isEmpty)
+    throw new Exception(
+      "SCSS compilation failed: neither 'bunx' nor 'npx' found in PATH"
+    )
+
+  val src = "src/main/scss/style.scss"
+  val dst = "src/main/resources/jagfx/style.css"
+  val cmd = s"$compiler sass $src $dst --no-source-map"
+  val exit = cmd.!
+  if (exit != 0) throw new Exception(s"SCSS compilation failed with code $exit")
+}
+
+Compile / compile := ((Compile / compile) dependsOn scss).value
