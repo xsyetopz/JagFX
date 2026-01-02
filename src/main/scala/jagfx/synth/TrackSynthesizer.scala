@@ -6,7 +6,7 @@ import jagfx.Constants
 /** Orchestrates synthesis of multiple tones with loop expansion. */
 object TrackSynthesizer:
   /** Synthesizes complete `SynthFile` into audio samples. Mixes all active
-    * tones and expands loop region if `loopCount > 1`.
+    * tones and expands loop region if `loopCount` > `1`.
     */
   def synthesize(file: SynthFile, loopCount: Int): AudioBuffer =
     val maxDuration = calculateMaxDuration(file)

@@ -5,7 +5,7 @@ package jagfx.model
   * @param volume
   *   Amplitude `0`-`100`
   * @param semitone
-  *   Pitch offset in decicents (`10 = 1` semitone)
+  *   Pitch offset in decicents (`10` = `1` semitone)
   * @param delay
   *   Phase offset in milliseconds
   */

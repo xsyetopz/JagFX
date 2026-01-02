@@ -10,7 +10,7 @@ enum WaveForm(val id: Int):
 
 /** `Waveform` companion with factory method. */
 object WaveForm:
-  /** Creates `WaveForm` from numeric ID (0-4). Unknown IDs return `Off`. */
+  /** Creates `WaveForm` from numeric ID (`0`-`4`). Unknown IDs return `Off`. */
   def fromId(id: Int): WaveForm = id match
     case 1 => Square
     case 2 => Sine
