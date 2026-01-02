@@ -61,7 +61,7 @@ object SynthReader:
     val duration = buf.readU16BE()
     val start = buf.readU16BE()
 
-    Tone(
+    val t = Tone(
       pitchEnvelope = pitchEnvelope,
       volumeEnvelope = volumeEnvelope,
       vibratoRate = vibratoRate,
@@ -76,6 +76,12 @@ object SynthReader:
       duration = duration,
       start = start
     )
+    harmonics.zipWithIndex.foreach { case (h, i) =>
+      scribe.debug(
+        s"  H$i: Vol=${h.volume}, Semi=${h.semitone}, Dly=${h.delay}"
+      )
+    }
+    t
 
   private def readEnvelope(buf: BinaryBuffer): Envelope =
     val form = WaveForm.fromId(buf.readU8())
@@ -106,7 +112,7 @@ object SynthReader:
       val volume = buf.readSmartUnsigned()
       if volume == 0 then continue = false
       else
-        val semitone = buf.readSmartSigned()
+        val semitone = buf.readSmart()
         val delay = buf.readSmartUnsigned()
         harmonics = harmonics :+ Harmonic(volume, semitone, delay)
         count += 1
