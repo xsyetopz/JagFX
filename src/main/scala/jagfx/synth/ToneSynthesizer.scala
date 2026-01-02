@@ -44,6 +44,7 @@ object ToneSynthesizer:
       )
     applyReverb(buffer, tone, samplesPerStep, sampleCount)
 
+    deClick(buffer, sampleCount)
     clipBuffer(buffer, sampleCount)
 
     AudioBuffer(buffer, SampleRate)
@@ -165,13 +166,20 @@ object ToneSynthesizer:
       sampleCount: Int
   ): Unit =
     import Constants._
-    val phases = new Array[Int](MaxHarmonics)
+    val phases = new Array[Int](Constants.MaxHarmonics)
     var frequencyPhase = 0
     var amplitudePhase = 0
+    var startFreq = 0
+    var startAmp = 0
+    var maxAmpSample = 0
 
     for sample <- 0 until sampleCount do
       var frequency = state.freqBaseEval.evaluate(sampleCount)
       var amplitude = state.ampBaseEval.evaluate(sampleCount)
+
+      if sample == sampleCount / 2 then
+        startFreq = frequency
+        startAmp = amplitude
 
       (state.freqModRateEval, state.freqModRangeEval) match
         case (Some(rateEval), Some(rangeEval)) =>
@@ -207,6 +215,9 @@ object ToneSynthesizer:
         amplitude,
         phases
       )
+
+      if math.abs(buffer(sample)) > maxAmpSample then
+        maxAmpSample = math.abs(buffer(sample))
 
   private def renderHarmonics(
       buffer: Array[Int],
@@ -286,3 +297,14 @@ object ToneSynthesizer:
     for sample <- 0 until sampleCount do
       if buffer(sample) < Int16.Min then buffer(sample) = Int16.Min
       if buffer(sample) > Int16.Max then buffer(sample) = Int16.Max
+
+  private def deClick(buffer: Array[Int], sampleCount: Int): Unit =
+    // 2ms micro-fade --> prevent DC offset clicks
+    val fadeLen = math.min(50, sampleCount / 2)
+    if fadeLen > 0 then
+      for i <- 0 until fadeLen do
+        // Fade In
+        buffer(i) = (buffer(i) * i) / fadeLen
+        // Fade Out
+        val endIdx = sampleCount - 1 - i
+        buffer(endIdx) = (buffer(endIdx) * i) / fadeLen
