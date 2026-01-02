@@ -2,7 +2,7 @@ package jagfx.io
 
 import jagfx.model._
 import jagfx.Constants
-import java.nio.file.{Files, Path}
+import java.nio.file._
 
 /** Serializer for `SynthFile` domain model to `.synth` binary format. */
 object SynthWriter:

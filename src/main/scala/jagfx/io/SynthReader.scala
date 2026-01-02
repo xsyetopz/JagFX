@@ -1,7 +1,7 @@
 package jagfx.io
 
 import jagfx.model._
-import java.nio.file.{Files, Path}
+import java.nio.file._
 
 private val MaxTones: Int = 10
 private val MaxHarmonics: Int = 10

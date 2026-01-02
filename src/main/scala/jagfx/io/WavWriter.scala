@@ -1,7 +1,7 @@
 package jagfx.io
 
 import jagfx.Constants
-import java.nio.file.{Files, Path}
+import java.nio.file._
 
 /** WAV file format writer for 8-bit mono PCM audio. */
 object WavWriter:
