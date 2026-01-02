@@ -164,6 +164,7 @@ object ToneSynthesizer:
       state: SynthState,
       sampleCount: Int
   ): Unit =
+    import Constants._
     val phases = new Array[Int](MaxHarmonics)
     var frequencyPhase = 0
     var amplitudePhase = 0
@@ -192,7 +193,7 @@ object ToneSynthesizer:
             range,
             amplitudePhase,
             tone.tremoloRate.get.form
-          ) >> 1) + Constants.Int16.UnsignedMid) >> 15
+          ) >> 1) + Int16.UnsignedMid) >> 15
           amplitudePhase += (rate * state.amplitudeStart >> 16) + state.amplitudeDuration
         case _ => ()
 
@@ -281,8 +282,7 @@ object ToneSynthesizer:
         buffer(sample) += buffer(sample - start) * tone.reverbVolume / 100
 
   private def clipBuffer(buffer: Array[Int], sampleCount: Int): Unit =
+    import Constants._
     for sample <- 0 until sampleCount do
-      if buffer(sample) < Constants.Int16.Min then
-        buffer(sample) = Constants.Int16.Min
-      if buffer(sample) > Constants.Int16.Max then
-        buffer(sample) = Constants.Int16.Max
+      if buffer(sample) < Int16.Min then buffer(sample) = Int16.Min
+      if buffer(sample) > Int16.Max then buffer(sample) = Int16.Max

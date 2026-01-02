@@ -41,9 +41,10 @@ class BinaryBuffer(val data: Array[Byte]):
 
   /** Reads signed 16-bit big-endian integer, advances position by 2. */
   def readS16BE(): Int =
+    import Constants._
     pos += 2
     var value = ((data(pos - 2) & 0xff) << 8) + (data(pos - 1) & 0xff)
-    if value > Constants.Int16.Max then value -= Constants.Int16.Range
+    if value > Int16.Max then value -= Int16.Range
     value
 
   /** Reads signed 32-bit big-endian integer, advances position by 4. */
@@ -62,9 +63,10 @@ class BinaryBuffer(val data: Array[Byte]):
 
   /** Reads unsigned variable-length smart integer (1 or 2 bytes). */
   def readSmartUnsigned(): Int =
+    import Constants._
     val value = data(pos) & 0xff
     if value < Smart.Threshold then readU8()
-    else readU16BE() - Constants.Int16.UnsignedMid
+    else readU16BE() - Int16.UnsignedMid
 
   /** Writes signed 32-bit big-endian integer, advances position by 4. */
   def writeS32BE(value: Int): Unit =

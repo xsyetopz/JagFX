@@ -100,6 +100,7 @@ object TrackSynthesizer:
         buffer(sample + offset) = buffer(sample)
 
   private def clipBuffer(buffer: Array[Int]): Unit =
+    import Constants._
     for i <- buffer.indices do
-      if buffer(i) < Constants.Int16.Min then buffer(i) = Constants.Int16.Min
-      if buffer(i) > Constants.Int16.Max then buffer(i) = Constants.Int16.Max
+      if buffer(i) < Int16.Min then buffer(i) = Int16.Min
+      if buffer(i) > Int16.Max then buffer(i) = Int16.Max
