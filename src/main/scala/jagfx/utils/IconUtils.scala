@@ -6,12 +6,7 @@ object IconUtils:
   /** Creates `FontIcon` from literal string description using MaterialDesign2.
     * This uses raw string code (e.g. `"mdi2-play"`).
     */
-  def icon(code: String): FontIcon =
-    val i = new FontIcon(code)
-    i.setIconSize(16) // Default size
-    i
-
-  def icon(code: String, size: Int): FontIcon =
+  def icon(code: String, size: Int = 16): FontIcon =
     val i = new FontIcon(code)
     i.setIconSize(size)
     i
