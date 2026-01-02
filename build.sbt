@@ -1,5 +1,7 @@
 import com.typesafe.sbt.packager.archetypes
 
+ThisBuild / semanticdbEnabled := true
+
 val scala3Version = "3.7.4"
 
 lazy val root = project
@@ -27,8 +29,10 @@ lazy val root = project
         .map(m => "org.openjfx" % s"javafx-$m" % "23.0.1" classifier osName)
     },
     libraryDependencies ++= Seq(
-      "com.outr" %% "scribe-slf4j" % "3.17.0",
       "ch.qos.logback" % "logback-classic" % "1.5.23",
+      "com.outr" %% "scribe-slf4j" % "3.17.0",
+      "org.kordamp.ikonli" % "ikonli-javafx" % "12.4.0",
+      "org.kordamp.ikonli" % "ikonli-materialdesign2-pack" % "12.4.0",
       "org.scalameta" %% "munit" % "1.0.4" % Test
     ),
     testFrameworks += new TestFramework("munit.Framework"),
