@@ -43,6 +43,6 @@ object JagFXCli:
         val audio = TrackSynthesizer.synthesize(synthFile, loopCount)
         scribe.debug(s"Generated ${audio.length} sample(s)")
 
-        val wavBytes = WavWriter.write(audio.toBytes)
+        val wavBytes = WavWriter.write(audio.toBytesUnsigned)
         Files.write(outputPath, wavBytes)
         scribe.info(s"Wrote $outputPath (${wavBytes.length} byte(s))")
