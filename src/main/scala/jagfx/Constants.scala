@@ -14,6 +14,9 @@ object Constants:
   /** Maximum tones per synth file. */
   val MaxTones: Int = 10
 
+  /** Maximum harmonics per tone. */
+  val MaxHarmonics: Int = 10
+
   /** 16-bit signed integer range constants. */
   object Int16:
     val Min: Int = -32768
