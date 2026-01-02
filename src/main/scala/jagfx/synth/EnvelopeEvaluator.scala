@@ -28,6 +28,8 @@ class EnvelopeEvaluator(envelope: Envelope):
     * interpolated value scaled to `0`-`65535` range.
     */
   def evaluate(deltaArg: Int): Int =
+    if envelope.segments.isEmpty then return envelope.start
+
     if ticks >= threshold then
       amplitude = envelope.segments(position).peak << 15
       position += 1
