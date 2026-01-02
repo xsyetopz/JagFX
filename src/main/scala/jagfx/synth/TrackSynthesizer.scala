@@ -8,8 +8,15 @@ object TrackSynthesizer:
   /** Synthesizes complete `SynthFile` into audio samples. Mixes all active
     * tones and expands loop region if `loopCount` > `1`.
     */
-  def synthesize(file: SynthFile, loopCount: Int): AudioBuffer =
-    val maxDuration = calculateMaxDuration(file)
+  def synthesize(
+      file: SynthFile,
+      loopCount: Int,
+      toneFilter: Int = -1
+  ): AudioBuffer =
+    val tonesToMix =
+      if toneFilter < 0 then file.activeTones
+      else file.activeTones.filter(_._1 == toneFilter)
+    val maxDuration = calculateMaxDurationFiltered(tonesToMix)
     if maxDuration == 0 then
       scribe.warn("No active tone(s) to synthesize")
       return AudioBuffer.empty(0)
@@ -24,10 +31,10 @@ object TrackSynthesizer:
       sampleCount + (loopStop - loopStart) * math.max(0, effectiveLoopCount - 1)
 
     scribe.debug(
-      s"Mixing ${file.activeTones.size} tone(s) into $totalSampleCount sample(s)..."
+      s"Mixing ${tonesToMix.size} tone(s) into $totalSampleCount sample(s)..."
     )
 
-    val buffer = mixTones(file, sampleCount, totalSampleCount)
+    val buffer = mixTonesFiltered(tonesToMix, sampleCount, totalSampleCount)
     if effectiveLoopCount > 1 then
       applyLoopExpansion(
         buffer,
@@ -43,6 +50,13 @@ object TrackSynthesizer:
   private def calculateMaxDuration(file: SynthFile): Int =
     var maxDuration = 0
     for (_, tone) <- file.activeTones do
+      val endTime = tone.duration + tone.start
+      if endTime > maxDuration then maxDuration = endTime
+    maxDuration
+
+  private def calculateMaxDurationFiltered(tones: Vector[(Int, Tone)]): Int =
+    var maxDuration = 0
+    for (_, tone) <- tones do
       val endTime = tone.duration + tone.start
       if endTime > maxDuration then maxDuration = endTime
     maxDuration
@@ -70,6 +84,24 @@ object TrackSynthesizer:
   ): Array[Int] =
     val buffer = Array.fill(totalSampleCount)(0)
     for (idx, tone) <- file.activeTones do
+      scribe.debug(
+        s"Synthesizing tone $idx: ${tone.duration}ms @ ${tone.start}ms offset..."
+      )
+      val toneBuffer = ToneSynthesizer.synthesize(tone)
+      val startOffset = tone.start * Constants.SampleRate / 1000
+      for i <- 0 until toneBuffer.length do
+        val pos = i + startOffset
+        if pos >= 0 && pos < sampleCount then
+          buffer(pos) += toneBuffer.samples(i)
+    buffer
+
+  private def mixTonesFiltered(
+      tones: Vector[(Int, Tone)],
+      sampleCount: Int,
+      totalSampleCount: Int
+  ): Array[Int] =
+    val buffer = Array.fill(totalSampleCount)(0)
+    for (idx, tone) <- tones do
       scribe.debug(
         s"Synthesizing tone $idx: ${tone.duration}ms @ ${tone.start}ms offset..."
       )
