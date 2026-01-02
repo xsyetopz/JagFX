@@ -207,29 +207,31 @@ class HeaderController(viewModel: SynthViewModel):
     currentClip = Some(clip)
 
     val format = new AudioFormat(Constants.SampleRate, 16, 1, true, true)
-    val audioBytes = audio.toBytes16BE
+    clip.open(format, audio.toBytes16BE, 0, audio.toBytes16BE.length)
 
-    clip.open(format, audioBytes, 0, audioBytes.length)
-
-    if viewModel.isLoopEnabled then
-      val startMs = math.max(0, viewModel.loopStartProperty.get)
-      val endMs = math.max(startMs, viewModel.loopEndProperty.get)
-      if endMs > startMs then
-        val startFrames = AudioUtils.msToSamples(startMs)
-        val endFrames = AudioUtils.msToSamples(endMs)
-        val len = clip.getFrameLength
-
-        val validEnd = math.min(endFrames, len - 1).toInt
-        val validStart = math.min(startFrames, validEnd).toInt
-
-        if validEnd > validStart then
-          clip.setLoopPoints(validStart, validEnd)
-          val count = viewModel.loopCountProperty.get
-          if count == 0 then clip.loop(Clip.LOOP_CONTINUOUSLY)
-          else clip.loop(count - 1)
-        else clip.start()
-      else clip.start()
+    if viewModel.isLoopEnabled && configureLoopPoints(clip) then
+      val count = viewModel.loopCountProperty.get
+      clip.loop(if count == 0 then Clip.LOOP_CONTINUOUSLY else count - 1)
     else clip.start()
+
+  /** Configures loop points on clip. Returns `true` if loop points are valid.
+    */
+  private def configureLoopPoints(clip: Clip): Boolean =
+    val startMs = math.max(0, viewModel.loopStartProperty.get)
+    val endMs = math.max(startMs, viewModel.loopEndProperty.get)
+    if endMs <= startMs then return false
+
+    val startFrames = AudioUtils.msToSamples(startMs)
+    val endFrames = AudioUtils.msToSamples(endMs)
+    val len = clip.getFrameLength
+
+    val validEnd = math.min(endFrames, len - 1).toInt
+    val validStart = math.min(startFrames, validEnd).toInt
+
+    if validEnd > validStart then
+      clip.setLoopPoints(validStart, validEnd)
+      true
+    else false
 
   private def stopAudio(): Unit =
     currentClip.foreach { clip =>
