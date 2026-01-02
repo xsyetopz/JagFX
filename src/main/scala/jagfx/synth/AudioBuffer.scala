@@ -35,9 +35,13 @@ class AudioBuffer(val samples: Array[Int], val sampleRate: Int = SampleRate):
     }
     AudioBuffer(clipped, sampleRate)
 
-  /** Converts 16-bit samples to 8-bit unsigned WAV format. */
-  def toBytes: Array[Byte] =
+  /** Converts 16-bit samples to 8-bit unsigned bytes. */
+  def toBytesUnsigned: Array[Byte] =
     samples.map(s => ((s >> 8) + 128).toByte)
+
+  /** Converts 16-bit samples to 8-bit signed bytes. */
+  def toBytes: Array[Byte] =
+    samples.map(s => (s >> 8).toByte)
 
 /** AudioBuffer factory methods. */
 object AudioBuffer:
@@ -47,4 +51,4 @@ object AudioBuffer:
 
   /** Creates silence-filled buffer (8-bit midpoint). */
   def silence(sampleCount: Int): AudioBuffer =
-    AudioBuffer(Array.fill(sampleCount)(-128), SampleRate)
+    AudioBuffer(Array.fill(sampleCount)(0), SampleRate)
