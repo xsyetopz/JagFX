@@ -20,6 +20,12 @@ class HeaderController(viewModel: SynthViewModel) extends IController[HBox]:
   import Constants._
   private var currentFile: Option[File] = None
   private var currentClip: Option[Clip] = None
+  private var playheadTimer: Option[javafx.animation.AnimationTimer] = None
+
+  /** Callback for playhead position updates (`0.0` to `1.0`, or `-1` when
+    * stopped).
+    */
+  var onPlayheadUpdate: Double => Unit = _ => ()
 
   protected val view = HBox()
   view.getStyleClass.add("header")
@@ -214,6 +220,21 @@ class HeaderController(viewModel: SynthViewModel) extends IController[HBox]:
       clip.loop(if count == 0 then Clip.LOOP_CONTINUOUSLY else count - 1)
     else clip.start()
 
+    // start playhead timer
+    val totalFrames = clip.getFrameLength.toDouble
+    val timer = new javafx.animation.AnimationTimer:
+      def handle(now: Long): Unit =
+        currentClip.foreach { c =>
+          if c.isRunning then
+            val pos = c.getFramePosition.toDouble / totalFrames
+            onPlayheadUpdate(pos)
+          else
+            onPlayheadUpdate(-1)
+            this.stop()
+        }
+    timer.start()
+    playheadTimer = Some(timer)
+
   /** Configures loop points on clip. Returns `true` if loop points are valid.
     */
   private def configureLoopPoints(clip: Clip): Boolean =
@@ -234,6 +255,9 @@ class HeaderController(viewModel: SynthViewModel) extends IController[HBox]:
     else false
 
   private def stopAudio(): Unit =
+    playheadTimer.foreach(_.stop())
+    playheadTimer = None
+    onPlayheadUpdate(-1)
     currentClip.foreach { clip =>
       if clip.isRunning then clip.stop()
       clip.close()

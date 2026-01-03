@@ -4,11 +4,13 @@ import jagfx.synth.AudioBuffer
 import jagfx.utils.ColorUtils._
 import jagfx.utils.DrawingUtils._
 
-/** Canvas rendering synthesized audio waveform (no grid, just waveform + center
-  * line).
+/** Canvas rendering synthesized audio waveform with playhead.
   */
 class JagWaveformCanvas extends JagBaseCanvas:
   private var audioSamples: Array[Int] = Array.empty
+
+  private var playheadPosition: Double =
+    -1.0 // `-1` = hidden, `0..1` = unitized pos
 
   getStyleClass.add("jag-waveform-canvas")
   zoomLevel = 4
@@ -19,11 +21,23 @@ class JagWaveformCanvas extends JagBaseCanvas:
 
   def clearAudio(): Unit =
     audioSamples = Array.empty
+    playheadPosition = -1.0
     draw()
+
+  /** Set playhead position (`0.0` = start, `1.0` = end, `-1.0` = hidden). */
+  def setPlayheadPosition(position: Double): Unit =
+    playheadPosition = position
+    javafx.application.Platform.runLater(() => draw())
+
+  /** Hide playhead. */
+  def hidePlayhead(): Unit =
+    playheadPosition = -1.0
+    javafx.application.Platform.runLater(() => draw())
 
   override protected def drawContent(buffer: Array[Int], w: Int, h: Int): Unit =
     drawCenterLine(buffer, w, h)
     drawWaveform(buffer, w, h)
+    drawPlayhead(buffer, w, h)
 
   private def drawWaveform(buffer: Array[Int], w: Int, h: Int): Unit =
     if audioSamples.isEmpty then return
@@ -45,6 +59,16 @@ class JagWaveformCanvas extends JagBaseCanvas:
 
         prevX = x
         prevY = math.max(0, math.min(h - 1, y))
+
+  private def drawPlayhead(buffer: Array[Int], w: Int, h: Int): Unit =
+    if playheadPosition < 0 then return
+
+    val zoomedWidth = w * zoomLevel
+    val absoluteX = (playheadPosition * zoomedWidth).toInt
+    val visibleX = absoluteX - panOffset
+
+    if visibleX >= 0 && visibleX < w then
+      line(buffer, w, h, visibleX, 0, visibleX, h, White)
 
 object JagWaveformCanvas:
   def apply(): JagWaveformCanvas = new JagWaveformCanvas()

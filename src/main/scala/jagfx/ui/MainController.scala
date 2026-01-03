@@ -22,6 +22,11 @@ object MainController:
     root.setCenter(rack.getView)
     root.setBottom(footer.getView)
 
+    // wire playhead callback
+    header.onPlayheadUpdate = pos =>
+      if pos < 0 then rack.hidePlayhead()
+      else rack.setPlayheadPosition(pos)
+
     javafx.application.Platform.runLater(() =>
       val stage = root.getScene.getWindow.asInstanceOf[javafx.stage.Stage]
       viewModel.currentFilePathProperty.addListener((_, _, path) =>
