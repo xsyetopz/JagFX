@@ -14,7 +14,9 @@ class JagToggleGroup(items: (String, String)*)
 
   items.foreach { case (value, iconCode) =>
     val btn = JagButton()
-    btn.setGraphic(IconUtils.icon(iconCode))
+    if iconCode.nonEmpty then btn.setGraphic(IconUtils.icon(iconCode))
+    else btn.setText(value)
+
     btn.activeProperty.bind(selected.isEqualTo(value))
     btn.setOnAction(_ => selected.set(value))
     getChildren.add(btn)
