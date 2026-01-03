@@ -25,23 +25,72 @@ class RackController(viewModel: SynthViewModel, inspector: InspectorController)
 
   private case class RackCellDef(
       title: String,
+      desc: String,
       cellType: CellType,
       enabled: Boolean = true
   )
 
   private val definitions = Vector(
-    RackCellDef("PITCH", CellType.Envelope(_.pitch)), // 0
-    RackCellDef("VIB RATE", CellType.Envelope(_.vibratoRate)), // 1
-    RackCellDef("VIB DEPTH", CellType.Envelope(_.vibratoDepth)), // 2
-    RackCellDef("FILT POLE", CellType.Filter), // 3
-    RackCellDef("VOLUME", CellType.Envelope(_.volume)), // 4
-    RackCellDef("TREM RATE", CellType.Envelope(_.tremoloRate)), // 5
-    RackCellDef("TREM DEPTH", CellType.Envelope(_.tremoloDepth)), // 6
-    RackCellDef("TRANSITION", CellType.Envelope(_.filterEnvelope)), // 7
-    RackCellDef("OUTPUT", CellType.Output), // 8
-    RackCellDef("SILENCE", CellType.Envelope(_.gateSilence)), // 9
-    RackCellDef("DURATION", CellType.Envelope(_.gateDuration)), // 10
-    RackCellDef("RESPONSE", CellType.Filter) // 11
+    RackCellDef(
+      "PITCH",
+      "Defines base pitch trajectory. Envelope values are added to fundamental frequency over time.",
+      CellType.Envelope(_.pitch)
+    ),
+    RackCellDef(
+      "VIBRATO RATE",
+      "Modulates speed of vibrato (FM). Higher values create faster pitch wobbling.",
+      CellType.Envelope(_.vibratoRate)
+    ),
+    RackCellDef(
+      "VIBRATO DEPTH",
+      "Controls intensity of vibrato. Higher values cause wider pitch variations.",
+      CellType.Envelope(_.vibratoDepth)
+    ),
+    RackCellDef(
+      "FILTER POLES/ZEROS",
+      "Visualizes IIR filter poles/zeros. Drag points to shape frequency response.",
+      CellType.Filter
+    ),
+    RackCellDef(
+      "VOLUME",
+      "Shapes overall loudness over time. Use to create attacks, decays, and swells.",
+      CellType.Envelope(_.volume)
+    ),
+    RackCellDef(
+      "TREMOLO RATE",
+      "Modulates speed of tremolo (AM). Higher values create faster volume fluctuations.",
+      CellType.Envelope(_.tremoloRate)
+    ),
+    RackCellDef(
+      "TREMOLO DEPTH",
+      "Controls intensity of tremolo. Higher values create deeper volume cuts.",
+      CellType.Envelope(_.tremoloDepth)
+    ),
+    RackCellDef(
+      "FILTER",
+      "Interpolates between initial/final filter states. 0 = Start Filter, 1 = End Filter.",
+      CellType.Envelope(_.filterEnvelope)
+    ),
+    RackCellDef(
+      "OUTPUT",
+      "Real-time visualization of synthesized waveform for active tone.",
+      CellType.Output
+    ),
+    RackCellDef(
+      "GATE SILENCE",
+      "Sets initial delay (silence) before note begins playing.",
+      CellType.Envelope(_.gateSilence)
+    ),
+    RackCellDef(
+      "GATE DURATION",
+      "Determines total length of active note segment in samples.",
+      CellType.Envelope(_.gateDuration)
+    ),
+    RackCellDef(
+      "FILTER RESPONSE",
+      "Displays frequency magnitude response (Bode plot) of active filter.",
+      CellType.Filter
+    )
   )
 
   private val outputWaveformCanvas = JagWaveformCanvas()
@@ -146,10 +195,15 @@ class RackController(viewModel: SynthViewModel, inspector: InspectorController)
     val tone = viewModel.getActiveTone
     val cellDef = definitions(idx)
     cellDef.cellType match
-      case CellType.Filter => inspector.bindFilter(tone.filterViewModel)
+      case CellType.Filter =>
+        inspector.bindFilter(
+          tone.filterViewModel,
+          cellDef.title,
+          cellDef.desc
+        )
       case CellType.Envelope(getter, _) =>
         val env = getter(tone)
-        inspector.bind(env)
+        inspector.bind(env, cellDef.title, cellDef.desc)
       case _ => inspector.hide()
 
   private def bindActiveTone(): Unit =

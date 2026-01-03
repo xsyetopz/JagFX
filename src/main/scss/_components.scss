@@ -126,3 +126,17 @@
     -fx-font-weight: bold;
     -fx-text-fill: $text-dim;
 }
+
+// Help Pane
+.help-header {
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-text-fill: $text-accent;
+    -fx-padding: 4px 0 2px 0;
+}
+
+.help-text {
+    -fx-font-size: 10px;
+    -fx-text-fill: $text-dim;
+    -fx-wrap-text: true;
+}

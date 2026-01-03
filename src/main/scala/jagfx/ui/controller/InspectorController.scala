@@ -16,14 +16,21 @@ class InspectorController(viewModel: SynthViewModel) extends IController[VBox]:
   private val envInspector = new EnvelopeInspector()
   private val fltInspector = new FilterInspector()
 
-  private val helpLabel = Label()
-  helpLabel.getStyleClass.add("help-text")
-  helpLabel.setWrapText(true)
+  private val helpHeader = Label("INFO")
+  helpHeader.getStyleClass.add("help-header")
+
+  private val helpDesc = Label("")
+  helpDesc.getStyleClass.add("help-text")
+  helpDesc.setWrapText(true)
+
+  private val helpControls = Label("")
+  helpControls.getStyleClass.add("help-text")
+  helpControls.setWrapText(true)
 
   private val topPane = VBox(8)
   topPane.setAlignment(Pos.TOP_LEFT)
 
-  private val bottomPane = VBox(8)
+  private val bottomPane = VBox(2)
   bottomPane.setAlignment(Pos.BOTTOM_LEFT)
   VBox.setVgrow(bottomPane, Priority.ALWAYS)
 
@@ -34,33 +41,37 @@ class InspectorController(viewModel: SynthViewModel) extends IController[VBox]:
   fltInspector.setVisible(false)
   fltInspector.setManaged(false)
 
-  bottomPane.getChildren.add(helpLabel)
+  bottomPane.getChildren.addAll(helpHeader, helpDesc, helpControls)
   view.getChildren.addAll(topPane, bottomPane)
 
-  def bind(envelope: EnvelopeViewModel): Unit =
+  def bind(envelope: EnvelopeViewModel, title: String, desc: String): Unit =
     show(envInspector)
     envInspector.bind(envelope)
-    setHelpText(envInspector.getHelpText)
+    updateHelp(title, desc, envInspector.getHelpText)
 
-  def bindFilter(filter: FilterViewModel): Unit =
+  def bindFilter(filter: FilterViewModel, title: String, desc: String): Unit =
     show(fltInspector)
     fltInspector.bind(filter)
-    setHelpText(fltInspector.getHelpText)
+    updateHelp(title, desc, fltInspector.getHelpText)
 
   def hide(): Unit =
     envInspector.setVisible(false)
     envInspector.setManaged(false)
     fltInspector.setVisible(false)
     fltInspector.setManaged(false)
-    setHelpText("")
+    helpHeader.setVisible(false)
+    helpDesc.setText("")
+    helpControls.setText("")
 
   private def show(node: javafx.scene.Node): Unit =
     hide()
     node.setVisible(true)
     node.setManaged(true)
+    helpHeader.setVisible(true)
 
-  private def setHelpText(text: String): Unit =
-    helpLabel.setText(text)
+  private def updateHelp(title: String, desc: String, controls: String): Unit =
+    helpDesc.setText(desc)
+    helpControls.setText(s"\n$controls")
 
   /** Inspector panel for envelope parameters. */
   private class EnvelopeInspector extends VBox:
