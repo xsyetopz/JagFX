@@ -160,9 +160,6 @@
 .jag-cell.selected .cell-title {
   -fx-text-fill: #f0f0f0;
 }
-.jag-cell.muted {
-  -fx-opacity: 0.5;
-}
 .jag-cell.collapsed {
   -fx-pref-height: 22px;
   -fx-max-height: 22px;

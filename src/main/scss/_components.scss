@@ -84,10 +84,6 @@
         }
     }
 
-    &.muted {
-        -fx-opacity: 0.5;
-    }
-
     &.collapsed {
         -fx-pref-height: 22px;
         -fx-max-height: 22px;
