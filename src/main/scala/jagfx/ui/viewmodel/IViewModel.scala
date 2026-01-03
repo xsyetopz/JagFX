@@ -9,6 +9,10 @@ trait IViewModel:
     listeners = cb :: listeners
     registerPropertyListeners(cb)
 
+  /** Unregister callback to be notified when this `ViewModel` changes. */
+  def removeChangeListener(cb: () => Unit): Unit =
+    listeners = listeners.filter(_ != cb)
+
   /** Override to wire up property-specific listeners. */
   protected def registerPropertyListeners(cb: () => Unit): Unit = ()
 
