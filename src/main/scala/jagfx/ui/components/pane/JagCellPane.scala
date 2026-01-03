@@ -13,10 +13,8 @@ import jagfx.ui.components.canvas._
 import jagfx.ui.components.button.JagButton
 
 class JagCellPane(title: String) extends StackPane:
-  private val collapsed = SimpleBooleanProperty(false)
   private val selected = SimpleBooleanProperty(false)
 
-  def collapsedProperty: BooleanProperty = collapsed
   def selectedProperty: BooleanProperty = selected
 
   getStyleClass.add("jag-cell")
@@ -25,10 +23,18 @@ class JagCellPane(title: String) extends StackPane:
 
   private val container = VBox()
   container.getStyleClass.add("cell-container")
+  container.setPickOnBounds(true) // FORCE capture of clicks on empty space
+
+  // IF container (or trans child) clicked, THEN fire on 'StackPane`
+  container.setOnMouseClicked(e =>
+    this.fireEvent(e.copyFor(this, this))
+    e.consume()
+  )
 
   private val header = HBox()
   header.getStyleClass.add("cell-head")
   header.setSpacing(4)
+  header.setPickOnBounds(false)
 
   private val titleLabel = Label(title)
   titleLabel.getStyleClass.add("cell-title")
@@ -42,9 +48,6 @@ class JagCellPane(title: String) extends StackPane:
   private val btnX1 = createToolButton("X1")
   private val btnX2 = createToolButton("X2")
   private val btnX4 = createToolButton("X4")
-
-  private val btnCollapse = createToolButton()
-  btnCollapse.setGraphic(IconUtils.icon("mdi2c-chevron-up"))
 
   private val btnMenu = createToolButton()
   btnMenu.setGraphic(IconUtils.icon("mdi2d-dots-horizontal"))
@@ -82,8 +85,6 @@ class JagCellPane(title: String) extends StackPane:
     contextMenu.show(btnMenu, javafx.geometry.Side.BOTTOM, 0, 0)
   )
 
-  btnCollapse.setOnAction(_ => collapsed.set(!collapsed.get))
-
   private var showCollapse = true
 
   def setFeatures(showMute: Boolean, showCollapse: Boolean): Unit =
@@ -102,38 +103,25 @@ class JagCellPane(title: String) extends StackPane:
     val padding = 5
 
     val isNarrow = w > 0 && w < (titleWidth + toolsWidth + padding)
-    if isNarrow then
-      toolbar.getChildren.add(btnMenu)
-      if showCollapse then toolbar.getChildren.add(btnCollapse)
-    else
-      toolbar.getChildren.addAll(btnX1, btnX2, btnX4)
-      if showCollapse then toolbar.getChildren.add(btnCollapse)
+    if isNarrow then toolbar.getChildren.add(btnMenu)
+    else toolbar.getChildren.addAll(btnX1, btnX2, btnX4)
 
   widthProperty.addListener((_, _, _) => updateToolbar())
   updateToolbar()
   header.getChildren.addAll(titleLabel, toolbar)
 
   private val canvasWrapper = new Pane()
+  canvasWrapper.setMouseTransparent(true) // make sure clicks pass thru
   VBox.setVgrow(canvasWrapper, Priority.ALWAYS)
 
   private val canvas = JagEnvelopeCanvas()
+  canvas.setPickOnBounds(false)
   canvas.widthProperty.bind(canvasWrapper.widthProperty)
   canvas.heightProperty.bind(canvasWrapper.heightProperty)
   canvasWrapper.getChildren.add(canvas)
 
   container.getChildren.addAll(header, canvasWrapper)
   getChildren.add(container)
-
-  collapsed.addListener((_, _, isCollapsed) =>
-    if isCollapsed then
-      getStyleClass.add("collapsed")
-      btnCollapse.setGraphic(IconUtils.icon("mdi2c-chevron-down"))
-      canvas.setVisible(false)
-    else
-      getStyleClass.remove("collapsed")
-      btnCollapse.setGraphic(IconUtils.icon("mdi2c-chevron-up"))
-      canvas.setVisible(true)
-  )
 
   selected.addListener((_, _, isSelected) =>
     if isSelected then getStyleClass.add("selected")
