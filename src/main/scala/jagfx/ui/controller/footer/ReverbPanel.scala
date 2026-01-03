@@ -7,14 +7,17 @@ import jagfx.ui.viewmodel.SynthViewModel
 import jagfx.ui.components.slider._
 import jagfx.ui.BindingManager
 
+private val PanelSize = 120
+private val SliderSize = 100
+
 /** Reverb controls panel (`MIX`/`DAMP`). */
 object ReverbPanel:
   def create(viewModel: SynthViewModel, bindings: BindingManager): VBox =
     val panel = VBox()
     panel.getStyleClass.add("panel")
-    panel.setMinWidth(120)
-    panel.setPrefWidth(120)
-    panel.setMaxWidth(120)
+    panel.setMinWidth(PanelSize)
+    panel.setPrefWidth(PanelSize)
+    panel.setMaxWidth(PanelSize)
     HBox.setHgrow(panel, Priority.NEVER)
     val head = Label("REVERB")
     head.getStyleClass.add("panel-head")
@@ -22,15 +25,15 @@ object ReverbPanel:
     head.setAlignment(Pos.CENTER)
     head.setMaxWidth(Double.MaxValue)
 
-    val mix = JagBarSlider(0, 100, 0, "MIX")
-    val damp = JagBarSlider(0, 100, 0, "DAMP")
+    val volume = JagBarSlider(0, SliderSize, 0, "VOL:")
+    val delay = JagBarSlider(0, SliderSize, 0, "DEL:")
 
     viewModel.activeToneIndexProperty.addListener((_, _, _) =>
       bindings.unbindAll()
       val tone = viewModel.getActiveTone
-      bindings.bindBidirectional(mix.valueProperty, tone.reverbVolume)
-      bindings.bindBidirectional(damp.valueProperty, tone.reverbDelay)
+      bindings.bindBidirectional(volume.valueProperty, tone.reverbVolume)
+      bindings.bindBidirectional(delay.valueProperty, tone.reverbDelay)
     )
 
-    panel.getChildren.addAll(head, mix, damp)
+    panel.getChildren.addAll(head, volume, delay)
     panel
