@@ -31,20 +31,13 @@ object JagFXCli:
       scribe.error(s"Input file not found: $inputPath")
       System.exit(1)
 
-    scribe.info(s"Reading $inputPath...")
     SynthReader.readFromPath(inputPath) match
       case Left(error) =>
         scribe.error(s"Parse error: ${error.message}")
         System.exit(1)
       case Right(synthFile) =>
         val activeToneCount = synthFile.activeTones.size
-        scribe.info(s"Loaded synth with $activeToneCount active tone(s)")
-        scribe.debug(s"Loop: ${synthFile.loop.begin} -> ${synthFile.loop.end}")
-
-        scribe.info(s"Synthesizing with loopCount=$loopCount...")
         val audio = TrackSynthesizer.synthesize(synthFile, loopCount)
-        scribe.debug(s"Generated ${audio.length} sample(s)")
-
         val wavBytes = WavWriter.write(audio.toBytesUnsigned)
         Files.write(outputPath, wavBytes)
-        scribe.info(s"Wrote $outputPath (${wavBytes.length} byte(s))")
+        System.exit(0)
