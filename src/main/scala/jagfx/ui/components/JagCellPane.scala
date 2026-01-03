@@ -140,18 +140,18 @@ class JagCellPane(title: String) extends StackPane:
 
   private var currentVm: Option[EnvelopeViewModel] = None
 
-  private val formListener: ChangeListener[WaveForm] = (_, _, form) =>
-    updateDimming(form)
+  private val dimmingListener: () => Unit = () =>
+    currentVm.foreach(vm => updateDimming(vm))
 
-  private def updateDimming(form: WaveForm): Unit =
-    container.setOpacity(if form == WaveForm.Off then 0.5 else 1.0)
+  private def updateDimming(vm: EnvelopeViewModel): Unit =
+    container.setOpacity(if vm.isZero then 0.5 else 1.0)
 
   def setViewModel(vm: EnvelopeViewModel): Unit =
-    currentVm.foreach(_.form.removeListener(formListener))
+    currentVm.foreach(_.removeChangeListener(dimmingListener))
     currentVm = Some(vm)
 
-    vm.form.addListener(formListener)
-    updateDimming(vm.form.get)
+    vm.addChangeListener(dimmingListener)
+    updateDimming(vm)
 
     canvas.setViewModel(vm)
 
