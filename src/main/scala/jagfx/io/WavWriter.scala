@@ -7,8 +7,14 @@ import java.nio.file._
 object WavWriter:
   import Constants.Wav._
 
-  /** Converts 8-bit audio samples to complete WAV file bytes. */
-  def write(samples: Array[Byte]): Array[Byte] =
+  /** Converts audio samples to complete WAV file bytes.
+    *
+    * @param samples
+    *   Raw PCM byte data (8-bit or 16-bit LE)
+    * @param bitsPerSample
+    *   Bits per sample (8 or 16)
+    */
+  def write(samples: Array[Byte], bitsPerSample: Int = 8): Array[Byte] =
     val dataSize = samples.length
     val fileSize = HeaderSize - 8 + dataSize
     val buf = BinaryBuffer(HeaderSize + dataSize)
@@ -22,10 +28,10 @@ object WavWriter:
     buf.writeS16LE(Constants.NumChannels)
     buf.writeS32LE(Constants.SampleRate)
     buf.writeS32LE(
-      Constants.SampleRate * Constants.NumChannels * Constants.BitsPerSample / 8
+      Constants.SampleRate * Constants.NumChannels * bitsPerSample / 8
     )
-    buf.writeS16LE(Constants.NumChannels * Constants.BitsPerSample / 8)
-    buf.writeS16LE(Constants.BitsPerSample)
+    buf.writeS16LE(Constants.NumChannels * bitsPerSample / 8)
+    buf.writeS16LE(bitsPerSample)
     buf.writeS32BE(DataMagic)
     buf.writeS32LE(dataSize)
     System.arraycopy(samples, 0, buf.data, buf.pos, dataSize)
