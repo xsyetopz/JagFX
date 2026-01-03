@@ -74,7 +74,7 @@ _Output: `target/scala-3.7.4/jagfx-all-platforms-0.2.0-SNAPSHOT.jar`_
 Creates stripped-down, fast-compiled distribution for **current OS only**. Includes bundled JVM runtime, so user DOES NOT need Java installed.
 
 ```bash
-sbt jlink
+sbt jlinkBuildImage
 ```
 
 _Output: `target/jlink/jagfx/`_
