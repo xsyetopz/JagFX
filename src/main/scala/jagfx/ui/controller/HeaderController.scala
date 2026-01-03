@@ -176,6 +176,18 @@ class HeaderController(viewModel: SynthViewModel) extends IController[GridPane]:
     group.setStyle("-fx-border-color: transparent;")
     group.setAlignment(Pos.CENTER)
 
+    val btnInit = JagButton("")
+    btnInit.setGraphic(IconUtils.icon("mdi2f-file-plus"))
+
+    val btn16 = JagButton("16-BIT")
+    btn16.setOnAction(_ =>
+      UserPreferences.export16Bit.set(!UserPreferences.export16Bit.get)
+    )
+    UserPreferences.export16Bit.addListener((_, _, enabled) =>
+      btn16.setActive(enabled)
+    )
+    btn16.setActive(UserPreferences.export16Bit.get)
+
     val btnOpen = JagButton("")
     btnOpen.setGraphic(IconUtils.icon("mdi2f-folder-open"))
     val btnSave = JagButton("")
@@ -183,11 +195,12 @@ class HeaderController(viewModel: SynthViewModel) extends IController[GridPane]:
     val btnExport = JagButton("")
     btnExport.setGraphic(IconUtils.icon("mdi2e-export-variant"))
 
+    btnInit.setOnAction(_ => viewModel.reset())
     btnOpen.setOnAction(_ => openFile())
     btnSave.setOnAction(_ => saveFile())
     btnExport.setOnAction(_ => saveAsOrExport())
 
-    group.getChildren.addAll(btnOpen, btnSave, btnExport)
+    group.getChildren.addAll(btnInit, btn16, btnOpen, btnSave, btnExport)
     group
 
   private def openFile(): Unit =
@@ -233,7 +246,10 @@ class HeaderController(viewModel: SynthViewModel) extends IController[GridPane]:
       val path = file.toPath
       if path.toString.endsWith(".wav") then
         val audio = TrackSynthesizer.synthesize(viewModel.toModel(), 1)
-        val wav = WavWriter.write(audio.toBytesUnsigned)
+        val is16Bit = UserPreferences.export16Bit.get
+        val bytes = if is16Bit then audio.toBytes16LE else audio.toBytesUnsigned
+        val bits = if is16Bit then 16 else 8
+        val wav = WavWriter.write(bytes, bits)
         Files.write(path, wav)
       else
         val bytes = SynthWriter.write(viewModel.toModel())
