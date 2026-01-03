@@ -6,6 +6,9 @@ import javafx.geometry.Pos
 import jagfx.ui.viewmodel.ToneViewModel
 import jagfx.ui.components.field._
 import jagfx.Constants.Int16
+import javafx.scene.layout.Region
+
+private val TimingFieldSize = 55
 
 /** Inspector panel for tone timing parameters (`Duration`, `StartOffset`). */
 class TimingInspector extends VBox:
@@ -18,24 +21,30 @@ class TimingInspector extends VBox:
   timingLabel.getStyleClass.addAll("label", "h-head")
 
   private val durField = JagNumericField(0, Int16.Range, 1000)
-  durField.setPrefWidth(55)
+  durField.setPrefWidth(TimingFieldSize)
   durField.valueProperty.addListener((_, _, nv) =>
     currentTone.foreach(_.duration.set(nv.intValue))
   )
 
   private val ofsField = JagNumericField(0, Int16.Range, 0)
-  ofsField.setPrefWidth(55)
+  ofsField.setPrefWidth(TimingFieldSize)
   ofsField.valueProperty.addListener((_, _, nv) =>
     currentTone.foreach(_.startOffset.set(nv.intValue))
   )
 
   private val timingRow = HBox(4)
   timingRow.setAlignment(Pos.CENTER_LEFT)
+  private val lblDur = Label("DUR:")
+  lblDur.setMinWidth(Region.USE_PREF_SIZE)
+
+  private val lblOfs = Label("OFS:")
+  lblOfs.setMinWidth(Region.USE_PREF_SIZE)
+
   timingRow.getChildren.addAll(
-    Label("DUR"),
+    lblDur,
     durField,
     new Region() { HBox.setHgrow(this, Priority.ALWAYS) },
-    Label("OFS"),
+    lblOfs,
     ofsField
   )
 
