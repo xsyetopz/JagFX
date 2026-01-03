@@ -4,6 +4,7 @@ import javafx.scene.layout._
 import jagfx.ui.viewmodel._
 import jagfx.ui.components._
 import jagfx.synth.ToneSynthesizer
+import javafx.beans.value.ChangeListener
 
 class RackController(viewModel: SynthViewModel, inspector: InspectorController):
   private val view = GridPane()
@@ -17,15 +18,15 @@ class RackController(viewModel: SynthViewModel, inspector: InspectorController):
     ("PITCH", true), // 0
     ("VIB RATE", true), // 1
     ("VIB DEPTH", true), // 2
-    ("FILT POLE", false), // 3
+    ("FILT POLE", true), // 3
     ("VOLUME", true), // 4
     ("TREM RATE", true), // 5
     ("TREM DEPTH", true), // 6
-    ("TRANSITION", false), // 7
+    ("TRANSITION", true), // 7
     ("OUTPUT", true), // 8
     ("SILENCE", true), // 9
     ("DURATION", true), // 10
-    ("RESPONSE", false) // 11
+    ("RESPONSE", true) // 11
   )
 
   private val outputWaveformCanvas = JagWaveformCanvas()
@@ -64,14 +65,17 @@ class RackController(viewModel: SynthViewModel, inspector: InspectorController):
   viewModel.selectedCellIndex.addListener((_, _, _) => updateSelection())
   buildGrid()
 
-  bindActiveTone()
+  def getView: GridPane = view
 
-  viewModel.activeToneIndexProperty.addListener((_, _, _) => bindActiveTone())
+  def bind(): Unit =
+    bindActiveTone()
+
+  private val activeToneChangeListener: ChangeListener[Number] = (_, _, _) =>
+    bindActiveTone()
+  viewModel.activeToneIndexProperty.addListener(activeToneChangeListener)
 
   for i <- 0 until viewModel.getTones.size do
     viewModel.getTones.get(i).addChangeListener(() => updateOutputWaveform())
-
-  def getView: GridPane = view
 
   private def buildGrid(): Unit =
     view.getChildren.clear()
@@ -125,6 +129,7 @@ class RackController(viewModel: SynthViewModel, inspector: InspectorController):
       case 4  => Some(tone.volume)
       case 5  => Some(tone.tremoloRate)
       case 6  => Some(tone.tremoloDepth)
+      case 7  => Some(tone.filterEnvelope)
       case 9  => Some(tone.gateSilence)
       case 10 => Some(tone.gateDuration)
       case _  => None
