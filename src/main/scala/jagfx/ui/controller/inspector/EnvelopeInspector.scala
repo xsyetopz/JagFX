@@ -10,6 +10,8 @@ import jagfx.ui.components.slider._
 import jagfx.ui.components.pane._
 import jagfx.model.WaveForm
 
+private val RangeFieldSize = 48
+
 /** Inspector panel for envelope parameters. */
 class EnvelopeInspector extends VBox:
   private var currentEnvelope: Option[EnvelopeViewModel] = None
@@ -46,14 +48,16 @@ class EnvelopeInspector extends VBox:
   private val rangeLabel = Label("RANGE")
   rangeLabel.getStyleClass.addAll("label", "h-head")
 
-  private val startField = JagNumericField(-999999, 999999, 0)
-  startField.setPrefWidth(55)
+  private val maxRangeValue = 999999
+
+  private val startField = JagNumericField(-maxRangeValue, maxRangeValue, 0)
+  startField.setPrefWidth(RangeFieldSize)
   startField.valueProperty.addListener((_, _, nv) =>
     currentEnvelope.foreach(_.start.set(nv.intValue))
   )
 
-  private val endField = JagNumericField(-999999, 999999, 0)
-  endField.setPrefWidth(55)
+  private val endField = JagNumericField(-maxRangeValue, maxRangeValue, 0)
+  endField.setPrefWidth(RangeFieldSize)
   endField.valueProperty.addListener((_, _, nv) =>
     currentEnvelope.foreach(_.end.set(nv.intValue))
   )
@@ -61,10 +65,10 @@ class EnvelopeInspector extends VBox:
   private val rangeRow = HBox(4)
   rangeRow.setAlignment(Pos.CENTER_LEFT)
   rangeRow.getChildren.addAll(
-    Label("S"),
+    Label("S:"),
     startField,
     new Region() { HBox.setHgrow(this, Priority.ALWAYS) },
-    Label("E"),
+    Label("E:"),
     endField
   )
 
@@ -72,19 +76,16 @@ class EnvelopeInspector extends VBox:
   private val segLabel = Label("SEGMENTS")
   segLabel.getStyleClass.addAll("label", "h-head")
 
-  private val segCountLabel = Label("0 pts")
-  segCountLabel.getStyleClass.add("label")
-  segCountLabel.setStyle("-fx-text-fill: #888;")
+  private val segmentEditor = EnvelopeSegmentEditor()
 
-  private val segRow = HBox(4)
-  segRow.setAlignment(Pos.CENTER_LEFT)
-  segRow.getChildren.addAll(
+  getChildren.addAll(
+    waveLabel,
+    waveGrid,
+    rangeLabel,
+    rangeRow,
     segLabel,
-    new Region() { HBox.setHgrow(this, Priority.ALWAYS) },
-    segCountLabel
+    segmentEditor
   )
-
-  getChildren.addAll(waveLabel, waveGrid, rangeLabel, rangeRow, segRow)
 
   /** Bind to envelope view model. */
   def bind(envelope: EnvelopeViewModel): Unit =
@@ -100,8 +101,4 @@ class EnvelopeInspector extends VBox:
     waveGrid.setSelected(formStr)
     startField.setValue(envelope.start.get)
     endField.setValue(envelope.end.get)
-    segCountLabel.setText(s"${envelope.getSegments.length} pts")
-
-  /** Get help text for this inspector mode. */
-  def getHelpText: String =
-    "Wave: Oscillator shape\nS/E: Start and end values\nSegments shown on canvas"
+    segmentEditor.bind(envelope)
