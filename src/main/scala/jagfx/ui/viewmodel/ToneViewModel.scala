@@ -8,33 +8,26 @@ import jagfx.Constants
 class ToneViewModel extends IViewModel:
   val enabled = new SimpleBooleanProperty(false)
 
-  // Envelopes
   val pitch = new EnvelopeViewModel()
   val volume = new EnvelopeViewModel()
 
-  // Modulation
   val vibratoRate = new EnvelopeViewModel()
   val vibratoDepth = new EnvelopeViewModel()
   val tremoloRate = new EnvelopeViewModel()
   val tremoloDepth = new EnvelopeViewModel()
 
-  // Gate
   val gateSilence = new EnvelopeViewModel()
   val gateDuration = new EnvelopeViewModel()
 
-  // Transition Curve
   val filterEnvelope = new EnvelopeViewModel()
 
-  // Poles/Zeros (editable filter parameters)
-  val filterViewModel = new FilterViewModel()
+  val polesZeros = new FilterViewModel()
 
-  // Properties
   val duration = new SimpleIntegerProperty(1000)
   val startOffset = new SimpleIntegerProperty(0)
   val reverbDelay = new SimpleIntegerProperty(0)
   val reverbVolume = new SimpleIntegerProperty(0)
 
-  // Harmonics (10 slots)
   val harmonics = Array.fill(Constants.MaxHarmonics)(new HarmonicViewModel())
 
   override protected def registerPropertyListeners(cb: () => Unit): Unit =
@@ -49,7 +42,7 @@ class ToneViewModel extends IViewModel:
       gateDuration,
       filterEnvelope
     ).foreach(_.addChangeListener(cb))
-    filterViewModel.addChangeListener(cb)
+    polesZeros.addChangeListener(cb)
     harmonics.foreach(_.addChangeListener(cb))
     enabled.addListener((_, _, _) => cb())
     duration.addListener((_, _, _) => cb())
@@ -79,7 +72,7 @@ class ToneViewModel extends IViewModel:
         t.gateSilence.foreach(gateSilence.load)
         t.gateDuration.foreach(gateDuration.load)
 
-        filterViewModel.load(t.filter)
+        polesZeros.load(t.filter)
         t.filter.flatMap(_.envelope).foreach(filterEnvelope.load)
 
         duration.set(t.duration)
@@ -105,7 +98,7 @@ class ToneViewModel extends IViewModel:
     gateSilence.clear()
     gateDuration.clear()
     filterEnvelope.clear()
-    filterViewModel.clear()
+    polesZeros.clear()
 
     duration.set(1000)
     startOffset.set(0)
@@ -119,7 +112,7 @@ class ToneViewModel extends IViewModel:
       val activeHarmonics =
         harmonics.take(5).filter(_.active.get).map(_.toModel()).toVector
 
-      val filterModel = filterViewModel.toModel() match
+      val filterModel = polesZeros.toModel() match
         case Some(f) =>
           val env =
             if filterEnvelope.isEmpty then None
