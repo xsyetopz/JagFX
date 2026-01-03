@@ -34,9 +34,10 @@ class JagNumericField(
   )
 
   value.addListener((_, _, newVal) =>
-    val displayVal = newVal.intValue / scale
-    val str = String.format(format, displayVal.asInstanceOf[Object])
-    if getText != str then setText(str)
+    if !isFocused then
+      val displayVal = newVal.intValue / scale
+      val str = String.format(format, displayVal.asInstanceOf[Object])
+      if getText != str then setText(str)
   )
 
   focusedProperty.addListener((_, _, focused) =>
