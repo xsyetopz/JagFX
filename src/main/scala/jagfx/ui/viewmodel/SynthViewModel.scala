@@ -43,7 +43,14 @@ class SynthViewModel:
     h1.active.set(true)
     h1.volume.set(100)
 
+    h1.volume.set(100)
+
+    // select OUTPUT cell by default to avoid selectless state
+    selectedCellIndex.set(8)
+
     currentFilePath.set("Untitled.synth")
+
+  def reset(): Unit = initDefault()
 
   def activeToneIndexProperty: IntegerProperty = activeToneIndex
   def getActiveToneIndex: Int = activeToneIndex.get
@@ -96,3 +103,11 @@ class SynthViewModel:
       .toVector
     val loop = LoopParams(loopStart.get, loopEnd.get)
     SynthFile(toneModels, loop)
+
+  private var toneClipboard: Option[Option[Tone]] = None
+
+  def copyActiveTone(): Unit =
+    toneClipboard = Some(getActiveTone.toModel())
+
+  def pasteToActiveTone(): Unit =
+    toneClipboard.foreach(getActiveTone.load)
