@@ -18,7 +18,7 @@ class JagToggleGroup(items: (String, String)*) extends HBox:
   setSpacing(2)
 
   items.foreach { case (value, iconCode) =>
-    val btn = JagButton("")
+    val btn = JagButton()
     btn.setGraphic(IconUtils.icon(iconCode))
     btn.activeProperty.bind(selected.isEqualTo(value))
     btn.setOnAction(_ => selected.set(value))

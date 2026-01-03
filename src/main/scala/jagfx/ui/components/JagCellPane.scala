@@ -41,10 +41,10 @@ class JagCellPane(title: String) extends StackPane:
   private val btnX2 = createToolButton("X2")
   private val btnX4 = createToolButton("X4")
 
-  private val btnCollapse = createToolButton("")
+  private val btnCollapse = createToolButton()
   btnCollapse.setGraphic(IconUtils.icon("mdi2c-chevron-up"))
 
-  private val btnMenu = createToolButton("")
+  private val btnMenu = createToolButton()
   btnMenu.setGraphic(IconUtils.icon("mdi2d-dots-horizontal"))
 
   private val zooms = Seq((btnX1, 1), (btnX2, 2), (btnX4, 4))
@@ -157,7 +157,7 @@ class JagCellPane(title: String) extends StackPane:
 
   def getCanvas: JagEnvelopeCanvas = canvas
 
-  private def createToolButton(text: String): JagButton =
+  private def createToolButton(text: String = ""): JagButton =
     val b = JagButton(text)
     b.getStyleClass.add("t-btn")
     b

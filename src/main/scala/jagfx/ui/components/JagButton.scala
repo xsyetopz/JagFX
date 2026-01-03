@@ -18,4 +18,4 @@ class JagButton(text: String) extends Button(text):
   )
 
 object JagButton:
-  def apply(text: String): JagButton = new JagButton(text)
+  def apply(text: String = ""): JagButton = new JagButton(text)
