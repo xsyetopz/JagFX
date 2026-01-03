@@ -8,8 +8,6 @@
   >
 </p>
 
-<https://github.com/user-attachments/assets/fff9dba4-0acb-4ca9-949e-b593fdbbc0fc>
-
 Clear and powerful tool for working with Jagex Audio Synthesis files. Allows you to view, play, and convert `.synth` files to `.wav`.
 
 ## Prerequisites
@@ -70,6 +68,12 @@ Convert file and loop it 4 times:
 ```bash
 sbt "cli input.synth output_looped.wav 4"
 ```
+
+---
+
+### `ice_cast.synth` and `ice_barrage_impact.synth` (Ice Barrage)
+
+<https://github.com/user-attachments/assets/fff9dba4-0acb-4ca9-949e-b593fdbbc0fc>
 
 ### 4. Run Tests
 
