@@ -15,6 +15,8 @@ class EnvelopeViewModel extends IViewModel:
   def getSegments: Vector[Int] = segments.map(_.peak)
   def getFullSegments: Vector[EnvelopeSegment] = segments
   def isEmpty: Boolean = segments.isEmpty && form.get == WaveForm.Off
+  def isZero: Boolean =
+    start.get == 0 && end.get == 0 && segments.forall(_.peak == 0)
 
   def load(env: Envelope): Unit =
     form.set(env.form)
