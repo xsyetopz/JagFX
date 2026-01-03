@@ -98,11 +98,11 @@ class HeaderController(viewModel: SynthViewModel) extends IController[GridPane]:
   view.add(rightGroup, 2, 0)
 
   private def createTransportGroup(): HBox =
-    val btnPlay = JagButton("")
+    val btnPlay = JagButton()
     btnPlay.setGraphic(IconUtils.icon("mdi2p-play"))
-    val btnStop = JagButton("")
+    val btnStop = JagButton()
     btnStop.setGraphic(IconUtils.icon("mdi2s-stop"))
-    val btnLoop = JagButton("")
+    val btnLoop = JagButton()
     btnLoop.setGraphic(IconUtils.icon("mdi2r-repeat"))
     btnLoop.setId("btn-loop")
 
@@ -183,14 +183,14 @@ class HeaderController(viewModel: SynthViewModel) extends IController[GridPane]:
     group.setStyle("-fx-border-color: transparent;")
     group.setAlignment(Pos.CENTER)
 
-    val btnInit = JagButton("")
+    val btnInit = JagButton()
     btnInit.setGraphic(IconUtils.icon("mdi2f-file-plus"))
 
-    val btnOpen = JagButton("")
+    val btnOpen = JagButton()
     btnOpen.setGraphic(IconUtils.icon("mdi2f-folder-open"))
-    val btnSave = JagButton("")
+    val btnSave = JagButton()
     btnSave.setGraphic(IconUtils.icon("mdi2c-content-save"))
-    val btnExport = JagButton("")
+    val btnExport = JagButton()
     btnExport.setGraphic(IconUtils.icon("mdi2e-export-variant"))
 
     btnInit.setOnAction(_ => viewModel.reset())
@@ -279,7 +279,8 @@ class HeaderController(viewModel: SynthViewModel) extends IController[GridPane]:
     currentClip = Some(clip)
 
     val format = new AudioFormat(Constants.SampleRate, 16, 1, true, true)
-    clip.open(format, audio.toBytes16BE, 0, audio.toBytes16BE.length)
+    val bytes = audio.toBytes16BE
+    clip.open(format, bytes, 0, bytes.length)
 
     if viewModel.isLoopEnabled && configureLoopPoints(clip) then
       val count = viewModel.loopCountProperty.get
