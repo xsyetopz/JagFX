@@ -1,52 +1,73 @@
 import com.typesafe.sbt.packager.archetypes
+import scala.sys.process._
+
+// --- Global / Build-wide Settings ---
+Global / onChangedBuildSource := ReloadOnSourceChanges
+
+ThisBuild / organization := "jagfx"
+ThisBuild / version := "0.2.0-SNAPSHOT"
+ThisBuild / scalaVersion := "3.7.4"
 
 ThisBuild / semanticdbEnabled := true
 
-val scala3Version = "3.7.4"
+// --- Dependency Versions ---
+val javaFxVersion = "23.0.1"
+val logbackVersion = "1.5.23"
+val scribeVersion = "3.17.0"
+val ikonliVersion = "12.4.0"
+val munitVersion = "1.0.4"
 
+// --- Project Definition ---
 lazy val root = project
   .in(file("."))
   .enablePlugins(JavaAppPackaging)
   .settings(
     name := "jagfx",
-    version := "0.2.0-SNAPSHOT",
-    scalaVersion := scala3Version,
+
+    // App Packaging
     Compile / mainClass := Some("jagfx.Launcher"),
     executableScriptName := "jagfx",
-    libraryDependencies ++= {
-      val javafxModules =
-        Seq("base", "controls", "fxml", "graphics", "media", "swing", "web")
-      val osName = {
-        val name = System.getProperty("os.name").toLowerCase
-        val arch = System.getProperty("os.arch").toLowerCase
-        if (name.contains("linux")) "linux"
-        else if (name.contains("mac")) {
-          if (arch == "aarch64") "mac-aarch64" else "mac"
-        } else if (name.contains("windows")) "win"
-        else throw new Exception("Unknown OS name: " + name)
-      }
-      javafxModules
-        .map(m => "org.openjfx" % s"javafx-$m" % "23.0.1" classifier osName)
-    },
+
+    // Dependencies
+    libraryDependencies ++= javaFxDependencies,
     libraryDependencies ++= Seq(
-      "ch.qos.logback" % "logback-classic" % "1.5.23",
-      "com.outr" %% "scribe-slf4j" % "3.17.0",
-      "org.kordamp.ikonli" % "ikonli-javafx" % "12.4.0",
-      "org.kordamp.ikonli" % "ikonli-materialdesign2-pack" % "12.4.0",
-      "org.scalameta" %% "munit" % "1.0.4" % Test
+      "ch.qos.logback" % "logback-classic" % logbackVersion,
+      "com.outr" %% "scribe-slf4j" % scribeVersion,
+      "org.kordamp.ikonli" % "ikonli-javafx" % ikonliVersion,
+      "org.kordamp.ikonli" % "ikonli-materialdesign2-pack" % ikonliVersion,
+      "org.scalameta" %% "munit" % munitVersion % Test
     ),
+
+    // Test & Run Config
     testFrameworks += new TestFramework("munit.Framework"),
     run / fork := true,
     run / connectInput := true,
     outputStrategy := Some(StdoutOutput)
   )
 
+// --- Command Aliases ---
 addCommandAlias("cli", "runMain jagfx.JagFXCli")
+
+// --- Helper Functions & Tasks ---
+lazy val javaFxDependencies = {
+  val osName = System.getProperty("os.name").toLowerCase
+  val osArch = System.getProperty("os.arch").toLowerCase
+
+  val classifier =
+    if (osName.contains("linux")) "linux"
+    else if (osName.contains("mac")) {
+      if (osArch == "aarch64") "mac-aarch64" else "mac"
+    } else if (osName.contains("windows")) "win"
+    else throw new Exception(s"Unknown OS name: $osName")
+
+  Seq("base", "controls", "fxml", "graphics", "media", "swing", "web")
+    .map(m =>
+      "org.openjfx" % s"javafx-$m" % javaFxVersion classifier classifier
+    )
+}
 
 lazy val scss = taskKey[Unit]("Compile SCSS to CSS")
 scss := {
-  import scala.sys.process._
-
   def isToolAvailable(tool: String): Boolean =
     try Process(Seq("which", tool)).! == 0
     catch { case _: Exception => false }
@@ -54,16 +75,14 @@ scss := {
   val compiler =
     if (isToolAvailable("bunx")) "bunx"
     else if (isToolAvailable("npx")) "npx"
-    else ""
-  if (compiler.isEmpty)
-    throw new Exception(
-      "SCSS compilation failed: neither 'bunx' nor 'npx' found in PATH"
-    )
+    else
+      throw new Exception(
+        "SCSS compilation failed: neither 'bunx' nor 'npx' found in PATH"
+      )
 
   val src = "src/main/scss/style.scss"
   val dst = "src/main/resources/jagfx/style.css"
-  val cmd = s"$compiler sass $src $dst --no-source-map"
-  val exit = cmd.!
+  val exit = s"$compiler sass $src $dst --no-source-map".!
   if (exit != 0) throw new Exception(s"SCSS compilation failed with code $exit")
 }
 
