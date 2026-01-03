@@ -7,7 +7,8 @@
     onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/xsyetopz/jagfx-scala/main/assets/370_cow_death.png';"
   >
 </p>
-https://github.com/user-attachments/assets/fff9dba4-0acb-4ca9-949e-b593fdbbc0fc
+
+<https://github.com/user-attachments/assets/fff9dba4-0acb-4ca9-949e-b593fdbbc0fc>
 
 Clear and powerful tool for working with Jagex Audio Synthesis files. Allows you to view, play, and convert `.synth` files to `.wav`.
 
