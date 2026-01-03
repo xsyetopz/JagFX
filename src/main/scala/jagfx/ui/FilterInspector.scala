@@ -1,8 +1,9 @@
-package jagfx.ui.components
+package jagfx.ui
 
 import javafx.scene.layout._
 import javafx.scene.control.Label
 import javafx.geometry.Pos
+import jagfx.ui.components._
 import jagfx.ui.viewmodel.FilterViewModel
 
 /** Inspector panel for filter parameters. */
