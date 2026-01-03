@@ -6,6 +6,7 @@ import javafx.geometry.Pos
 import jagfx.ui.viewmodel._
 import jagfx.ui.components._
 import jagfx.model.WaveForm
+import jagfx.Constants.Int16
 
 /** Inspector panel for editing envelope or filter parameters. */
 class InspectorController(viewModel: SynthViewModel) extends IController[VBox]:
@@ -207,13 +208,13 @@ class InspectorController(viewModel: SynthViewModel) extends IController[VBox]:
     private val unityLabel = Label("UNITY")
     unityLabel.getStyleClass.addAll("label", "h-head")
 
-    private val unity0Field = JagNumericField(0, 65535, 0)
+    private val unity0Field = JagNumericField(0, Int16.Range, 0)
     unity0Field.setPrefWidth(55)
     unity0Field.valueProperty.addListener((_, _, nv) =>
       currentFilter.foreach(_.unity0.set(nv.intValue))
     )
 
-    private val unity1Field = JagNumericField(0, 65535, 0)
+    private val unity1Field = JagNumericField(0, Int16.Range, 0)
     unity1Field.setPrefWidth(55)
     unity1Field.valueProperty.addListener((_, _, nv) =>
       currentFilter.foreach(_.unity1.set(nv.intValue))

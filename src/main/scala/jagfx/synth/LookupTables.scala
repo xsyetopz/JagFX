@@ -1,9 +1,10 @@
 package jagfx.synth
 
-import jagfx.utils.MathUtils.TwoPi
+import jagfx.utils.MathUtils
 import java.util.SplittableRandom
+import jagfx.Constants.Int16
 
-private val WaveTableSize = 32768
+private val SemitoneRange = 120
 private val SinTableDivisor = 5215.1903
 private val CircleSegments = 64
 
@@ -14,27 +15,35 @@ object LookupTables:
   /** Noise table with deterministic random `-1`/`+1` values. */
   lazy val noise: Array[Int] =
     val rng = new SplittableRandom(0xdeadbeef)
-    Array.tabulate(WaveTableSize)(_ => if rng.nextBoolean() then 1 else -1)
+    Array.tabulate(Int16.UnsignedMid)(_ => if rng.nextBoolean() then 1 else -1)
 
   /** Sine table with `16384`-amplitude range. */
   lazy val sin: Array[Int] =
-    Array.tabulate(WaveTableSize)(i =>
-      (math.sin(i / SinTableDivisor) * 16384.0).toInt
+    Array.tabulate(Int16.UnsignedMid)(i =>
+      (math.sin(i / SinTableDivisor) * Int16.Quarter).toInt
     )
 
   /** Semitone multipliers mapping index `0-240` to semitones `-120` to `+120`.
     */
-  lazy val semitoneMultiplier: Array[Double] =
-    Array.tabulate(241)(i => math.pow(SemitoneBase, i - 120))
+  private lazy val semitoneCache: Array[Double] =
+    Array.tabulate(241)(i => math.pow(SemitoneBase, i - SemitoneRange))
+
+  /** Returns multiplier for given semitone offset. Uses cache for
+    * `[-120, 120]`, `math.pow` otherwise.
+    */
+  def getSemitoneMultiplier(semitone: Int): Double =
+    if semitone >= -SemitoneRange && semitone <= SemitoneRange then
+      semitoneCache(semitone + SemitoneRange)
+    else math.pow(SemitoneBase, semitone.toDouble)
 
   /** Unit circle X coordinates for `64`-segment rendering. */
   lazy val unitCircleX: Array[Double] =
     Array.tabulate(CircleSegments + 1)(i =>
-      math.cos(i * TwoPi / CircleSegments)
+      math.cos(i * MathUtils.TwoPi / CircleSegments)
     )
 
   /** Unit circle Y coordinates for `64`-segment rendering. */
   lazy val unitCircleY: Array[Double] =
     Array.tabulate(CircleSegments + 1)(i =>
-      math.sin(i * TwoPi / CircleSegments)
+      math.sin(i * MathUtils.TwoPi / CircleSegments)
     )

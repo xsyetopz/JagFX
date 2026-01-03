@@ -3,6 +3,7 @@ package jagfx.ui.components
 import jagfx.synth.AudioBuffer
 import jagfx.utils.ColorUtils._
 import jagfx.utils.DrawingUtils._
+import jagfx.Constants.Int16
 
 /** Canvas rendering synthesized audio waveform with playhead.
   */
@@ -52,7 +53,7 @@ class JagWaveformCanvas extends JagBaseCanvas:
       val sampleIdx = ((x + panOffset) * audioSamples.length) / zoomedWidth
       if sampleIdx < audioSamples.length then
         val sample = audioSamples(sampleIdx)
-        val normalized = sample.toDouble / 32768.0
+        val normalized = sample.toDouble / Int16.UnsignedMid
         val y = midY - (normalized * (h / 2)).toInt
 
         if x > 0 then line(buffer, w, h, prevX, prevY, x, y, Graph)

@@ -2,6 +2,7 @@ package jagfx.io
 
 import jagfx.model._
 import java.nio.file._
+import jagfx.Constants.Int16
 
 private val MaxTones: Int = 10
 private val MaxHarmonics: Int = 10
@@ -110,7 +111,7 @@ object SynthReader:
 
     val pairCount0 = count >> 4
     val pairCount1 = count & 0xf
-    // IF see high pair counts, THEN likely NOT filter but start of next tone
+    // IF see high pair counts, THEN likely not filter but start of next tone
     if pairCount0 > 3 || pairCount1 > 3 then
       buf.pos = startPos
       return None
@@ -173,7 +174,7 @@ object SynthReader:
     val envelope =
       if hasEnvelope then
         val env = readEnvelopeSegments(buf)
-        Some(env.copy(start = 65535, end = 65535))
+        Some(env.copy(start = Int16.Range, end = Int16.Range))
       else None
 
     Some(

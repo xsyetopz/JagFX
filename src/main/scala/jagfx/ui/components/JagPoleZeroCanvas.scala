@@ -5,6 +5,7 @@ import jagfx.utils.ColorUtils._
 import jagfx.utils.DrawingUtils._
 import jagfx.utils.MathUtils
 import jagfx.synth.LookupTables
+import jagfx.Constants.Int16
 
 /** Canvas rendering pole-zero diagram on unit circle. */
 class JagPoleZeroCanvas extends JagBaseCanvas:
@@ -80,8 +81,8 @@ class JagPoleZeroCanvas extends JagBaseCanvas:
       idx: Int,
       g: Geometry
   ): (Int, Int) =
-    val phase = vm.pairPhase(dir)(idx)(0).get / ValueScale * MathUtils.TwoPi
-    val mag = vm.pairMagnitude(dir)(idx)(0).get / ValueScale
+    val phase = vm.pairPhase(dir)(idx)(0).get / Int16.Range * MathUtils.TwoPi
+    val mag = vm.pairMagnitude(dir)(idx)(0).get / Int16.Range
     val x = g.cx + (g.radius * mag * math.cos(phase)).toInt
     val y = g.cy - (g.radius * mag * math.sin(phase)).toInt
     (x, y)
@@ -137,6 +138,5 @@ object JagPoleZeroCanvas:
   private val MarkerCircleSegments = 8
   private val CirclePadding = 4
   private val MarkerSize = 3
-  private val ValueScale = 65535.0
 
   def apply(): JagPoleZeroCanvas = new JagPoleZeroCanvas()

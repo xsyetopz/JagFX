@@ -3,6 +3,7 @@ package jagfx.ui.components
 import jagfx.ui.viewmodel.EnvelopeViewModel
 import jagfx.utils.ColorUtils._
 import jagfx.utils.DrawingUtils._
+import jagfx.Constants.Int16
 
 /** Canvas rendering envelope segments with grid. */
 class JagEnvelopeCanvas extends JagBaseCanvas:
@@ -45,13 +46,13 @@ class JagEnvelopeCanvas extends JagBaseCanvas:
 
       // draw 1st point (apply pan offset)
       var prevX = 0 - panOffset
-      var prevY = h - (segments(0) / 65535.0 * h).toInt
+      var prevY = h - (segments(0) / Int16.Range * h).toInt
       if prevX >= 0 && prevX < w then
         fillRect(buffer, w, h, prevX - 1, prevY - 1, 3, 3, Graph)
 
       for i <- 1 until segments.length do
         val x = (i * step).toInt - panOffset
-        val y = h - (segments(i) / 65535.0 * h).toInt
+        val y = h - (segments(i) / Int16.Range * h).toInt
         // only draw if visible
         if x >= -w && x < w * 2 && prevX >= -w && prevX < w * 2 then
           line(buffer, w, h, prevX, prevY, x, y, Graph)

@@ -5,6 +5,7 @@ import jagfx.utils.ColorUtils._
 import jagfx.utils.DrawingUtils._
 import jagfx.utils.MathUtils
 import jagfx.utils.MathUtils.{TwoPi, clamp, distance, linearToDb}
+import jagfx.Constants.Int16
 
 /** Canvas rendering frequency response curve from filter poles/zeros. */
 class JagFrequencyResponseCanvas extends JagBaseCanvas:
@@ -66,7 +67,7 @@ class JagFrequencyResponseCanvas extends JagBaseCanvas:
     val omega = normalizedFreq * math.Pi
     val zeroContrib = computeZeroContribution(vm, omega)
     val poleContrib = computePoleContribution(vm, omega)
-    val unity = vm.unity0.get / ValueScale + MinGain
+    val unity = vm.unity0.get / Int16.Range + MinGain
     unity * zeroContrib / poleContrib
 
   private def computeZeroContribution(
@@ -76,8 +77,8 @@ class JagFrequencyResponseCanvas extends JagBaseCanvas:
     var contrib = 1.0
     val (eReal, eImag) = (math.cos(omega), math.sin(omega))
     for i <- 0 until vm.pairCount0.get do
-      val phase = vm.pairPhase(0)(i)(0).get / ValueScale * TwoPi
-      val mag = vm.pairMagnitude(0)(i)(0).get / ValueScale
+      val phase = vm.pairPhase(0)(i)(0).get / Int16.Range * TwoPi
+      val mag = vm.pairMagnitude(0)(i)(0).get / Int16.Range
       val zReal = mag * math.cos(phase)
       val zImag = mag * math.sin(phase)
       contrib *= distance(eReal, eImag, zReal, zImag)
@@ -90,8 +91,8 @@ class JagFrequencyResponseCanvas extends JagBaseCanvas:
     var contrib = 1.0
     val (eReal, eImag) = (math.cos(omega), math.sin(omega))
     for i <- 0 until vm.pairCount1.get do
-      val phase = vm.pairPhase(1)(i)(0).get / ValueScale * TwoPi
-      val mag = vm.pairMagnitude(1)(i)(0).get / ValueScale
+      val phase = vm.pairPhase(1)(i)(0).get / Int16.Range * TwoPi
+      val mag = vm.pairMagnitude(1)(i)(0).get / Int16.Range
       val pReal = mag * math.cos(phase)
       val pImag = mag * math.sin(phase)
       contrib *= math.max(MinGain, distance(eReal, eImag, pReal, pImag))
@@ -103,7 +104,6 @@ class JagFrequencyResponseCanvas extends JagBaseCanvas:
 object JagFrequencyResponseCanvas:
   private val GridCols = 8
   private val GridRows = 4
-  private val ValueScale = 65535.0
   private val MinGain = 0.001
   private val MinDb = -24.0
   private val MaxDb = 24.0

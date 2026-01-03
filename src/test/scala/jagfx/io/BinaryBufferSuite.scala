@@ -1,6 +1,7 @@
 package jagfx.io
 
 import jagfx.Constants.Smart
+import jagfx.Constants.Int16
 
 class BinaryBufferSuite extends munit.FunSuite:
 
@@ -24,15 +25,15 @@ class BinaryBufferSuite extends munit.FunSuite:
     )
     assertEquals(buf.readU16BE(), 1)
     assertEquals(buf.readU16BE(), 256)
-    assertEquals(buf.readU16BE(), 65535)
+    assertEquals(buf.readU16BE(), Int16.Range)
 
   test("readS16BE reads big-endian signed short"):
     val buf = BinaryBuffer(
       Array[Byte](0x00, 0x01, 0x7f, 0xff.toByte, 0x80.toByte, 0x00)
     )
     assertEquals(buf.readS16BE(), 1)
-    assertEquals(buf.readS16BE(), 32767)
-    assertEquals(buf.readS16BE(), -32768)
+    assertEquals(buf.readS16BE(), Int16.Max)
+    assertEquals(buf.readS16BE(), Int16.Min)
 
   test("readS32BE reads big-endian signed int"):
     val buf = BinaryBuffer(
