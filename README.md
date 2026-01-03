@@ -1,6 +1,6 @@
 # Jagex Additive Synthesizer
 
-<p align="center">
+<p align="left">
   <img
     src="assets/370_cow_death.png"
     alt="Cow Death"
@@ -8,6 +8,7 @@
     onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/xsyetopz/jagfx-scala/main/assets/370_cow_death.png';"
   >
 </p>
+<https://raw.githubusercontent.com/xsyetopz/jagfx-scalafx/main/assets/ice_barrage.mp4>
 
 Clear and powerful tool for working with Jagex Audio Synthesis files. Allows you to view, play, and convert `.synth` files to `.wav`.
 
