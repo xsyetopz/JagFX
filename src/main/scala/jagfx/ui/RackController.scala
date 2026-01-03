@@ -33,6 +33,9 @@ class RackController(viewModel: SynthViewModel, inspector: InspectorController)
   private val outputWaveformCanvas = JagWaveformCanvas()
   outputWaveformCanvas.setZoom(4)
 
+  private val poleZeroCanvas = JagPoleZeroCanvas()
+  private val freqResponseCanvas = JagFrequencyResponseCanvas()
+
   definitions.zipWithIndex.foreach { case ((title, enabled), idx) =>
     val cell = JagCellPane(title)
     if !enabled then cell.setDisable(true)
@@ -60,7 +63,31 @@ class RackController(viewModel: SynthViewModel, inspector: InspectorController)
 
     outputCell.setAlternateCanvas(outputWaveformCanvas)
 
+  private def setupFilterCells(): Unit =
+    // Cell 3: FILT POLE - pole-zero diagram
+    val poleCell = cells(3)
+    val poleContainer = poleCell.getChildren.get(0).asInstanceOf[VBox]
+    val poleWrapper = poleContainer.getChildren.get(1).asInstanceOf[Pane]
+    poleCell.getCanvas.setVisible(false)
+    if !poleWrapper.getChildren.contains(poleZeroCanvas) then
+      poleWrapper.getChildren.add(poleZeroCanvas)
+      poleZeroCanvas.widthProperty.bind(poleWrapper.widthProperty)
+      poleZeroCanvas.heightProperty.bind(poleWrapper.heightProperty)
+    poleCell.setAlternateCanvas(poleZeroCanvas)
+
+    // Cell 11: RESPONSE - frequency response
+    val respCell = cells(11)
+    val respContainer = respCell.getChildren.get(0).asInstanceOf[VBox]
+    val respWrapper = respContainer.getChildren.get(1).asInstanceOf[Pane]
+    respCell.getCanvas.setVisible(false)
+    if !respWrapper.getChildren.contains(freqResponseCanvas) then
+      respWrapper.getChildren.add(freqResponseCanvas)
+      freqResponseCanvas.widthProperty.bind(respWrapper.widthProperty)
+      freqResponseCanvas.heightProperty.bind(respWrapper.heightProperty)
+    respCell.setAlternateCanvas(freqResponseCanvas)
+
   setupOutputCell()
+  setupFilterCells()
 
   viewModel.rackMode.addListener((_, _, _) => buildGrid())
   viewModel.selectedCellIndex.addListener((_, _, _) => updateSelection())
@@ -148,6 +175,9 @@ class RackController(viewModel: SynthViewModel, inspector: InspectorController)
     for idx <- cells.indices if cells(idx) != null do
       envelopeForCell(tone, idx).foreach(cells(idx).setViewModel)
 
+    poleZeroCanvas.setViewModel(tone.filterViewModel)
+    freqResponseCanvas.setViewModel(tone.filterViewModel)
+
     updateOutputWaveform()
 
   private def updateOutputWaveform(): Unit =
@@ -160,3 +190,11 @@ class RackController(viewModel: SynthViewModel, inspector: InspectorController)
         case None =>
           outputWaveformCanvas.clearAudio()
     )
+
+  /** Set playhead position (`0.0` to `1.0`) on output waveform. */
+  def setPlayheadPosition(position: Double): Unit =
+    outputWaveformCanvas.setPlayheadPosition(position)
+
+  /** Hide playhead on output waveform. */
+  def hidePlayhead(): Unit =
+    outputWaveformCanvas.hidePlayhead()
