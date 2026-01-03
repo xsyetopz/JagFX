@@ -35,7 +35,7 @@ class JagWaveformCanvas extends JagBaseCanvas:
     var prevY = midY
 
     for x <- 0 until w do
-      val sampleIdx = (x * audioSamples.length) / zoomedWidth
+      val sampleIdx = ((x + panOffset) * audioSamples.length) / zoomedWidth
       if sampleIdx < audioSamples.length then
         val sample = audioSamples(sampleIdx)
         val normalized = sample.toDouble / 32768.0

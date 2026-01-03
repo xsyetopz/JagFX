@@ -2,7 +2,8 @@ package jagfx.ui
 
 import javafx.scene.layout._
 import jagfx.ui.viewmodel._
-import jagfx.ui.components.JagCellPane
+import jagfx.ui.components._
+import jagfx.synth.ToneSynthesizer
 
 class RackController(viewModel: SynthViewModel, inspector: InspectorController):
   private val view = GridPane()
@@ -21,14 +22,14 @@ class RackController(viewModel: SynthViewModel, inspector: InspectorController):
     ("TREM RATE", true), // 5
     ("TREM DEPTH", true), // 6
     ("TRANSITION", false), // 7
-    (
-      "OUTPUT",
-      false
-    ), // 8 (TODO: waveform visualisation)
+    ("OUTPUT", true), // 8
     ("SILENCE", true), // 9
     ("DURATION", true), // 10
     ("RESPONSE", false) // 11
   )
+
+  private val outputWaveformCanvas = JagWaveformCanvas()
+  outputWaveformCanvas.setZoom(4)
 
   definitions.zipWithIndex.foreach { case ((title, enabled), idx) =>
     val cell = JagCellPane(title)
@@ -42,14 +43,33 @@ class RackController(viewModel: SynthViewModel, inspector: InspectorController):
     cells(idx) = cell
   }
 
+  private def setupOutputCell(): Unit =
+    val outputCell = cells(8)
+    val container =
+      outputCell.getChildren.get(0).asInstanceOf[VBox]
+    val canvasWrapper =
+      container.getChildren.get(1).asInstanceOf[Pane]
+
+    outputCell.getCanvas.setVisible(false)
+    if !canvasWrapper.getChildren.contains(outputWaveformCanvas) then
+      canvasWrapper.getChildren.add(outputWaveformCanvas)
+      outputWaveformCanvas.widthProperty.bind(canvasWrapper.widthProperty)
+      outputWaveformCanvas.heightProperty.bind(canvasWrapper.heightProperty)
+
+    outputCell.setAlternateCanvas(outputWaveformCanvas)
+
+  setupOutputCell()
+
   viewModel.rackMode.addListener((_, _, _) => buildGrid())
   viewModel.selectedCellIndex.addListener((_, _, _) => updateSelection())
   buildGrid()
 
-  bindSoloLogic()
   bindActiveTone()
 
   viewModel.activeToneIndexProperty.addListener((_, _, _) => bindActiveTone())
+
+  for i <- 0 until viewModel.getTones.size do
+    viewModel.getTones.get(i).addChangeListener(() => updateOutputWaveform())
 
   def getView: GridPane = view
 
@@ -117,30 +137,15 @@ class RackController(viewModel: SynthViewModel, inspector: InspectorController):
     for idx <- cells.indices if cells(idx) != null do
       envelopeForCell(tone, idx).foreach(cells(idx).setViewModel)
 
-  private var preSoloMuteState: Map[JagCellPane, Boolean] = Map.empty
+    updateOutputWaveform()
 
-  private def bindSoloLogic(): Unit =
-    cells.foreach { cell =>
-      if cell != null then
-        cell.soloProperty.addListener((_, _, _) => updateSoloState())
-    }
-
-  private def updateSoloState(): Unit =
-    val activeSolos = cells.filter(c => c != null && c.soloProperty.get)
-    if activeSolos.nonEmpty then
-      if preSoloMuteState.isEmpty then
-        preSoloMuteState = cells.collect {
-          case c if c != null => c -> c.mutedProperty.get
-        }.toMap
-
-      cells.foreach { c =>
-        if c != null then
-          if activeSolos.contains(c) then
-            if c.mutedProperty.get then c.mutedProperty.set(false)
-          else if !c.mutedProperty.get then c.mutedProperty.set(true)
-      }
-    else if preSoloMuteState.nonEmpty then
-      preSoloMuteState.foreach { case (c, wasMuted) =>
-        c.mutedProperty.set(wasMuted)
-      }
-      preSoloMuteState = Map.empty
+  private def updateOutputWaveform(): Unit =
+    javafx.application.Platform.runLater(() =>
+      val toneVm = viewModel.getActiveTone
+      toneVm.toModel() match
+        case Some(tone) =>
+          val audio = ToneSynthesizer.synthesize(tone)
+          outputWaveformCanvas.setAudioBuffer(audio)
+        case None =>
+          outputWaveformCanvas.clearAudio()
+    )
