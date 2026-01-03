@@ -21,7 +21,7 @@ class ToneViewModel extends IViewModel:
 
   val filterEnvelope = new EnvelopeViewModel()
 
-  val polesZeros = new FilterViewModel()
+  val filterViewMode = new FilterViewModel()
 
   val duration = new SimpleIntegerProperty(1000)
   val startOffset = new SimpleIntegerProperty(0)
@@ -42,7 +42,7 @@ class ToneViewModel extends IViewModel:
       gateDuration,
       filterEnvelope
     ).foreach(_.addChangeListener(cb))
-    polesZeros.addChangeListener(cb)
+    filterViewMode.addChangeListener(cb)
     harmonics.foreach(_.addChangeListener(cb))
     enabled.addListener((_, _, _) => cb())
     duration.addListener((_, _, _) => cb())
@@ -72,7 +72,7 @@ class ToneViewModel extends IViewModel:
         t.gateSilence.foreach(gateSilence.load)
         t.gateDuration.foreach(gateDuration.load)
 
-        polesZeros.load(t.filter)
+        filterViewMode.load(t.filter)
         t.filter.flatMap(_.envelope).foreach(filterEnvelope.load)
 
         duration.set(t.duration)
@@ -98,7 +98,7 @@ class ToneViewModel extends IViewModel:
     gateSilence.clear()
     gateDuration.clear()
     filterEnvelope.clear()
-    polesZeros.clear()
+    filterViewMode.clear()
 
     duration.set(1000)
     startOffset.set(0)
@@ -112,7 +112,7 @@ class ToneViewModel extends IViewModel:
       val activeHarmonics =
         harmonics.take(5).filter(_.active.get).map(_.toModel()).toVector
 
-      val filterModel = polesZeros.toModel() match
+      val filterModel = filterViewMode.toModel() match
         case Some(f) =>
           val env =
             if filterEnvelope.isEmpty then None
