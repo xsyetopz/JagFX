@@ -1,6 +1,6 @@
 package jagfx
 
-import javafx.application.Application
+import javafx.application._
 import javafx.scene.Scene
 import javafx.scene.layout.BorderPane
 import javafx.stage.Stage
@@ -22,9 +22,11 @@ class JagFX extends Application:
     stage.setMinWidth(minWidth)
     stage.setMinHeight(minHeight)
     stage.setResizable(false)
+    stage.setOnCloseRequest(_ => {
+      Platform.exit()
+      System.exit(0)
+    })
     stage.show()
-
-    scribe.info("JagFX started")
 
 object JagFX:
   def main(args: Array[String]): Unit =
