@@ -6,7 +6,7 @@ import javafx.scene.layout.BorderPane
 import javafx.stage.Stage
 import jagfx.ui.controller.MainController
 
-val (minWidth, minHeight) = (800, 520)
+private val (minWidth, minHeight) = (800, 520)
 
 /** GUI application entry point. */
 class JagFX extends Application:
