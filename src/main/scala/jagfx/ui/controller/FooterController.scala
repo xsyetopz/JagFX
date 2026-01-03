@@ -11,10 +11,12 @@ import jagfx.ui.viewmodel.RackMode
 import jagfx.utils.IconUtils
 import javafx.geometry.Pos
 import jagfx.Constants
+import jagfx.ui.BindingManager
 
 class FooterController(viewModel: SynthViewModel) extends IController[HBox]:
   protected val view = HBox()
   view.getStyleClass.add("footer")
+  private val reverbBindings = BindingManager()
 
   private val tonesPanel = createTonesPanel()
   private val harmonicsPanel = createHarmonicsPanel()
@@ -75,11 +77,15 @@ class FooterController(viewModel: SynthViewModel) extends IController[HBox]:
       buttons(i) = btn
       grid.add(btn, i % 2, i / 2)
 
+    viewModel.activeToneIndexProperty.addListener((_, _, newIdx) =>
+      for i <- 0 until MaxTones do buttons(i).setActive(i == newIdx.intValue)
+    )
+
     val ops = HBox()
     ops.setId("tone-ops")
-    val copyBtn = JagButton("")
+    val copyBtn = JagButton()
     copyBtn.setGraphic(IconUtils.icon("mdi2c-content-copy"))
-    val pasteBtn = JagButton("")
+    val pasteBtn = JagButton()
     pasteBtn.setGraphic(IconUtils.icon("mdi2c-content-paste"))
     HBox.setHgrow(copyBtn, Priority.ALWAYS)
     HBox.setHgrow(pasteBtn, Priority.ALWAYS)
@@ -215,9 +221,10 @@ class FooterController(viewModel: SynthViewModel) extends IController[HBox]:
     val damp = JagBarSlider(0, 100, 0, "DAMP")
 
     viewModel.activeToneIndexProperty.addListener((_, _, _) =>
+      reverbBindings.unbindAll()
       val tone = viewModel.getActiveTone
-      mix.valueProperty.bindBidirectional(tone.reverbVolume)
-      damp.valueProperty.bindBidirectional(tone.reverbDelay)
+      reverbBindings.bindBidirectional(mix.valueProperty, tone.reverbVolume)
+      reverbBindings.bindBidirectional(damp.valueProperty, tone.reverbDelay)
     )
 
     panel.getChildren.addAll(head, mix, damp)
