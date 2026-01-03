@@ -4,7 +4,7 @@ import javafx.application.Application
 import javafx.scene.Scene
 import javafx.scene.layout.BorderPane
 import javafx.stage.Stage
-import jagfx.ui.MainController
+import jagfx.ui.controller.MainController
 
 val (minWidth, minHeight) = (800, 520)
 
