@@ -17,22 +17,22 @@ class JagWaveformCanvas extends JagBaseCanvas:
 
   def setAudioBuffer(audio: AudioBuffer): Unit =
     audioSamples = audio.samples
-    draw()
+    requestRedraw()
 
   def clearAudio(): Unit =
     audioSamples = Array.empty
     playheadPosition = -1.0
-    draw()
+    requestRedraw()
 
   /** Set playhead position (`0.0` = start, `1.0` = end, `-1.0` = hidden). */
   def setPlayheadPosition(position: Double): Unit =
     playheadPosition = position
-    javafx.application.Platform.runLater(() => draw())
+    javafx.application.Platform.runLater(() => requestRedraw())
 
   /** Hide playhead. */
   def hidePlayhead(): Unit =
     playheadPosition = -1.0
-    javafx.application.Platform.runLater(() => draw())
+    javafx.application.Platform.runLater(() => requestRedraw())
 
   override protected def drawContent(buffer: Array[Int], w: Int, h: Int): Unit =
     drawCenterLine(buffer, w, h)

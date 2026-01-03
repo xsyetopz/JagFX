@@ -17,9 +17,9 @@ class JagFrequencyResponseCanvas extends JagBaseCanvas:
   def setViewModel(vm: FilterViewModel): Unit =
     viewModel = Some(vm)
     vm.addChangeListener(() =>
-      javafx.application.Platform.runLater(() => draw())
+      javafx.application.Platform.runLater(() => requestRedraw())
     )
-    draw()
+    requestRedraw()
 
   override protected def drawContent(buffer: Array[Int], w: Int, h: Int): Unit =
     drawGrid(buffer, w, h)

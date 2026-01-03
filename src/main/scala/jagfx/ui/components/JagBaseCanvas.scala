@@ -45,10 +45,6 @@ abstract class JagBaseCanvas extends Canvas:
   /** Requests redraw on next animation frame. */
   def requestRedraw(): Unit = dirty = true
 
-  @deprecated("use `requestRedraw()` instead", "0.2.0")
-  /** Requests redraw on next animation frame. */
-  def draw(): Unit = requestRedraw()
-
   private def performDraw(): Unit =
     val w = getWidth.toInt
     val h = getHeight.toInt
