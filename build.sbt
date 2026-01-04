@@ -105,13 +105,17 @@ lazy val allJavaFxDeps =
 
 lazy val scss = taskKey[Unit]("Compile SCSS to CSS")
 scss := {
+  val isWindows = System.getProperty("os.name").toLowerCase.contains("windows")
+
   def isToolAvailable(tool: String): Boolean =
-    try Process(Seq("which", tool)).! == 0
-    catch { case _: Exception => false }
+    try {
+      val cmd = if (isWindows) Seq("where", tool) else Seq("which", tool)
+      Process(cmd).! == 0
+    } catch { case _: Exception => false }
 
   val compiler =
     if (isToolAvailable("bunx")) "bunx"
-    else if (isToolAvailable("npx")) "npx"
+    else if (isToolAvailable("npx")) { if (isWindows) "npx.cmd" else "npx" }
     else
       throw new Exception(
         "SCSS compilation failed: neither 'bunx' nor 'npx' found in PATH"
