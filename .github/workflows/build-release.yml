@@ -26,6 +26,11 @@ jobs:
           java-version: "21"
           cache: "sbt"
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
       - name: Install sbt (Linux)
         if: matrix.os == 'ubuntu-latest'
         run: |
