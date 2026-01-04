@@ -33,6 +33,7 @@ class EnvelopeSegmentEditor extends VBox:
   addButton.setGraphic(IconUtils.icon("mdi2p-plus", 14))
   addButton.setMaxWidth(Double.MaxValue)
   addButton.getStyleClass.add("segment-add-btn")
+  addButton.setTooltip(new Tooltip("Add new envelope segment"))
   addButton.setOnAction(_ => addSegment())
 
   getChildren.addAll(headerRow, scrollPane, addButton)
@@ -115,6 +116,7 @@ class EnvelopeSegmentEditor extends VBox:
     delBtn.setGraphic(IconUtils.icon("mdi2m-minus", 10))
     delBtn.getStyleClass.add("icon-btn-small")
     delBtn.setPrefWidth(20)
+    delBtn.setTooltip(new Tooltip("Remove this segment"))
     delBtn.setOnAction(_ => remove(index))
 
     row.getChildren.addAll(idxLbl, durField, peakField, delBtn)

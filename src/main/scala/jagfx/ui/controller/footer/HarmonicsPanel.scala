@@ -120,6 +120,8 @@ object HarmonicsPanel:
       hs.sRow.view.setDisable(dim)
       hs.dRow.view.setDisable(dim)
 
+import javafx.scene.control._
+
 /** Single row in harmonics strip (`SEMI`/`VOL`/`DEL`). */
 class HarmonicsRow(
     labelTxt: String,
@@ -139,6 +141,12 @@ class HarmonicsRow(
 
   val input = JagNumericField(min, max, 0, scale, format)
   input.setPrefWidth(32)
+  // Add tooltip based on field type
+  input.setTooltip(new Tooltip(labelTxt match
+    case "SEMI:" => "Semitone offset (decicents, 10=1 semitone)"
+    case "VOL:"  => "Harmonic volume (0-100%)"
+    case "DEL:"  => "Phase delay in samples"
+    case _       => labelTxt))
 
   val barBox = VBox()
   barBox.getStyleClass.add("bar-box")

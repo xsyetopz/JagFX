@@ -4,7 +4,7 @@ import javafx.beans.property._
 import javafx.scene.layout._
 import javafx.scene.shape.Rectangle
 import javafx.geometry.Pos
-import javafx.scene.control.Label
+import javafx.scene.control._
 import jagfx.ui.components.field.JagNumericField
 
 /** Horizontal bar slider with numeric input. */
@@ -30,6 +30,10 @@ class JagBarSlider(min: Int, max: Int, initial: Int, labelText: String = "")
     inputRow.getChildren.addAll(lbl, spacer)
 
   private val input = JagNumericField(min, max, initial)
+  input.setTooltip(new Tooltip(labelText match
+    case "VOL:" => "Reverb mix level (0-100%)"
+    case "DEL:" => "Reverb delay in samples"
+    case other  => other))
   value.bindBidirectional(input.valueProperty)
   inputRow.getChildren.add(input)
 

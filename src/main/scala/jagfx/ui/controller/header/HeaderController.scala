@@ -74,11 +74,18 @@ class HeaderController(viewModel: SynthViewModel) extends IController[GridPane]:
   private def createTransportGroup(): HBox =
     val btnPlay = JagButton()
     btnPlay.setGraphic(IconUtils.icon("mdi2p-play"))
+    btnPlay.setTooltip(
+      new Tooltip("Play current tone, or all tones if TGT=ALL")
+    )
     val btnStop = JagButton()
     btnStop.setGraphic(IconUtils.icon("mdi2s-stop"))
+    btnStop.setTooltip(new Tooltip("Stop playback"))
     val btnLoop = JagButton()
     btnLoop.setGraphic(IconUtils.icon("mdi2r-repeat"))
     btnLoop.setId("btn-loop")
+    btnLoop.setTooltip(
+      new Tooltip("Toggle loop playback between start and end")
+    )
 
     btnPlay.setOnAction(_ => audioPlayer.play())
     btnStop.setOnAction(_ => audioPlayer.stop())
@@ -99,7 +106,9 @@ class HeaderController(viewModel: SynthViewModel) extends IController[GridPane]:
     group.getStyleClass.add("h-grp")
 
     val btnAll = JagButton("ALL")
+    btnAll.setTooltip(new Tooltip("Edit affects all enabled tones"))
     val btnOne = JagButton("ONE")
+    btnOne.setTooltip(new Tooltip("Edit affects only active tone"))
 
     btnAll.setOnAction(_ => viewModel.targetModeProperty.set(true))
     btnOne.setOnAction(_ => viewModel.targetModeProperty.set(false))
@@ -118,10 +127,14 @@ class HeaderController(viewModel: SynthViewModel) extends IController[GridPane]:
     group.getStyleClass.add("h-grp")
     val durationField = JagNumericField(0, Int16.Range, 1200)
     durationField.setEditable(false)
+    durationField.setTooltip(
+      new Tooltip("Total tone duration in samples (read-only)")
+    )
     durationField.valueProperty.bindBidirectional(
       viewModel.totalDurationProperty
     )
     val startOffsetField = JagNumericField(0, Int16.Range, 0)
+    startOffsetField.setTooltip(new Tooltip("Start offset in samples"))
     group.getChildren.addAll(
       Label("DUR:"),
       durationField,
@@ -136,14 +149,17 @@ class HeaderController(viewModel: SynthViewModel) extends IController[GridPane]:
 
     val fldL1 = JagNumericField(0, Int16.Range, 0)
     fldL1.setPrefWidth(LoopParamSize)
+    fldL1.setTooltip(new Tooltip("Loop start position in samples"))
     fldL1.valueProperty.bindBidirectional(viewModel.loopStartProperty)
 
     val fldL2 = JagNumericField(0, Int16.Range, 0)
     fldL2.setPrefWidth(LoopParamSize)
+    fldL2.setTooltip(new Tooltip("Loop end position in samples"))
     fldL2.valueProperty.bindBidirectional(viewModel.loopEndProperty)
 
     val fldCnt = JagNumericField(0, 100, 0)
     fldCnt.setPrefWidth(LoopParamSize - 10)
+    fldCnt.setTooltip(new Tooltip("Number of loop repetitions (preview only)"))
     fldCnt.valueProperty.bindBidirectional(viewModel.loopCountProperty)
 
     val lblStart = Label("S:")
@@ -176,10 +192,13 @@ class HeaderController(viewModel: SynthViewModel) extends IController[GridPane]:
 
     val btnOpen = JagButton()
     btnOpen.setGraphic(IconUtils.icon("mdi2f-folder-open"))
+    btnOpen.setTooltip(new Tooltip("Open .synth file"))
     val btnSave = JagButton()
     btnSave.setGraphic(IconUtils.icon("mdi2c-content-save"))
+    btnSave.setTooltip(new Tooltip("Save current file"))
     val btnExport = JagButton()
     btnExport.setGraphic(IconUtils.icon("mdi2e-export-variant"))
+    btnExport.setTooltip(new Tooltip("Save as .synth or export to WAV"))
 
     btnOpen.setOnAction(_ => fileOps.open())
     btnSave.setOnAction(_ => fileOps.save())

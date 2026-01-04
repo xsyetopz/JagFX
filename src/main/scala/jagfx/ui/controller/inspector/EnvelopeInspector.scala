@@ -1,7 +1,7 @@
 package jagfx.ui.controller.inspector
 
 import javafx.scene.layout._
-import javafx.scene.control.Label
+import javafx.scene.control._
 import javafx.geometry.Pos
 import jagfx.ui.viewmodel.EnvelopeViewModel
 import jagfx.ui.components.field._
@@ -52,12 +52,14 @@ class EnvelopeInspector extends VBox:
 
   private val startField = JagNumericField(-maxRangeValue, maxRangeValue, 0)
   startField.setPrefWidth(RangeFieldSize)
+  startField.setTooltip(new Tooltip("Envelope start value"))
   startField.valueProperty.addListener((_, _, nv) =>
     currentEnvelope.foreach(_.start.set(nv.intValue))
   )
 
   private val endField = JagNumericField(-maxRangeValue, maxRangeValue, 0)
   endField.setPrefWidth(RangeFieldSize)
+  endField.setTooltip(new Tooltip("Envelope end value"))
   endField.valueProperty.addListener((_, _, nv) =>
     currentEnvelope.foreach(_.end.set(nv.intValue))
   )
