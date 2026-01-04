@@ -26,6 +26,35 @@ class JagNumericField(
   setPrefWidth(FieldSize)
   setMinWidth(FieldSize)
 
+  setOnScroll(e =>
+    if isFocused || isHover then
+      val delta = if e.getDeltaY > 0 then 1 else -1
+
+      // default: `1.0` display unit (scale)
+      // Shift: `10.0` display units (coarse)
+      // Cmd/Ctrl: `0.01` display units (fine) or `1` raw unit
+      val stepMultiplier =
+        if e.isShiftDown then 10.0
+        else if e.isShortcutDown then 0.01
+        else 1.0
+
+      val increment = (stepMultiplier * scale).round.toInt
+      val effectiveInc =
+        if increment == 0 then (if delta > 0 then 1 else -1)
+        else increment * delta
+
+      val newVal = math.max(min, math.min(max, value.get + effectiveInc))
+      if newVal != value.get then
+        value.set(newVal)
+        // force update text display even IF focused
+        val displayVal = newVal.intValue / scale
+        val str = String.format(format, displayVal.asInstanceOf[Object])
+        if getText != str then setText(str)
+        selectAll()
+
+      e.consume() // prevent scrolling parent container
+  )
+
   private val filter: UnaryOperator[TextFormatter.Change] = change =>
     val newText = change.getControlNewText
     if validPattern.matcher(newText).matches() then
