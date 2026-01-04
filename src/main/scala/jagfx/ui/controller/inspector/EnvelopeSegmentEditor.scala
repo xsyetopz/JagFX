@@ -54,11 +54,26 @@ class EnvelopeSegmentEditor extends VBox:
     refresh()
 
   private def refresh(): Unit =
-    contentBox.getChildren.clear()
     currentModel.foreach { model =>
-      model.getFullSegments.zipWithIndex.foreach { case (seg, idx) =>
-        contentBox.getChildren.add(createRow(idx, seg.duration, seg.peak))
-      }
+      val segments = model.getFullSegments
+      val currentRows = contentBox.getChildren
+      if currentRows.size > segments.length then
+        currentRows.remove(segments.length, currentRows.size)
+      if currentRows.size < segments.length then
+        for i <- currentRows.size until segments.length do
+          val seg = segments(i)
+          contentBox.getChildren.add(createRow(i, seg.duration, seg.peak))
+
+      for i <- 0 until segments.length do
+        val seg = segments(i)
+        val row = currentRows.get(i).asInstanceOf[HBox]
+        // row children: [Label(#), DurField, PeakField, DelBtn]
+        val durField = row.getChildren.get(1).asInstanceOf[JagNumericField]
+        val peakField = row.getChildren.get(2).asInstanceOf[JagNumericField]
+
+        if durField.getValue != seg.duration then
+          durField.setValue(seg.duration)
+        if peakField.getValue != seg.peak then peakField.setValue(seg.peak)
     }
 
   private def createHeader(): HBox =
@@ -94,20 +109,34 @@ class EnvelopeSegmentEditor extends VBox:
     row.setAlignment(Pos.CENTER_LEFT)
 
     val idxLbl = Label((index + 1).toString)
-    idxLbl.setPrefWidth(32) // Match header
+    idxLbl.setPrefWidth(32)
     idxLbl.getStyleClass.add("dim-label")
     idxLbl.setAlignment(Pos.CENTER)
 
-    val durField = JagNumericField(0, Int16.Range, duration)
+    val scale = Int16.Range.toDouble / 100.0 // 655.35
+    val fmt = "%.2f"
+    val helpText = "\nScroll: ±1%\nShift: ±10%\nAlt/Cmd: ±0.01%"
+
+    val durField = JagNumericField(0, Int16.Range, duration, scale, fmt)
     durField.setPrefWidth(55)
     durField.getStyleClass.add("table-field")
+    val durTip = new Tooltip()
+    durTip.textProperty.bind(
+      durField.valueProperty.asString("Raw: %d").concat(helpText)
+    )
+    durField.setTooltip(durTip)
     durField.valueProperty.addListener((_, _, nv) =>
       update(index, nv.intValue, peak)
     )
 
-    val peakField = JagNumericField(0, Int16.Range, peak)
+    val peakField = JagNumericField(0, Int16.Range, peak, scale, fmt)
     peakField.setPrefWidth(55)
     peakField.getStyleClass.add("table-field")
+    val peakTip = new Tooltip()
+    peakTip.textProperty.bind(
+      peakField.valueProperty.asString("Raw: %d").concat(helpText)
+    )
+    peakField.setTooltip(peakTip)
     peakField.valueProperty.addListener((_, _, nv) =>
       update(index, duration, nv.intValue)
     )
