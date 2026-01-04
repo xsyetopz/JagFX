@@ -42,6 +42,20 @@ class JagCellPane(title: String) extends StackPane:
   titleLabel.setAlignment(Pos.CENTER_LEFT)
   HBox.setHgrow(titleLabel, Priority.ALWAYS)
 
+  private var onMaximizeToggle: Option[() => Unit] = None
+
+  /** Set callback for when maximize (editor mode) toggled via double-click on
+    * title.
+    */
+  def setOnMaximizeToggle(handler: () => Unit): Unit =
+    onMaximizeToggle = Some(handler)
+
+  titleLabel.setOnMouseClicked(e =>
+    if e.getClickCount == 2 then
+      onMaximizeToggle.foreach(_())
+      e.consume()
+  )
+
   private val toolbar = HBox()
   toolbar.setSpacing(1)
 
