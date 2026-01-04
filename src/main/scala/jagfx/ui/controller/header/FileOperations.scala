@@ -47,28 +47,35 @@ class FileOperations(
       new FileChooser.ExtensionFilter("WAV Files", "*.wav")
     )
 
-    if filterObj.isDefined then
-      chooser.setSelectedExtensionFilter(
-        chooser.getExtensionFilters
-          .filtered(f => f.getExtensions.contains(filterObj.get))
-          .get(0)
-      )
+    filterObj.foreach { filter =>
+      chooser.getExtensionFilters
+        .filtered(f => f.getExtensions.contains(filter))
+        .stream()
+        .findFirst()
+        .ifPresent(chooser.setSelectedExtensionFilter)
+    }
 
-      val file = chooser.showSaveDialog(getWindow())
-      if file != null then
-        val path = file.toPath
-        try
-          if path.toString.endsWith(".wav") then
-            val audio = TrackSynthesizer.synthesize(viewModel.toModel(), 1)
-            val is16Bit = UserPreferences.export16Bit.get
-            val bytes =
-              if is16Bit then audio.toBytes16LE else audio.toBytesUnsigned
-            val bits = if is16Bit then 16 else 8
-            val wav = WavWriter.write(bytes, bits)
-            Files.write(path, wav)
-          else
-            val bytes = SynthWriter.write(viewModel.toModel())
-            Files.write(path, bytes)
-            currentFile = Some(file)
-            viewModel.setCurrentFilePath(file.getAbsolutePath)
-        catch case e: Exception => scribe.error(e)
+    currentFile.foreach { file =>
+      val name = file.getName.replaceFirst("\\.[^.]+$", "")
+      chooser.setInitialFileName(name)
+      chooser.setInitialDirectory(file.getParentFile)
+    }
+
+    val file = chooser.showSaveDialog(getWindow())
+    if file != null then
+      val path = file.toPath
+      try
+        if path.toString.endsWith(".wav") then
+          val audio = TrackSynthesizer.synthesize(viewModel.toModel(), 1)
+          val is16Bit = UserPreferences.export16Bit.get
+          val bytes =
+            if is16Bit then audio.toBytes16LE else audio.toBytesUnsigned
+          val bits = if is16Bit then 16 else 8
+          val wav = WavWriter.write(bytes, bits)
+          Files.write(path, wav)
+        else
+          val bytes = SynthWriter.write(viewModel.toModel())
+          Files.write(path, bytes)
+          currentFile = Some(file)
+          viewModel.setCurrentFilePath(file.getAbsolutePath)
+      catch case e: Exception => scribe.error(e)
