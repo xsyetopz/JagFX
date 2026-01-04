@@ -74,8 +74,8 @@ src/main/scala/jagfx/
 
 ### `ice_cast.synth` and `ice_barrage_impact.synth`
 
-https://github.com/user-attachments/assets/6a0216bb-44e4-4d96-a53e-27e7c986313d
+<https://github.com/user-attachments/assets/6a0216bb-44e4-4d96-a53e-27e7c986313d>
 
 ## License
 
-This project is licensed under MIT License. See `LICENSE` file for more details.
+This project is licensed under MIT License. See [LICENSE](LICENSE) file for more details.
