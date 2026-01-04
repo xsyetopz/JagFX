@@ -4,7 +4,7 @@ import javafx.beans.property._
 import javafx.scene.layout._
 import javafx.scene.control.Label
 import javafx.scene.control._
-import javafx.geometry.Pos
+import javafx.geometry._
 import jagfx.ui.viewmodel.EnvelopeViewModel
 import jagfx.utils.IconUtils
 import jagfx.model.WaveForm
@@ -23,7 +23,7 @@ class JagCellPane(title: String) extends StackPane:
 
   private val container = VBox()
   container.getStyleClass.add("cell-container")
-  container.setPickOnBounds(true) // FORCE capture of clicks on empty space
+  container.setPickOnBounds(true) // force capture of clicks on empty space
 
   // IF container (or trans child) clicked, THEN fire on 'StackPane`
   container.setOnMouseClicked(e =>
@@ -67,6 +67,8 @@ class JagCellPane(title: String) extends StackPane:
       zooms.foreach(_._1.setActive(false))
       btn.setActive(true)
       alternateCanvas.getOrElse(canvas).setZoom(level)
+      // allow drag/scroll panning via mouse when zoomed in
+      canvasWrapper.setMouseTransparent(level == 1)
     )
   }
   btnX1.setActive(true)
@@ -82,17 +84,25 @@ class JagCellPane(title: String) extends StackPane:
 
   btnMenu.setOnAction(e =>
     updateMenu()
-    contextMenu.show(btnMenu, javafx.geometry.Side.BOTTOM, 0, 0)
+    contextMenu.show(btnMenu, Side.BOTTOM, 0, 0)
   )
 
   private var showCollapse = true
+  private var showZoomButtons = true
 
   def setFeatures(showMute: Boolean, showCollapse: Boolean): Unit =
     this.showCollapse = showCollapse
     updateToolbar()
 
+  /** Hide zoom buttons. */
+  def setShowZoomButtons(show: Boolean): Unit =
+    showZoomButtons = show
+    updateToolbar()
+
   private def updateToolbar(): Unit =
     toolbar.getChildren.clear()
+    if !showZoomButtons then return
+
     val w = getWidth
 
     val titleWidth = titleLabel.prefWidth(-1)
@@ -119,7 +129,6 @@ class JagCellPane(title: String) extends StackPane:
   canvas.widthProperty.bind(canvasWrapper.widthProperty)
   canvas.heightProperty.bind(canvasWrapper.heightProperty)
   canvasWrapper.getChildren.add(canvas)
-
   container.getChildren.addAll(header, canvasWrapper)
   getChildren.add(container)
 
