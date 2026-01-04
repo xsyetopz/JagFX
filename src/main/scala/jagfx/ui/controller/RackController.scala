@@ -211,6 +211,7 @@ class RackController(viewModel: SynthViewModel, inspector: InspectorController)
 
     val filterCell = JagCellPane("FILTER DISPLAY")
     filterCell.setFeatures(false, false)
+    filterCell.setShowZoomButtons(false)
     val fWrapper = filterCell.getCanvas.getParent.asInstanceOf[Pane]
     filterCell.getCanvas.setVisible(false)
     fWrapper.getChildren.clear() // remove canvas
