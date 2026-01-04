@@ -8,6 +8,7 @@ import jagfx.ui.viewmodel.SynthViewModel
 import jagfx.io._
 import jagfx.synth.TrackSynthesizer
 import jagfx.utils.UserPreferences
+import javafx.scene.control.Alert
 
 /** File I/O operations for `.synth` files and WAV export. */
 class FileOperations(
@@ -25,10 +26,31 @@ class FileOperations(
     if file != null then
       SynthReader.readFromPath(file.toPath) match
         case Right(synth) =>
+          if synth.warnings.nonEmpty then showWarningDialog(synth.warnings)
+
           viewModel.load(synth)
           viewModel.setCurrentFilePath(file.getAbsolutePath)
           currentFile = Some(file)
-        case Left(err) => scribe.error(s"Failed to load: ${err.message}")
+        case Left(err) =>
+          showErrorDialog(s"Failed to load: ${err.message}")
+
+  private def showWarningDialog(warnings: List[String]): Unit =
+    val alert = new Alert(Alert.AlertType.WARNING)
+    alert.setTitle("Corrupt Data Detected")
+    alert.setHeaderText("Loaded file appears to be corrupted or truncated.")
+    alert.setContentText(
+      warnings.mkString(
+        "\n"
+      ) + "\n\nPartial data loaded, but playback may differ from original source."
+    )
+    alert.showAndWait()
+
+  private def showErrorDialog(msg: String): Unit =
+    val alert = new Alert(Alert.AlertType.ERROR)
+    alert.setTitle("Load Error")
+    alert.setHeaderText("Could not load file")
+    alert.setContentText(msg)
+    alert.showAndWait()
 
   def save(): Unit =
     currentFile match
