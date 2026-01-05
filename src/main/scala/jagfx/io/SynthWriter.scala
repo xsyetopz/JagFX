@@ -1,16 +1,17 @@
 package jagfx.io
 
-import jagfx.model._
-import jagfx.types._
-import jagfx.constants
-import java.nio.file._
+import java.nio.file.*
+
+import jagfx.Constants
+import jagfx.model.*
+import jagfx.types.*
 
 /** Serializer for `SynthFile` domain model to `.synth` binary format. */
 object SynthWriter:
   /** Serializes `SynthFile` to `.synth` binary data. */
   def write(file: SynthFile): Array[Byte] =
     val buf = BinaryBuffer(4096)
-    _writeTones(buf, file.tones)
+    writeTones(buf, file.tones)
     buf.writeUInt16BE(file.loop.begin)
     buf.writeUInt16BE(file.loop.end)
     buf.data.take(buf.position)
@@ -20,29 +21,29 @@ object SynthWriter:
     val bytes = write(file)
     Files.write(path, bytes)
 
-  private def _writeTones(
+  private def writeTones(
       buf: BinaryBuffer,
       tones: Vector[Option[Tone]]
   ): Unit =
-    for tone <- tones.take(constants.MaxTones) do
+    for tone <- tones.take(Constants.MaxTones) do
       tone match
-        case Some(t) => _writeTone(buf, t)
+        case Some(t) => writeTone(buf, t)
         case None    => buf.writeUInt8(0)
 
-  private def _writeTone(buf: BinaryBuffer, tone: Tone): Unit =
-    _writeEnvelope(buf, tone.pitchEnvelope)
-    _writeEnvelope(buf, tone.volumeEnvelope)
-    _writeOptionalEnvelopePair(buf, tone.vibratoRate, tone.vibratoDepth)
-    _writeOptionalEnvelopePair(buf, tone.tremoloRate, tone.tremoloDepth)
-    _writeOptionalEnvelopePair(buf, tone.gateRelease, tone.gateAttack)
-    _writePartials(buf, tone.partials)
+  private def writeTone(buf: BinaryBuffer, tone: Tone): Unit =
+    writeEnvelope(buf, tone.pitchEnvelope)
+    writeEnvelope(buf, tone.volumeEnvelope)
+    writeOptionalEnvelopePair(buf, tone.vibratoRate, tone.vibratoDepth)
+    writeOptionalEnvelopePair(buf, tone.tremoloRate, tone.tremoloDepth)
+    writeOptionalEnvelopePair(buf, tone.gateSilence, tone.gateDuration)
+    writePartials(buf, tone.partials)
     buf.writeUSmart(USmart(tone.echoDelay))
     buf.writeUSmart(USmart(tone.echoMix))
     buf.writeUInt16BE(tone.duration)
     buf.writeUInt16BE(tone.start)
-    _writeFilter(buf, tone.filter)
+    writeFilter(buf, tone.filter)
 
-  private def _writeEnvelope(buf: BinaryBuffer, env: Envelope): Unit =
+  private def writeEnvelope(buf: BinaryBuffer, env: Envelope): Unit =
     buf.writeUInt8(env.waveform.id)
     buf.writeInt32BE(env.start)
     buf.writeInt32BE(env.end)
@@ -51,7 +52,31 @@ object SynthWriter:
       buf.writeUInt16BE(seg.duration)
       buf.writeUInt16BE(seg.peak)
 
-  private def _writeFilter(buf: BinaryBuffer, filter: Option[Filter]): Unit =
+  private def writeOptionalEnvelopePair(
+      buf: BinaryBuffer,
+      env1: Option[Envelope],
+      env2: Option[Envelope]
+  ): Unit =
+    (env1, env2) match
+      case (Some(e1), Some(e2)) =>
+        writeEnvelope(buf, e1)
+        writeEnvelope(buf, e2)
+      case _ =>
+        buf.writeUInt8(0)
+
+  private def writePartials(
+      buf: BinaryBuffer,
+      partials: Vector[Partial]
+  ): Unit =
+    val activePartials =
+      partials.filter(_.volume.value > 0).take(Constants.MaxPartials)
+    for height <- activePartials do
+      buf.writeUSmart(USmart(height.volume.value))
+      buf.writeSmart(Smart(height.pitchOffset))
+      buf.writeUSmart(USmart(height.startDelay.value))
+    buf.writeUSmart(USmart(0))
+
+  private def writeFilter(buf: BinaryBuffer, filter: Option[Filter]): Unit =
     filter match
       case None    => buf.writeUInt8(0)
       case Some(f) =>
@@ -61,17 +86,17 @@ object SynthWriter:
         buf.writeUInt16BE(f.unity(0))
         buf.writeUInt16BE(f.unity(1))
 
-        val migrated = _determineMigrationFlags(f, p0, p1)
+        val migrated = determineMigrationFlags(f, p0, p1)
         buf.writeUInt8(migrated)
 
-        _writeBasePairs(buf, f, p0, p1)
-        _writeMigratedPairs(buf, f, migrated)
+        writeBasePairs(buf, f, p0, p1)
+        writeMigratedPairs(buf, f, migrated)
 
         f.envelope match
-          case Some(env) => _writeEnvelopeSegments(buf, env)
+          case Some(env) => writeEnvelopeSegments(buf, env)
           case None      => // do nothing
 
-  private def _determineMigrationFlags(f: Filter, p0: Int, p1: Int): Int =
+  private def determineMigrationFlags(f: Filter, p0: Int, p1: Int): Int =
     var migrated = 0
     for dir <- 0 until 2 do
       val count = f.pairCounts(dir)
@@ -86,7 +111,7 @@ object SynthWriter:
 
     migrated
 
-  private def _writeBasePairs(
+  private def writeBasePairs(
       buf: BinaryBuffer,
       f: Filter,
       p0: Int,
@@ -99,7 +124,7 @@ object SynthWriter:
       buf.writeUInt16BE(f.pairPhase(1)(0)(p))
       buf.writeUInt16BE(f.pairMagnitude(1)(0)(p))
 
-  private def _writeMigratedPairs(
+  private def writeMigratedPairs(
       buf: BinaryBuffer,
       f: Filter,
       migrated: Int
@@ -111,32 +136,8 @@ object SynthWriter:
           buf.writeUInt16BE(f.pairPhase(dir)(1)(p))
           buf.writeUInt16BE(f.pairMagnitude(dir)(1)(p))
 
-  private def _writeEnvelopeSegments(buf: BinaryBuffer, env: Envelope): Unit =
+  private def writeEnvelopeSegments(buf: BinaryBuffer, env: Envelope): Unit =
     buf.writeUInt8(env.segments.length)
     for seg <- env.segments do
       buf.writeUInt16BE(seg.duration)
       buf.writeUInt16BE(seg.peak)
-
-  private def _writeOptionalEnvelopePair(
-      buf: BinaryBuffer,
-      env1: Option[Envelope],
-      env2: Option[Envelope]
-  ): Unit =
-    (env1, env2) match
-      case (Some(e1), Some(e2)) =>
-        _writeEnvelope(buf, e1)
-        _writeEnvelope(buf, e2)
-      case _ =>
-        buf.writeUInt8(0)
-
-  private def _writePartials(
-      buf: BinaryBuffer,
-      partials: Vector[Partial]
-  ): Unit =
-    val activePartials =
-      partials.filter(_.volume.value > 0).take(constants.MaxPartials)
-    for h <- activePartials do
-      buf.writeUSmart(USmart(h.volume.value))
-      buf.writeSmart(Smart(h.pitchOffset))
-      buf.writeUSmart(USmart(h.startDelay.value))
-    buf.writeUSmart(USmart(0))
