@@ -1,24 +1,11 @@
 package jagfx.io
 
-import jagfx.model._
-import jagfx.TestFixtures._
+import jagfx.TestFixtures.*
+import jagfx.model.*
 
 class SynthWriterSuite extends munit.FunSuite:
 
-  private def _assertByteIdentical(
-      written: Array[Byte],
-      original: Array[Byte],
-      name: String
-  ): Unit =
-    assertEquals(written.length, original.length, s"$name: length mismatch")
-    val diffs = written.zip(original).zipWithIndex.collect {
-      case ((w, o), i) if w != o =>
-        s"pos $i: wrote 0x${"%02x".format(w & 0xff)}, expected 0x${"%02x".format(o & 0xff)}"
-    }
-    assert(
-      diffs.isEmpty,
-      s"$name byte differences:\n${diffs.take(10).mkString("\n")}"
-    )
+  
 
   test("cow_death (1 tone) roundtrip preserves model equality"):
     val original = SynthReader.read(cowDeathHex).toOption.get

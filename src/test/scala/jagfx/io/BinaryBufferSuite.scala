@@ -1,6 +1,6 @@
 package jagfx.io
 
-import jagfx.types._
+import jagfx.types.*
 
 class BinaryBufferSuite extends munit.FunSuite:
 

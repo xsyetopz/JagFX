@@ -1,8 +1,8 @@
 package jagfx.io
 
-import jagfx.model._
-import jagfx.types._
-import jagfx.TestFixtures._
+import jagfx.TestFixtures.*
+import jagfx.model.*
+import jagfx.types.*
 
 class SynthReaderSuite extends munit.FunSuite:
   test("reads cow_death (1 tone) correctly"):

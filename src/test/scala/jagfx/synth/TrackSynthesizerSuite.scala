@@ -1,9 +1,9 @@
 package jagfx.synth
 
-import jagfx.model._
+import jagfx.TestFixtures.*
+import jagfx.Constants
 import jagfx.io.SynthReader
-import jagfx.TestFixtures._
-import jagfx.constants
+import jagfx.model.*
 import jagfx.synth.TrackSynthesizer
 
 class TrackSynthesizerSuite extends munit.FunSuite:
@@ -13,7 +13,7 @@ class TrackSynthesizerSuite extends munit.FunSuite:
     val audio = TrackSynthesizer.synthesize(file, 1)
 
     assert(audio.length > 0)
-    assertEquals(audio.sampleRate, constants.SampleRate)
+    assertEquals(audio.sampleRate, Constants.SampleRate)
     assertEquals(audio.length, 19889 - 44)
 
   test("synthesizes protect_from_magic (2 tones)"):
@@ -21,7 +21,7 @@ class TrackSynthesizerSuite extends munit.FunSuite:
     val audio = TrackSynthesizer.synthesize(file, 1)
 
     assert(audio.length > 0)
-    assertEquals(audio.sampleRate, constants.SampleRate)
+    assertEquals(audio.sampleRate, Constants.SampleRate)
     assertEquals(audio.length, 33119 - 44)
 
   test("synthesizes ice_cast (2 tones)"):
@@ -29,7 +29,7 @@ class TrackSynthesizerSuite extends munit.FunSuite:
     val audio = TrackSynthesizer.synthesize(file, 1)
 
     assert(audio.length > 0)
-    assertEquals(audio.sampleRate, constants.SampleRate)
+    assertEquals(audio.sampleRate, Constants.SampleRate)
 
   test("empty file produces empty buffer"):
     val emptyFile = SynthFile(Vector.fill(10)(None), LoopParams(0, 0))

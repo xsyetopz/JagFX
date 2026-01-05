@@ -1,6 +1,6 @@
 package jagfx.ui.viewmodel
 
-import jagfx.model._
+import jagfx.model.*
 
 class EnvelopeViewModelSuite extends munit.FunSuite:
 
