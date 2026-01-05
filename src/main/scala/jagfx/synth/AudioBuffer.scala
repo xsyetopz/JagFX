@@ -2,6 +2,7 @@ package jagfx.synth
 
 import jagfx.Constants
 import jagfx.Constants.SampleRate
+import jagfx.utils.MathUtils
 
 /** Container for synthesized audio samples with mixing and conversion
   * operations.
@@ -27,17 +28,13 @@ class AudioBuffer(val samples: Array[Int], val sampleRate: Int = SampleRate):
 
   /** Clips samples to 16-bit signed range (`-32768` to `32767`). */
   def clip(): AudioBuffer =
-    import Constants._
-    val clipped = samples.map { s =>
-      if s < Int16.Min then Int16.Min
-      else if s > Int16.Max then Int16.Max
-      else s
-    }
-    AudioBuffer(clipped, sampleRate)
+    val newSamples = samples.clone()
+    MathUtils.clipInt16(newSamples)
+    AudioBuffer(newSamples, sampleRate)
 
   /** Converts 16-bit samples to 8-bit unsigned bytes. */
   def toBytesUnsigned: Array[Byte] =
-    samples.map(s => ((s >> 8) + 128).toByte)
+    samples.map(s => ((s >> 8) + Byte.MaxValue + 1).toByte)
 
   /** Converts 16-bit samples to 8-bit signed bytes. */
   def toBytes: Array[Byte] =
