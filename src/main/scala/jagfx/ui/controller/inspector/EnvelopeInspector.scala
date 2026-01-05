@@ -8,7 +8,8 @@ import javafx.geometry.Pos
 import javafx.scene.control.*
 import javafx.scene.layout.*
 
-private val RangeFieldSize = 48
+// Constants
+private final val RangeFieldSize = 48
 
 /** Inspector panel for envelope parameters. */
 class EnvelopeInspector extends VBox:

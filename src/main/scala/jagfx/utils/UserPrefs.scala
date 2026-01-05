@@ -3,7 +3,8 @@ package jagfx.utils
 import java.util.prefs.Preferences
 import javafx.beans.property.*
 
-private val KeyExport16Bit = "export_16_bit"
+// Constants
+private final val KeyExport16Bit = "export_16_bit"
 
 /** Handles persistent user preferences using `java.util.prefs`. */
 object UserPrefs:

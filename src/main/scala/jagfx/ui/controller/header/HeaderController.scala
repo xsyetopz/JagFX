@@ -10,7 +10,8 @@ import javafx.geometry.*
 import javafx.scene.control.*
 import javafx.scene.layout.*
 
-private val LoopParamSize = 34
+// Constants
+private final val LoopParamSize = 120
 
 /** Header controller containing transport, file, and settings controls. */
 class HeaderController(viewModel: SynthViewModel)

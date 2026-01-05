@@ -115,11 +115,11 @@ class JagFrequencyResponseCanvas extends JagBaseCanvas:
 
 object JagFrequencyResponseCanvas:
   // Constants
-  private val GridCols = 8
-  private val GridRows = 4
-  private val MinGain = 0.001
-  private val MinDb = -24.0
-  private val MaxDb = 24.0
+  private final val GridCols = 8
+  private final val GridRows = 4
+  private final val MinGain = 0.001
+  private final val MinDb = -24.0
+  private final val MaxDb = 24.0
 
   /** Creates frequency response canvas. */
   def apply(): JagFrequencyResponseCanvas = new JagFrequencyResponseCanvas()

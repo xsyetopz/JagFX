@@ -11,7 +11,8 @@ import javafx.geometry.Pos
 import javafx.scene.control.*
 import javafx.scene.layout.*
 
-private val HalfMaxPartials = Constants.MaxPartials - 5
+// Constants
+private final val HalfMaxPartials = Constants.MaxPartials - 5
 
 /** Partials panel with P1-5/P6-10 bank switcher. */
 object PartialsPanel:

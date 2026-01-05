@@ -7,8 +7,9 @@ import javafx.geometry.Pos
 import javafx.scene.control.Label
 import javafx.scene.layout.*
 
-private val PanelSize = 120
-private val SliderSize = 100
+// Constants
+private final val PanelSize = 120
+private final val SliderSize = 100
 
 /** Echo controls panel. */
 object EchoPanel:

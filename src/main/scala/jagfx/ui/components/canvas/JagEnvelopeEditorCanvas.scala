@@ -12,9 +12,10 @@ import javafx.application.Platform
 import javafx.scene.Cursor
 import javafx.scene.input.MouseEvent
 
-private val PointRadius = 5
-private val HitRadius = 8
-private val SegmentHitThreshold = 6
+// Constants
+private final val PointRadius = 5
+private final val HitRadius = 8
+private final val SegmentHitThreshold = 6
 
 /** Interactive canvas for envelope editing with draggable control points. */
 class JagEnvelopeEditorCanvas extends JagBaseCanvas:

@@ -7,7 +7,8 @@ import javafx.geometry.Pos
 import javafx.scene.control.TextFormatter
 import javafx.util.converter.DefaultStringConverter
 
-private val FieldSize = 40
+// Constants
+private final val FieldSize = 40
 
 /** Integer input field with min/max validation and scroll adjustment. */
 class JagNumericField(

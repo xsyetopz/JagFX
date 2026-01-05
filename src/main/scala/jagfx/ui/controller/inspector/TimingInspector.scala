@@ -7,7 +7,8 @@ import javafx.geometry.Pos
 import javafx.scene.control.Label
 import javafx.scene.layout.*
 
-private val TimingFieldSize = 55
+// Constants
+private final val TimingFieldSize = 55
 
 /** Inspector panel for tone timing parameters (`Duration`, `StartOffset`). */
 class TimingInspector extends VBox:

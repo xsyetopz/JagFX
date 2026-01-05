@@ -148,10 +148,10 @@ class JagPoleZeroCanvas extends JagBaseCanvas:
 
 object JagPoleZeroCanvas:
   // Constants
-  private val CircleSegments = 64
-  private val MarkerCircleSegments = 8
-  private val CirclePadding = 4
-  private val MarkerSize = 3
+  private final val CircleSegments = 64
+  private final val MarkerCircleSegments = 8
+  private final val CirclePadding = 4
+  private final val MarkerSize = 3
 
   /** Creates pole-zero canvas. */
   def apply(): JagPoleZeroCanvas = new JagPoleZeroCanvas()

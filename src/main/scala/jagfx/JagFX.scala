@@ -5,7 +5,8 @@ import javafx.application.*
 import javafx.scene.Scene
 import javafx.stage.Stage
 
-private val AppDims = (800, 520)
+// Constants
+private final val AppDims = (800, 520)
 
 /** GUI application entry point. */
 class JagFX extends Application:

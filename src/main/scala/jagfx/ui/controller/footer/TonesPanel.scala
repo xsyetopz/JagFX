@@ -8,8 +8,9 @@ import javafx.geometry.Pos
 import javafx.scene.control.Label
 import javafx.scene.layout.*
 
-private val TonesPanelSize = 70
-private val ColumnSize = 50
+// Constants
+private final val PanelSize = 70
+private final val ColumnSize = 50
 
 /** Tones selection panel (`1-10` buttons with copy/paste). */
 object TonesPanel:
@@ -20,9 +21,9 @@ object TonesPanel:
     val panel = VBox()
     panel.setId("tones-panel")
     panel.getStyleClass.add("panel")
-    panel.setMinWidth(TonesPanelSize)
-    panel.setPrefWidth(TonesPanelSize)
-    panel.setMaxWidth(TonesPanelSize)
+    panel.setMinWidth(PanelSize)
+    panel.setPrefWidth(PanelSize)
+    panel.setMaxWidth(PanelSize)
     HBox.setHgrow(panel, Priority.NEVER)
 
     val head = Label("TONES")

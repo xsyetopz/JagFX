@@ -9,7 +9,8 @@ import javafx.geometry.Pos
 import javafx.scene.control.*
 import javafx.scene.layout.*
 
-private val HeaderWidth = 55
+// Constants
+private final val HeaderWidth = 55
 
 /** Editor for envelope segments with add/remove controls. */
 class EnvelopeSegmentEditor extends VBox:
