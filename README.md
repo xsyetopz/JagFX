@@ -15,10 +15,10 @@ Cross-platform editor for Jagex Audio Synthesis (`.synth`) files. Create, edit, 
 | Category | Description |
 |----------|----------|
 | **Envelopes** | Pitch, Volume, Vibrato (Rate/Depth), Tremolo (Rate/Depth), Gate (Silence/Duration) |
-| **Harmonics** | 10 additive partials with volume, semitone offset, and phase delay |
+| **Partials** | 10 additive partials with volume, decicent offset, and time delay |
 | **Filter** | IIR filter with pole/zero editor, frequency response visualisation |
 | **Modulation** | FM (vibrato) and AM (tremolo) with envelope-controlled rate/depth |
-| **Reverb** | Configurable delay and mix level per tone |
+| **Echo** | Configurable echo delay and mix level per tone |
 | **Export** | Save as `.synth` or export to `.wav` (8-bit or 16-bit) |
 
 ## Quick Start
@@ -70,6 +70,7 @@ src/main/scala/jagfx/
 ├── io/              # Binary .synth reader/writer
 ├── model/           # Data models (Tone, Envelope, Filter)
 ├── synth/           # DSP engine (oscillators, filters, synthesis)
+├── tools/           # Utility classes for various tasks
 ├── ui/              # JavaFX controllers and components
 ├── utils/           # Utilities (icons, colors, preferences)
 ├── JagFX.scala      # GUI entry point
