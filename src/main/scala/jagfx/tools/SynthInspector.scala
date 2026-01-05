@@ -1,11 +1,12 @@
 package jagfx.tools
 
-import jagfx.io.BinaryBuffer
-import jagfx.model._
-import jagfx.types._
-import java.nio.file._
-import jagfx.constants
+import java.nio.file.*
 
+import jagfx.Constants
+import jagfx.io.BinaryBuffer
+import jagfx.types.*
+
+/** Debug tool for inspecting `.synth` binary file structure. */
 object SynthInspector:
   def main(args: Array[String]): Unit =
     if args.isEmpty then
@@ -40,10 +41,10 @@ object SynthInspector:
         println("REMAINING CONTEXT:")
         println(buf.dumpRemaining(0, 64))
 
-  def inspectTones(buf: DebugBuffer): Unit =
+  private def inspectTones(buf: DebugBuffer): Unit =
     for i <- 0 until 10 do
       if buf.remaining > 0 then
-        val valid = buf.peek() != 0
+        buf.peek() != 0
         println(f"\n=== TONE $i (OFFSET: ${buf.position}%04X) ===")
 
         val marker = buf.peek()
@@ -52,12 +53,8 @@ object SynthInspector:
         else
           buf.readUInt8("EMPTY MARKER")
           println(s"Tone $i empty")
-      else
-        // println(s"Tone $i: EOF reached unexpectedly (Truncated Tone Loop?)")
-        (
-      )
 
-  def inspectTone(buf: DebugBuffer): Unit =
+  private def inspectTone(buf: DebugBuffer): Unit =
     println("--- PITCH ENVELOPE ---")
     inspectEnvelope(buf)
     println("--- VOLUME ENVELOPE ---")
@@ -80,16 +77,16 @@ object SynthInspector:
 
     inspectFilter(buf)
 
-  def inspectEnvelope(buf: DebugBuffer): Unit =
-    val waveformId = buf.readUInt8("WAVEFORM ID")
-    val start = buf.readInt32BE("START VAL")
-    val end = buf.readInt32BE("END VAL")
+  private def inspectEnvelope(buf: DebugBuffer): Unit =
+    buf.readUInt8("WAVEFORM ID")
+    buf.readInt32BE("START VAL")
+    buf.readInt32BE("END VAL")
     val segLen = buf.readUInt8("SEG COUNT")
     for i <- 0 until segLen do
       buf.readUInt16BE(s"SEG $i DUR")
       buf.readUInt16BE(s"SEG $i PEAK")
 
-  def inspectOptionalEnvelopePair(buf: DebugBuffer): Unit =
+  private def inspectOptionalEnvelopePair(buf: DebugBuffer): Unit =
     val marker = buf.peek()
     println(s"  MARKER: $marker")
     if marker != 0 then
@@ -99,24 +96,22 @@ object SynthInspector:
       inspectEnvelope(buf)
     else buf.readUInt8("EMPTY MARKER")
 
-  def inspectPartials(buf: DebugBuffer): Unit =
+  private def inspectPartials(buf: DebugBuffer): Unit =
     println("--- PARTIALS ---")
     var continue = true
     var count = 0
-    while continue && count < constants.MaxPartials do
+    while continue && count < Constants.MaxPartials do
       val marker = buf.peek()
       if marker != 0 then
-        val term = buf.readSmart("H. TERM VOL")
+        buf.readSmart("H. TERM VOL")
         buf.readSmart("H. PIT")
         buf.readSmart("H. DEL")
-        // println(s"  Partial $count read")
         count += 1
       else
         buf.readSmart("H. END MARKER")
         continue = false
-        // println("  Partials ended")
 
-  def inspectFilter(buf: DebugBuffer): Unit =
+  private def inspectFilter(buf: DebugBuffer): Unit =
     println("--- FILTER ---")
     if buf.remaining == 0 then
       println("  EOF reached before Filter read")
@@ -131,8 +126,8 @@ object SynthInspector:
       println("  FILTER EMPTY (PAIRS=0)")
       return
 
-    val unity0 = buf.readUInt16BE("UNITY 0")
-    val unity1 = buf.readUInt16BE("UNITY 1")
+    buf.readUInt16BE("UNITY 0")
+    buf.readUInt16BE("UNITY 1")
     val modMask = buf.readUInt8("MOD MASK")
     println(s"  MOD MASK: $modMask")
 
@@ -152,44 +147,54 @@ object SynthInspector:
           buf.readUInt16BE(s"    MAG MOD $p")
         else println(s"    MOD $p SKIPPED (MASK 0)")
 
-    if modMask != 0 || unity1 != unity0 then
+    if modMask != 0 then
       println("READING FILTER ENVELOPE SEGMENTS:")
       inspectEnvelopeSegments(buf)
     else println("FILTER ENVELOPE SKIPPED")
 
-  def inspectEnvelopeSegments(buf: DebugBuffer): Unit =
+  private def inspectEnvelopeSegments(buf: DebugBuffer): Unit =
     val length = buf.readUInt8("SEG COUNT")
     for i <- 0 until length do
       buf.readUInt16BE(s"SEG $i DUR")
       buf.readUInt16BE(s"SEG $i PEAK")
 
+/** Debug buffer with logging for binary inspection. */
 class DebugBuffer(data: Array[Byte]) extends BinaryBuffer(data):
   def readUInt8(label: String): Int =
     val v = super.readUInt8()
-    _log(1, label, v)
+    log(1, label, v)
     v
+
   def readInt32BE(label: String): Int =
     val v = super.readInt32BE()
-    _log(4, label, v)
+    log(4, label, v)
     v
+
   def readUInt16BE(label: String): Int =
     val v = super.readUInt16BE()
-    _log(2, label, v)
+    log(2, label, v)
     v
+
   def readSmart(label: String): Smart =
     val startPos = position
     val v = super.readSmart()
     val len = position - startPos
-    _log(len, label, v)
+    log(len, label, v)
     v
+
   def readUSmart(label: String): USmart =
     val startPos = position
     val v = super.readUSmart()
     val len = position - startPos
-    _log(len, label, v)
+    log(len, label, v)
     v
 
-  private def _log(len: Int, label: String, value: Any): Unit =
+  def dumpRemaining(offset: Int = 0, limit: Int = -1): String =
+    val count = if limit < 0 then remaining else math.min(limit, remaining)
+    val chunk = data.slice(position + offset, position + offset + count)
+    chunk.map("%02X".format(_)).mkString(" ")
+
+  private def log(len: Int, label: String, value: Any): Unit =
     val offsetStr = f"[${position - len}%04X]"
     val hex =
       (0 until len)
@@ -200,10 +205,4 @@ class DebugBuffer(data: Array[Byte]) extends BinaryBuffer(data):
         }
         .mkString(" ")
     val hexStr = if hex.length > 14 then hex.take(11) + "..." else hex
-
     println(f"$offsetStr $hexStr%-16s | $label%-20s : $value")
-
-  def dumpRemaining(offset: Int = 0, limit: Int = -1): String =
-    val count = if limit < 0 then remaining else math.min(limit, remaining)
-    val chunk = data.slice(position + offset, position + offset + count)
-    chunk.map("%02X".format(_)).mkString(" ")
