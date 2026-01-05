@@ -1,20 +1,21 @@
 package jagfx.ui.controller.footer
 
-import javafx.scene.layout._
-import javafx.scene.control.Label
-import javafx.geometry.Pos
+import jagfx.constants
+import jagfx.ui.components.button.*
+import jagfx.ui.components.field.*
+import jagfx.ui.viewmodel.SynthViewModel
+import javafx.beans.binding.Bindings
 import javafx.beans.property.IntegerProperty
 import javafx.beans.value.ChangeListener
-import javafx.beans.binding.Bindings
-import jagfx.ui.viewmodel.SynthViewModel
-import jagfx.ui.components.slider._
-import jagfx.ui.components.field._
-import jagfx.ui.components.button._
-import jagfx.constants
+import javafx.geometry.Pos
+import javafx.scene.control.*
+import javafx.scene.layout.*
+
+private val HalfMaxPartials = constants.MaxPartials - 5
 
 /** Partials panel with P1-5/P6-10 bank switcher. */
 object PartialsPanel:
-  // store strip components for rebinding
+  // Types
   private case class HStrip(
       strip: VBox,
       label: Label,
@@ -23,14 +24,12 @@ object PartialsPanel:
       dRow: PartialsRow
   )
 
-  private val _HalfMaxPartials = constants.MaxPartials - 5
-
+  /** Creates partials panel with bank switching and sliders. */
   def create(viewModel: SynthViewModel): VBox =
     val panel = VBox()
     panel.getStyleClass.add("panel")
     HBox.setHgrow(panel, Priority.ALWAYS)
 
-    // 0 = P1-5, 5 = P6-10
     var bankOffset = 0
 
     val headRow = StackPane()
@@ -52,41 +51,41 @@ object PartialsPanel:
     grid.setId("partials")
     VBox.setVgrow(grid, Priority.ALWAYS)
 
-    val strips = new Array[HStrip](_HalfMaxPartials)
-    for i <- 0 until _HalfMaxPartials do
-      val hs = _createStrip(i)
+    val strips = new Array[HStrip](HalfMaxPartials)
+    for i <- 0 until HalfMaxPartials do
+      val hs = createStrip(i)
       strips(i) = hs
       grid.getChildren.add(hs.strip)
 
-    var volListeners =
+    val volListeners =
       Array.fill[Option[(IntegerProperty, ChangeListener[Number])]](
-        _HalfMaxPartials
+        HalfMaxPartials
       )(None)
 
+    /** Binds partials to this view model. */
     def bindPartials(): Unit =
-      for i <- 0 until _HalfMaxPartials do
+      for i <- 0 until HalfMaxPartials do
         val hIdx = bankOffset + i
-        val h = viewModel.getActiveTone.partials(hIdx)
+        val height = viewModel.getActiveTone.partials(hIdx)
 
-        // remove old listener
         volListeners(i).foreach { case (prop, listener) =>
           prop.removeListener(listener)
         }
 
         val hs = strips(i)
         hs.label.setText(s"PARTIAL ${hIdx + 1}")
-        hs.sRow.bind(h.pitchOffset)
-        hs.vRow.bind(h.volume)
-        hs.dRow.bind(h.startDelay)
+        hs.sRow.bind(height.pitchOffset)
+        hs.vRow.bind(height.volume)
+        hs.dRow.bind(height.startDelay)
 
-        val volListener = _createVolListener(hs)
-        h.volume.addListener(volListener)
-        volListeners(i) = Some((h.volume, volListener))
+        val volListener = createVolListener(hs)
+        height.volume.addListener(volListener)
+        volListeners(i) = Some((height.volume, volListener))
 
-        volListener.changed(null, null, h.volume.get)
+        volListener.changed(null, null, height.volume.get)
 
     bankBtn.setOnAction(_ =>
-      bankOffset = if bankOffset == 0 then _HalfMaxPartials else 0
+      bankOffset = if bankOffset == 0 then HalfMaxPartials else 0
       bankBtn.setText(if bankOffset == 0 then "1-5" else "6-10")
       bindPartials()
     )
@@ -97,13 +96,13 @@ object PartialsPanel:
     panel.getChildren.addAll(headRow, grid)
     panel
 
-  private def _createStrip(index: Int): HStrip =
+  private def createStrip(index: Int): HStrip =
     val strip = VBox()
-    strip.getStyleClass.add("h-strip")
+    strip.getStyleClass.add("height-strip")
     HBox.setHgrow(strip, Priority.ALWAYS)
 
     val label = Label(s"PARTIAL ${index + 1}")
-    label.getStyleClass.add("h-head")
+    label.getStyleClass.add("height-head")
 
     val sRow = PartialsRow("SEMI:", -480, 480, 10.0, "%.1f")
     val vRow = PartialsRow("VOL:", 0, 100)
@@ -112,14 +111,12 @@ object PartialsPanel:
     strip.getChildren.addAll(label, sRow.view, vRow.view, dRow.view)
     HStrip(strip, label, sRow, vRow, dRow)
 
-  private def _createVolListener(hs: HStrip): ChangeListener[Number] =
+  private def createVolListener(hs: HStrip): ChangeListener[Number] =
     (_, _, newVal) =>
       val dim = newVal.intValue == 0
       hs.strip.setOpacity(if dim then 0.5 else 1.0)
       hs.sRow.view.setDisable(dim)
       hs.dRow.view.setDisable(dim)
-
-import javafx.scene.control._
 
 /** Single row in partials strip. */
 class PartialsRow(
@@ -129,44 +126,44 @@ class PartialsRow(
     scale: Double = 1.0,
     format: String = "%.0f"
 ):
-  val view = VBox()
-  view.getStyleClass.add("h-row")
-
-  val topRow = HBox()
-  topRow.getStyleClass.add("h-sub-row")
-
-  val label = Label(labelTxt)
-  label.getStyleClass.add("h-lbl")
-
-  val input = JagNumericField(min, max, 0, scale, format)
-  input.setPrefWidth(32)
-  val scrollHelp = "\nScroll: ±1\nShift: ±10\nCmd: ±0.01"
-  val tipText = labelTxt match
+  // Fields
+  val view: VBox = VBox()
+  val topRow: HBox = HBox()
+  val label: Label = Label(labelTxt)
+  val input: JagNumericField = JagNumericField(min, max, 0, scale, format)
+  val barBox: VBox = VBox()
+  val barFill: Region = Region()
+  val spacer: Region = Region()
+  val tipText: String = labelTxt match
     case "PIT:" => "Pitch offset (decicents, 10 = 1 semitone)"
     case "VOL:" => "Partial volume (0-100%)"
     case "DEL:" => "Time delay (ms)"
     case _      => labelTxt
 
-  input.setTooltip(new Tooltip(tipText + scrollHelp))
+  private var currentProp: Option[IntegerProperty] = None
 
-  val barBox = VBox()
+  // Init: styling
+  view.getStyleClass.add("height-row")
+  topRow.getStyleClass.add("height-sub-row")
+  label.getStyleClass.add("height-lbl")
+  input.setPrefWidth(32)
+  input.setTooltip(
+    new Tooltip(tipText + "\nScroll: ±1\nShift: ±10\nCmd: ±0.01")
+  )
   barBox.getStyleClass.add("bar-box")
-  val barFill = Region()
   barFill.getStyleClass.add("bar-fill")
-  barBox.getChildren.add(barFill)
-
-  val spacer = new Region()
   HBox.setHgrow(spacer, Priority.ALWAYS)
 
+  // Init: build hierarchy
+  barBox.getChildren.add(barFill)
   topRow.getChildren.addAll(label, spacer, input)
   view.getChildren.addAll(topRow, barBox)
 
-  private var _currentProp: Option[IntegerProperty] = None
-
+  /** Binds property to input field and bar. */
   def bind(prop: IntegerProperty): Unit =
-    _currentProp.foreach(input.valueProperty.unbindBidirectional)
+    currentProp.foreach(input.valueProperty.unbindBidirectional)
     input.valueProperty.bindBidirectional(prop)
-    _currentProp = Some(prop)
+    currentProp = Some(prop)
 
     barFill.prefWidthProperty.bind(
       barBox.widthProperty.multiply(

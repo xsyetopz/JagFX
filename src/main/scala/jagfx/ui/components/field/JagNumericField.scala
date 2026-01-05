@@ -1,16 +1,15 @@
 package jagfx.ui.components.field
 
-import javafx.beans.property._
-import javafx.scene.control.TextField
-import javafx.geometry.Pos
-import javafx.scene.control.TextFormatter
-import javafx.util.converter.DefaultStringConverter
 import java.util.function.UnaryOperator
 import java.util.regex.Pattern
 
-private val _FieldSize = 40
+import javafx.geometry.Pos
+import javafx.scene.control.TextFormatter
+import javafx.util.converter.DefaultStringConverter
 
-/** Integer input field with min/max validation. */
+private val FieldSize = 40
+
+/** Integer input field with min/max validation and scroll adjustment. */
 class JagNumericField(
     min: Int,
     max: Int,
@@ -18,21 +17,39 @@ class JagNumericField(
     scale: Double = 1.0,
     format: String = "%.0f"
 ) extends JagBaseField(initial):
+  // Fields
+  private val validPattern = Pattern.compile("-?(([0-9]*)|([0-9]*\\.[0-9]*))")
 
-  private val _validPattern = Pattern.compile("-?(([0-9]*)|([0-9]*\\.[0-9]*))")
+  private val filter: UnaryOperator[TextFormatter.Change] = change =>
+    val newText = change.getControlNewText
+    if validPattern.matcher(newText).matches() then
+      if newText.isEmpty || newText == "-" || newText == "." || newText == "-."
+      then change
+      else
+        try
+          val parsed = newText.toDouble
+          val scaled = parsed * scale
+          val blockMax = max > 0 && scaled > max
+          val blockMin = min < 0 && scaled < min
+          if blockMax || blockMin then null else change
+        catch case _: NumberFormatException => null
+    else null
 
+  private val formatter =
+    new TextFormatter[String](DefaultStringConverter(), null, filter)
+
+  // Init: styling
   getStyleClass.add("jag-input")
   setAlignment(Pos.CENTER_RIGHT)
-  setPrefWidth(_FieldSize)
-  setMinWidth(_FieldSize)
+  setPrefWidth(FieldSize)
+  setMinWidth(FieldSize)
+  setTextFormatter(formatter)
+  setText(String.format(format, (initial / scale).asInstanceOf[Object]))
 
+  // Init: event handlers
   setOnScroll(e =>
     if isFocused || isHover then
       val delta = if e.getDeltaY > 0 then 1 else -1
-
-      // default: `1.0` display unit (scale)
-      // Shift: `10.0` display units (coarse)
-      // Cmd/Ctrl: `0.01` display units (fine) or `1` raw unit
       val stepMultiplier =
         if e.isShiftDown then 10.0
         else if e.isShortcutDown then 0.01
@@ -46,39 +63,17 @@ class JagNumericField(
       val newVal = math.max(min, math.min(max, value.get + effectiveInc))
       if newVal != value.get then
         value.set(newVal)
-        // force update text display even IF focused
         val displayVal = newVal.intValue / scale
         val str = String.format(format, displayVal.asInstanceOf[Object])
         if getText != str then setText(str)
         selectAll()
 
-      e.consume() // prevent scrolling parent container
+      e.consume()
   )
-
-  private val _filter: UnaryOperator[TextFormatter.Change] = change =>
-    val newText = change.getControlNewText
-    if _validPattern.matcher(newText).matches() then
-      if newText.isEmpty || newText == "-" || newText == "." || newText == "-."
-      then change
-      else
-        try
-          val parsed = newText.toDouble
-          val scaled = parsed * scale
-
-          val blockMax = max > 0 && scaled > max
-          val blockMin = min < 0 && scaled < min
-          if blockMax || blockMin then null else change
-        catch case _: NumberFormatException => null
-    else null
-
-  private val _formatter =
-    new TextFormatter[String](DefaultStringConverter(), null, _filter)
-  setTextFormatter(_formatter)
-
-  setText(String.format(format, (initial / scale).asInstanceOf[Object]))
 
   setOnAction(_ => if getParent != null then getParent.requestFocus())
 
+  // Init: listeners
   textProperty.addListener((_, _, newText) =>
     if !newText.isEmpty && newText != "-" && newText != "." then
       try
@@ -104,9 +99,11 @@ class JagNumericField(
   )
 
 object JagNumericField:
+  /** Creates numeric field with default scale. */
   def apply(min: Int, max: Int, initial: Int): JagNumericField =
     new JagNumericField(min, max, initial)
 
+  /** Creates numeric field with custom scale and format. */
   def apply(
       min: Int,
       max: Int,

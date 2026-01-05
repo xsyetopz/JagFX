@@ -1,23 +1,28 @@
 package jagfx.ui.controller.footer
 
-import javafx.scene.layout._
-import javafx.scene.control.Label
-import javafx.geometry.Pos
-import jagfx.ui.viewmodel.SynthViewModel
-import jagfx.ui.components.button._
-import jagfx.ui.components.field._
-import jagfx.utils.IconUtils
 import jagfx.constants
+import jagfx.ui.components.button.*
+import jagfx.ui.viewmodel.SynthViewModel
+import jagfx.utils.IconUtils
+import javafx.geometry.Pos
+import javafx.scene.control.Label
+import javafx.scene.layout.*
+
+private val TonesPanelSize = 70
+private val ColumnSize = 50
 
 /** Tones selection panel (`1-10` buttons with copy/paste). */
 object TonesPanel:
+  /** Creates tones panel with tone selection and copy/paste buttons. */
   def create(viewModel: SynthViewModel): VBox =
+    import constants._
+
     val panel = VBox()
     panel.setId("tones-panel")
     panel.getStyleClass.add("panel")
-    panel.setMinWidth(70)
-    panel.setPrefWidth(70)
-    panel.setMaxWidth(70)
+    panel.setMinWidth(TonesPanelSize)
+    panel.setPrefWidth(TonesPanelSize)
+    panel.setMaxWidth(TonesPanelSize)
     HBox.setHgrow(panel, Priority.NEVER)
 
     val head = Label("TONES")
@@ -36,12 +41,11 @@ object TonesPanel:
     VBox.setVgrow(grid, Priority.ALWAYS)
 
     val col1 = new ColumnConstraints()
-    col1.setPercentWidth(50)
+    col1.setPercentWidth(ColumnSize)
     val col2 = new ColumnConstraints()
-    col2.setPercentWidth(50)
+    col2.setPercentWidth(ColumnSize)
     grid.getColumnConstraints.addAll(col1, col2)
 
-    import constants._
     val buttons = new Array[JagButton](MaxTones)
     for i <- 0 until MaxTones do
       val btn = JagButton((i + 1).toString)
@@ -51,7 +55,6 @@ object TonesPanel:
         btn.setActive(true)
         viewModel.setActiveToneIndex(i)
       )
-      // double-click toggles enable/disable
       btn.setOnMouseClicked(e =>
         if e.getClickCount == 2 then
           val tone = viewModel.getTones.get(i)

@@ -1,81 +1,94 @@
 package jagfx.ui.components.canvas
 
-import jagfx.ui.viewmodel.FilterViewModel
-import jagfx.utils.ColorUtils._
-import jagfx.utils.DrawingUtils._
-import jagfx.utils.MathUtils
-import jagfx.synth.LookupTables
 import jagfx.constants.Int16
+import jagfx.synth.LookupTables
+import jagfx.ui.viewmodel.FilterViewModel
+import jagfx.utils.ColorUtils.*
+import jagfx.utils.DrawingUtils.*
+import jagfx.utils.MathUtils
 
 /** Canvas rendering pole-zero diagram on unit circle. */
 class JagPoleZeroCanvas extends JagBaseCanvas:
   import JagPoleZeroCanvas._
 
-  private var _viewModel: Option[FilterViewModel] = None
+  // Types
+  private case class Geometry(width: Int, height: Int):
+    val cx: Int = width >> 1
+    val cy: Int = height >> 1
+    val radius: Int = math.min(width, height) / 2 - CirclePadding
 
+  // Fields
+  private var viewModel: Option[FilterViewModel] = None
+
+  // Init: styling
   getStyleClass.add("jag-pole-zero-canvas")
 
+  /** Binds filter view model. */
   def setViewModel(vm: FilterViewModel): Unit =
-    _viewModel = Some(vm)
+    viewModel = Some(vm)
     vm.addChangeListener(() =>
       javafx.application.Platform.runLater(() => requestRedraw())
     )
     requestRedraw()
 
-  override protected def drawContent(buffer: Array[Int], w: Int, h: Int): Unit =
-    val geom = Geometry(w, h)
-    _drawGrid(buffer, w, h, geom)
-    _drawUnitCircle(buffer, w, h, geom)
-    _viewModel.foreach { vm =>
-      _drawFeedforwardPoles(buffer, w, h, vm, geom)
-      _drawFeedbackPoles(buffer, w, h, vm, geom)
+  override protected def drawContent(
+      buffer: Array[Int],
+      width: Int,
+      height: Int
+  ): Unit =
+    val geom = Geometry(width, height)
+    drawGrid(buffer, width, height, geom)
+    drawUnitCircle(buffer, width, height, geom)
+    viewModel.foreach { vm =>
+      drawFeedforwardPoles(buffer, width, height, vm, geom)
+      drawFeedbackPoles(buffer, width, height, vm, geom)
     }
 
-  private case class Geometry(w: Int, h: Int):
-    val cx: Int = w >> 1
-    val cy: Int = h >> 1
-    val radius: Int = math.min(w, h) / 2 - _CirclePadding
-
-  private def _drawGrid(buffer: Array[Int], w: Int, h: Int, g: Geometry): Unit =
-    line(buffer, w, h, 0, g.cy, w, g.cy, GridLineFaint)
-    line(buffer, w, h, g.cx, 0, g.cx, h, GridLineFaint)
-
-  private def _drawUnitCircle(
+  private def drawGrid(
       buffer: Array[Int],
-      w: Int,
-      h: Int,
+      width: Int,
+      height: Int,
       g: Geometry
   ): Unit =
-    for i <- 0 until _CircleSegments do
+    line(buffer, width, height, 0, g.cy, width, g.cy, GridLineFaint)
+    line(buffer, width, height, g.cx, 0, g.cx, height, GridLineFaint)
+
+  private def drawUnitCircle(
+      buffer: Array[Int],
+      width: Int,
+      height: Int,
+      g: Geometry
+  ): Unit =
+    for i <- 0 until CircleSegments do
       val x1 = g.cx + (g.radius * LookupTables.unitCircleX(i)).toInt
       val y1 = g.cy + (g.radius * LookupTables.unitCircleY(i)).toInt
       val x2 = g.cx + (g.radius * LookupTables.unitCircleX(i + 1)).toInt
       val y2 = g.cy + (g.radius * LookupTables.unitCircleY(i + 1)).toInt
-      line(buffer, w, h, x1, y1, x2, y2, BorderDim)
+      line(buffer, width, height, x1, y1, x2, y2, BorderDim)
 
-  private def _drawFeedforwardPoles(
+  private def drawFeedforwardPoles(
       buffer: Array[Int],
-      w: Int,
-      h: Int,
+      width: Int,
+      height: Int,
       vm: FilterViewModel,
       g: Geometry
   ): Unit =
     for i <- 0 until vm.pairCount0.get do
-      val (x, y) = _polePosition(vm, 0, i, g)
-      _drawCircleMarker(buffer, w, h, x, y, FilterZero)
+      val (x, y) = polePosition(vm, 0, i, g)
+      drawCircleMarker(buffer, width, height, x, y, FilterZero)
 
-  private def _drawFeedbackPoles(
+  private def drawFeedbackPoles(
       buffer: Array[Int],
-      w: Int,
-      h: Int,
+      width: Int,
+      height: Int,
       vm: FilterViewModel,
       g: Geometry
   ): Unit =
     for i <- 0 until vm.pairCount1.get do
-      val (x, y) = _polePosition(vm, 1, i, g)
-      _drawCrossMarker(buffer, w, h, x, y, FilterPole)
+      val (x, y) = polePosition(vm, 1, i, g)
+      drawCrossMarker(buffer, width, height, x, y, FilterPole)
 
-  private def _polePosition(
+  private def polePosition(
       vm: FilterViewModel,
       dir: Int,
       idx: Int,
@@ -87,56 +100,58 @@ class JagPoleZeroCanvas extends JagBaseCanvas:
     val y = g.cy - (g.radius * mag * math.sin(phase)).toInt
     (x, y)
 
-  private def _drawCrossMarker(
+  private def drawCrossMarker(
       buffer: Array[Int],
-      w: Int,
-      h: Int,
+      width: Int,
+      height: Int,
       x: Int,
       y: Int,
       color: Int
   ): Unit =
     line(
       buffer,
-      w,
-      h,
-      x - _MarkerSize,
-      y - _MarkerSize,
-      x + _MarkerSize,
-      y + _MarkerSize,
+      width,
+      height,
+      x - MarkerSize,
+      y - MarkerSize,
+      x + MarkerSize,
+      y + MarkerSize,
       color
     )
     line(
       buffer,
-      w,
-      h,
-      x - _MarkerSize,
-      y + _MarkerSize,
-      x + _MarkerSize,
-      y - _MarkerSize,
+      width,
+      height,
+      x - MarkerSize,
+      y + MarkerSize,
+      x + MarkerSize,
+      y - MarkerSize,
       color
     )
 
-  private def _drawCircleMarker(
+  private def drawCircleMarker(
       buffer: Array[Int],
-      w: Int,
-      h: Int,
+      width: Int,
+      height: Int,
       x: Int,
       y: Int,
       color: Int
   ): Unit =
-    for i <- 0 until _MarkerCircleSegments do
-      val a1 = i * MathUtils.TwoPi / _MarkerCircleSegments
-      val a2 = (i + 1) * MathUtils.TwoPi / _MarkerCircleSegments
-      val x1 = x + (_MarkerSize * math.cos(a1)).toInt
-      val y1 = y + (_MarkerSize * math.sin(a1)).toInt
-      val x2 = x + (_MarkerSize * math.cos(a2)).toInt
-      val y2 = y + (_MarkerSize * math.sin(a2)).toInt
-      line(buffer, w, h, x1, y1, x2, y2, color)
+    for i <- 0 until MarkerCircleSegments do
+      val a1 = i * MathUtils.TwoPi / MarkerCircleSegments
+      val a2 = (i + 1) * MathUtils.TwoPi / MarkerCircleSegments
+      val x1 = x + (MarkerSize * math.cos(a1)).toInt
+      val y1 = y + (MarkerSize * math.sin(a1)).toInt
+      val x2 = x + (MarkerSize * math.cos(a2)).toInt
+      val y2 = y + (MarkerSize * math.sin(a2)).toInt
+      line(buffer, width, height, x1, y1, x2, y2, color)
 
 object JagPoleZeroCanvas:
-  private val _CircleSegments = 64
-  private val _MarkerCircleSegments = 8
-  private val _CirclePadding = 4
-  private val _MarkerSize = 3
+  // Constants
+  private val CircleSegments = 64
+  private val MarkerCircleSegments = 8
+  private val CirclePadding = 4
+  private val MarkerSize = 3
 
+  /** Creates pole-zero canvas. */
   def apply(): JagPoleZeroCanvas = new JagPoleZeroCanvas()

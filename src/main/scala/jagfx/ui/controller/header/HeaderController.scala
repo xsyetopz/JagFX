@@ -1,84 +1,78 @@
 package jagfx.ui.controller.header
 
-import javafx.scene.layout._
-import javafx.scene.control._
-import javafx.geometry._
-import javafx.scene.text._
-import jagfx.ui.viewmodel.SynthViewModel
-import jagfx.ui.controller.ControllerLike
-import jagfx.ui.components.button._
-import jagfx.ui.components.field._
 import jagfx.constants
-import jagfx.utils._
-import javafx.beans.property.SimpleBooleanProperty
+import jagfx.ui.components.button.*
+import jagfx.ui.components.field.*
+import jagfx.ui.controller.ControllerLike
+import jagfx.ui.viewmodel.SynthViewModel
+import jagfx.utils.*
+import javafx.geometry.*
+import javafx.scene.control.*
+import javafx.scene.layout.*
 
-private val _LoopParamSize = 34
+private val LoopParamSize = 34
 
 /** Header controller containing transport, file, and settings controls. */
 class HeaderController(viewModel: SynthViewModel)
     extends ControllerLike[GridPane]:
   import constants._
 
-  private val _audioPlayer = AudioPlayer(viewModel)
-  private val _fileOps =
-    FileOperations(viewModel, () => view.getScene.getWindow)
+  // Fields
+  protected val view: GridPane = GridPane()
+  private val audioPlayer = AudioPlayer(viewModel)
+  private val fileOps = FileOperations(viewModel, () => view.getScene.getWindow)
+  private val col1 = ColumnConstraints()
+  private val col2 = ColumnConstraints()
+  private val col3 = ColumnConstraints()
+  private val transportGroup = createTransportGroup()
+  private val tgtGroup = createTargetGroup()
+  private val lenPosGroup = createLenPosGroup()
+  private val loopGroup = createLoopGroup()
+  private val fileGroup = createFileGroup()
+  private val btn16Bit = create16BitButton()
+  private val leftGroup = HBox(2)
+  private val centerGroup = HBox(2)
+  private val rightGroup = HBox(2)
 
-  /** Callback for playhead position updates. */
-  def onPlayheadUpdate: Double => Unit = _audioPlayer.onPlayheadUpdate
-  def onPlayheadUpdate_=(f: Double => Unit): Unit =
-    _audioPlayer.onPlayheadUpdate = f
-
-  protected val view = GridPane()
+  // Init: styling
   view.getStyleClass.add("header-grid")
   view.getStyleClass.add("header-root")
 
-  private val _col1 = ColumnConstraints()
-  _col1.setPercentWidth(20)
-  _col1.setHalignment(HPos.LEFT)
+  col1.setPercentWidth(20)
+  col1.setHalignment(HPos.LEFT)
+  col2.setPercentWidth(60)
+  col2.setHalignment(HPos.CENTER)
+  col3.setPercentWidth(20)
+  col3.setHalignment(HPos.RIGHT)
 
-  private val _col2 = ColumnConstraints()
-  _col2.setPercentWidth(60)
-  _col2.setHalignment(HPos.CENTER)
+  leftGroup.setAlignment(Pos.CENTER_LEFT)
+  leftGroup.setPickOnBounds(false)
 
-  private val _col3 = ColumnConstraints()
-  _col3.setPercentWidth(20)
-  _col3.setHalignment(HPos.RIGHT)
+  centerGroup.setAlignment(Pos.CENTER)
+  centerGroup.setPickOnBounds(false)
 
-  view.getColumnConstraints.addAll(_col1, _col2, _col3)
+  rightGroup.setAlignment(Pos.CENTER_RIGHT)
+  rightGroup.setPickOnBounds(false)
 
-  private val _transportGroup = _createTransportGroup()
-  private val _tgtGroup = _createTargetGroup()
-  private val _lenPosGroup = _createLenPosGroup()
-  private val _loopGroup = _createLoopGroup()
-  private val _fileGroup = _createFileGroup()
-  private val _btn16Bit = _create16BitButton()
+  // Init: build hierarchy
+  view.getColumnConstraints.addAll(col1, col2, col3)
 
-  private val _leftGroup = HBox(2)
-  _leftGroup.setAlignment(Pos.CENTER_LEFT)
-  _leftGroup.setPickOnBounds(false)
+  leftGroup.getChildren.add(transportGroup)
+  centerGroup.getChildren.addAll(tgtGroup, lenPosGroup, loopGroup, btn16Bit)
+  rightGroup.getChildren.addAll(fileGroup)
 
-  _leftGroup.getChildren.add(_transportGroup)
+  view.add(leftGroup, 0, 0)
+  view.add(centerGroup, 1, 0)
+  view.add(rightGroup, 2, 0)
 
-  private val _centerGroup = HBox(2)
-  _centerGroup.setAlignment(Pos.CENTER)
-  _centerGroup.setPickOnBounds(false)
-  _centerGroup.getChildren.addAll(
-    _tgtGroup,
-    _lenPosGroup,
-    _loopGroup,
-    _btn16Bit
-  )
+  /** Callback for playhead position updates. */
+  def onPlayheadUpdate: Double => Unit = audioPlayer.onPlayheadUpdate
 
-  private val _rightGroup = HBox(2)
-  _rightGroup.setAlignment(Pos.CENTER_RIGHT)
-  _rightGroup.setPickOnBounds(false)
-  _rightGroup.getChildren.addAll(_fileGroup)
+  /** Sets playhead update callback. */
+  def onPlayheadUpdate_=(f: Double => Unit): Unit =
+    audioPlayer.onPlayheadUpdate = f
 
-  view.add(_leftGroup, 0, 0)
-  view.add(_centerGroup, 1, 0)
-  view.add(_rightGroup, 2, 0)
-
-  private def _createTransportGroup(): HBox =
+  private def createTransportGroup(): HBox =
     val btnPlay = JagButton()
     btnPlay.setGraphic(IconUtils.icon("mdi2p-play"))
     btnPlay.setTooltip(
@@ -94,8 +88,8 @@ class HeaderController(viewModel: SynthViewModel)
       new Tooltip("Toggle loop playback between start and end")
     )
 
-    btnPlay.setOnAction(_ => _audioPlayer.play())
-    btnStop.setOnAction(_ => _audioPlayer.stop())
+    btnPlay.setOnAction(_ => audioPlayer.play())
+    btnStop.setOnAction(_ => audioPlayer.stop())
     btnLoop.setOnAction(_ =>
       viewModel.loopEnabledProperty.set(!viewModel.isLoopEnabled)
     )
@@ -105,12 +99,12 @@ class HeaderController(viewModel: SynthViewModel)
     )
 
     val group = HBox(2, btnPlay, btnStop, btnLoop)
-    group.getStyleClass.add("h-grp")
+    group.getStyleClass.add("height-grp")
     group
 
-  private def _createTargetGroup(): HBox =
+  private def createTargetGroup(): HBox =
     val group = HBox(2)
-    group.getStyleClass.add("h-grp")
+    group.getStyleClass.add("height-grp")
 
     val btnAll = JagButton("ALL")
     btnAll.setTooltip(new Tooltip("Edit affects all enabled tones"))
@@ -129,9 +123,9 @@ class HeaderController(viewModel: SynthViewModel)
     group.getChildren.addAll(Label("TGT"), btnOne, btnAll)
     group
 
-  private def _createLenPosGroup(): HBox =
+  private def createLenPosGroup(): HBox =
     val group = HBox(2)
-    group.getStyleClass.add("h-grp")
+    group.getStyleClass.add("height-grp")
     val durationField = JagNumericField(0, Int16.Range, 1200)
     durationField.setEditable(false)
     durationField.setTooltip(
@@ -150,22 +144,22 @@ class HeaderController(viewModel: SynthViewModel)
     )
     group
 
-  private def _createLoopGroup(): HBox =
+  private def createLoopGroup(): HBox =
     val group = HBox(2)
-    group.getStyleClass.add("h-grp")
+    group.getStyleClass.add("height-grp")
 
     val fldL1 = JagNumericField(0, Int16.Range, 0)
-    fldL1.setPrefWidth(_LoopParamSize)
+    fldL1.setPrefWidth(LoopParamSize)
     fldL1.setTooltip(new Tooltip("Loop start position in samples"))
     fldL1.valueProperty.bindBidirectional(viewModel.loopStartProperty)
 
     val fldL2 = JagNumericField(0, Int16.Range, 0)
-    fldL2.setPrefWidth(_LoopParamSize)
+    fldL2.setPrefWidth(LoopParamSize)
     fldL2.setTooltip(new Tooltip("Loop end position in samples"))
     fldL2.valueProperty.bindBidirectional(viewModel.loopEndProperty)
 
     val fldCnt = JagNumericField(0, 100, 0)
-    fldCnt.setPrefWidth(_LoopParamSize - 10)
+    fldCnt.setPrefWidth(LoopParamSize - 10)
     fldCnt.setTooltip(new Tooltip("Number of loop repetitions (preview only)"))
     fldCnt.valueProperty.bindBidirectional(viewModel.loopCountProperty)
 
@@ -192,7 +186,7 @@ class HeaderController(viewModel: SynthViewModel)
     group.setDisable(true)
     group
 
-  private def _createFileGroup(): HBox =
+  private def createFileGroup(): HBox =
     val group = HBox(2)
     group.setStyle("-fx-border-color: transparent;")
     group.setAlignment(Pos.CENTER)
@@ -207,14 +201,14 @@ class HeaderController(viewModel: SynthViewModel)
     btnExport.setGraphic(IconUtils.icon("mdi2e-export-variant"))
     btnExport.setTooltip(new Tooltip("Save as .synth or export to WAV"))
 
-    btnOpen.setOnAction(_ => _fileOps.open())
-    btnSave.setOnAction(_ => _fileOps.save())
-    btnExport.setOnAction(_ => _fileOps.saveAs())
+    btnOpen.setOnAction(_ => fileOps.open())
+    btnSave.setOnAction(_ => fileOps.save())
+    btnExport.setOnAction(_ => fileOps.saveAs())
 
     group.getChildren.addAll(btnOpen, btnSave, btnExport)
     group
 
-  private def _create16BitButton(): JagButton =
+  private def create16BitButton(): JagButton =
     val btn16 = JagButton("16-BIT")
     btn16.setTooltip(new Tooltip("8-bit (OFF) / 16-bit (ON)"))
     btn16.setOnAction(_ =>

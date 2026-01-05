@@ -1,120 +1,118 @@
 package jagfx.ui.controller.rack
 
-import javafx.scene.layout._
-import jagfx.ui.viewmodel._
-import jagfx.ui.components.canvas._
-import jagfx.ui.components.pane._
 import jagfx.synth.SynthesisExecutor
 import jagfx.ui.BindingManager
+import jagfx.ui.components.canvas.*
+import jagfx.ui.components.pane.*
 import jagfx.ui.controller.ControllerLike
 import jagfx.ui.controller.inspector.InspectorController
+import jagfx.ui.viewmodel.*
 import jagfx.utils.ColorUtils
+import javafx.scene.layout.*
 
+/** Grid-based controller for rack cells displaying envelope and filter editors.
+  */
 class RackController(viewModel: SynthViewModel, inspector: InspectorController)
     extends ControllerLike[GridPane]:
-  protected val view = GridPane()
+  // Fields
+  protected val view: GridPane = GridPane()
+  private val cells = new Array[JagCellPane](12)
+  private val bindingManager = BindingManager()
+  private val outputWaveformCanvas = JagWaveformCanvas()
+  private val poleZeroCanvas = JagPoleZeroCanvas()
+  private val freqResponseCanvas = JagFrequencyResponseCanvas()
+  private val editor = new RackEditor(viewModel)
+  private val factory = new RackCellFactory(
+    poleZeroCanvas,
+    freqResponseCanvas,
+    outputWaveformCanvas,
+    selectCell,
+    editor.toggleEditorMode
+  )
+  private val filterDisplay = new VBox(2):
+    getChildren.addAll(poleZeroCanvas, freqResponseCanvas)
+    VBox.setVgrow(freqResponseCanvas, Priority.ALWAYS)
+
+  // Init: styling
   view.getStyleClass.add("rack")
   view.setHgap(1)
   view.setVgap(1)
+  outputWaveformCanvas.setZoom(4)
 
-  private val _cells = new Array[JagCellPane](12)
-
-  private val _outputWaveformCanvas = JagWaveformCanvas()
-  _outputWaveformCanvas.setZoom(4)
-
-  private val _poleZeroCanvas = JagPoleZeroCanvas()
-  private val _freqResponseCanvas = JagFrequencyResponseCanvas()
-
-  private val _editor = new RackEditor(viewModel)
-  private val _factory = new RackCellFactory(
-    viewModel,
-    _poleZeroCanvas,
-    _freqResponseCanvas,
-    _outputWaveformCanvas,
-    _selectCell,
-    _editor.toggleEditorMode
+  // Init: listeners
+  bindingManager.listen(viewModel.activeToneIndexProperty)(_ =>
+    bindActiveTone()
   )
-
-  private val _filterDisplay = new VBox(2):
-    getChildren.addAll(_poleZeroCanvas, _freqResponseCanvas)
-    VBox.setVgrow(_freqResponseCanvas, Priority.ALWAYS)
-
-  private val _bindingManager = BindingManager()
-
-  _buildGrid()
-
-  def bind(): Unit =
-    _bindActiveTone()
-
-  _bindingManager.listen(viewModel.activeToneIndexProperty)(_ =>
-    _bindActiveTone()
-  )
-  _bindingManager.listen(viewModel.fileLoadedProperty)(_ => _bindActiveTone())
-  _bindingManager.listen(viewModel.selectedCellIndex)(_ => _updateSelection())
+  bindingManager.listen(viewModel.fileLoadedProperty)(_ => bindActiveTone())
+  bindingManager.listen(viewModel.selectedCellIndex)(_ => updateSelection())
 
   for i <- 0 until viewModel.getTones.size do
     val toneIdx = i
     viewModel.getTones
       .get(i)
       .addChangeListener(() =>
-        if viewModel.getActiveToneIndex == toneIdx then _updateOutputWaveform()
+        if viewModel.getActiveToneIndex == toneIdx then updateOutputWaveform()
       )
 
+  // Init: build grid
+  buildGrid()
+
+  /** Binds active tone to all cells. */
+  def bind(): Unit =
+    bindActiveTone()
+
+  /** Sets playhead position on waveform canvas. */
   def setPlayheadPosition(position: Double): Unit =
-    _outputWaveformCanvas.setPlayheadPosition(position)
+    outputWaveformCanvas.setPlayheadPosition(position)
 
+  /** Hides playhead on waveform canvas. */
   def hidePlayhead(): Unit =
-    _outputWaveformCanvas.hidePlayhead()
+    outputWaveformCanvas.hidePlayhead()
 
-  private def _buildGrid(): Unit =
+  private def buildGrid(): Unit =
     view.getChildren.clear()
     view.getColumnConstraints.clear()
     view.getRowConstraints.clear()
 
-    _setupGridConstraints()
+    setupGridConstraints()
 
-    // (Cell Def Index, Col, Row)
-    // 0:Pitch, 1:V.Rate, 2:V.Depth, 3:P/Z(Unused), 4:Vol, 5:T.Rate, 6:T.Depth,
-    // 7:Filt, 8:Out(Unused), 9:G.Sil, 10:G.Dur, 11:Bode(Unused)
+    createAndAddCell(0, 0, 0)
+    createAndAddCell(1, 0, 1)
+    createAndAddCell(2, 0, 2)
 
-    _createAndAddCell(0, 0, 0) // Pitch
-    _createAndAddCell(1, 0, 1) // V.Rate
-    _createAndAddCell(2, 0, 2) // V.Depth
+    createAndAddCell(4, 1, 0)
+    createAndAddCell(5, 1, 1)
+    createAndAddCell(6, 1, 2)
 
-    _createAndAddCell(4, 1, 0) // Volume
-    _createAndAddCell(5, 1, 1) // T.Rate
-    _createAndAddCell(6, 1, 2) // T.Depth
+    createAndAddCell(7, 2, 0)
+    createAndAddCell(9, 2, 1)
+    createAndAddCell(10, 2, 2)
 
-    _createAndAddCell(7, 2, 0) // Filter
-    _createAndAddCell(9, 2, 1) // G.Sil
-    _createAndAddCell(10, 2, 2) // G.Dur
-
-    _cells(8) = _factory.createCell(8)
-    view.add(_cells(8), 0, 3, 3, 1)
+    cells(8) = factory.createCell(8)
+    view.add(cells(8), 0, 3, 3, 1)
 
     val filterCell = JagCellPane("FILTER DISPLAY")
-    filterCell.setFeatures(false, false)
+    filterCell.setFeatures(false)
     filterCell.setShowZoomButtons(false)
     val fWrapper = filterCell.getCanvas.getParent.asInstanceOf[Pane]
     filterCell.getCanvas.setVisible(false)
     fWrapper.getChildren.clear()
-    fWrapper.getChildren.add(_filterDisplay)
+    fWrapper.getChildren.add(filterDisplay)
 
-    _poleZeroCanvas.widthProperty.bind(fWrapper.widthProperty)
-    _poleZeroCanvas.heightProperty.bind(fWrapper.heightProperty.divide(2))
-    _freqResponseCanvas.widthProperty.bind(fWrapper.widthProperty)
-    _freqResponseCanvas.heightProperty.bind(fWrapper.heightProperty.divide(2))
+    poleZeroCanvas.widthProperty.bind(fWrapper.widthProperty)
+    poleZeroCanvas.heightProperty.bind(fWrapper.heightProperty.divide(2))
+    freqResponseCanvas.widthProperty.bind(fWrapper.widthProperty)
+    freqResponseCanvas.heightProperty.bind(fWrapper.heightProperty.divide(2))
 
     view.add(filterCell, 3, 0, 1, 4)
 
-    // Editor Overlay
-    view.add(_editor.getView, 0, 0, 4, 4)
-    _editor.canvas.widthProperty.bind(view.widthProperty.subtract(20))
-    _editor.canvas.heightProperty.bind(view.heightProperty.subtract(60))
+    view.add(editor.getView, 0, 0, 4, 4)
+    editor.getCanvas.widthProperty.bind(view.widthProperty.subtract(20))
+    editor.getCanvas.heightProperty.bind(view.heightProperty.subtract(60))
 
-    _updateSelection()
+    updateSelection()
 
-  private def _setupGridConstraints(): Unit =
+  private def setupGridConstraints(): Unit =
     val colConstraint = new ColumnConstraints()
     colConstraint.setPercentWidth(25)
     for _ <- 0 until 4 do view.getColumnConstraints.add(colConstraint)
@@ -123,64 +121,59 @@ class RackController(viewModel: SynthViewModel, inspector: InspectorController)
     rowConstraint.setVgrow(Priority.ALWAYS)
     for _ <- 0 until 4 do view.getRowConstraints.add(rowConstraint)
 
-  private def _createAndAddCell(defIdx: Int, col: Int, row: Int): Unit =
-    val cell = _factory.createCell(defIdx)
-    _cells(defIdx) = cell
+  private def createAndAddCell(defIdx: Int, col: Int, row: Int): Unit =
+    val cell = factory.createCell(defIdx)
+    cells(defIdx) = cell
     view.add(cell, col, row)
 
-  private def _updateSelection(): Unit =
+  private def updateSelection(): Unit =
     val selectedIdx = viewModel.selectedCellIndex.get
-    _cells.zipWithIndex.foreach { case (cell, idx) =>
+    cells.zipWithIndex.foreach { case (cell, idx) =>
       if cell != null then
         val isSel = idx == selectedIdx
         if cell.selectedProperty.get != isSel then
           cell.selectedProperty.set(isSel)
     }
-    if selectedIdx >= 0 && selectedIdx < _cells.length then
-      _bindInspector(selectedIdx)
+    if selectedIdx >= 0 && selectedIdx < cells.length then
+      bindInspector(selectedIdx)
 
-  private def _selectCell(idx: Int): Unit =
+  private def selectCell(idx: Int): Unit =
     viewModel.selectedCellIndex.set(idx)
 
-  private def _bindInspector(idx: Int): Unit =
+  private def bindInspector(idx: Int): Unit =
     val tone = viewModel.getActiveTone
     val cellDef = RackDefs.cellDefs(idx)
     cellDef.cellType match
       case CellType.Filter =>
-        inspector.bindFilter(
-          tone.filterViewMode,
-          cellDef.title,
-          cellDef.desc
-        )
+        inspector.bindFilter(tone.filterViewMode, cellDef.desc)
       case CellType.Envelope(getter, _) =>
         val env = getter(tone)
-        inspector.bind(env, cellDef.title, cellDef.desc)
+        inspector.bind(env, cellDef.desc)
       case _ => inspector.hide()
 
-  private def _bindActiveTone(): Unit =
+  private def bindActiveTone(): Unit =
     val tone = viewModel.getActiveTone
-    for idx <- _cells.indices if _cells(idx) != null do
+    for idx <- cells.indices if cells(idx) != null do
       val cellDef = RackDefs.cellDefs(idx)
       cellDef.cellType match
         case CellType.Envelope(getter, _) =>
-          _cells(idx).setViewModel(getter(tone))
+          cells(idx).setViewModel(getter(tone))
           if cellDef.title.startsWith("G.") then
-            _cells(idx).getCanvas match
-              case c: JagEnvelopeCanvas =>
-                c.setGraphColor(ColorUtils.Gating)
-              case null =>
-        case _ => // do nothing
+            cells(idx).getCanvas match
+              case c: JagEnvelopeCanvas => c.setGraphColor(ColorUtils.Gating)
+              case null                 =>
+        case _ =>
 
-    _poleZeroCanvas.setViewModel(tone.filterViewMode)
-    _freqResponseCanvas.setViewModel(tone.filterViewMode)
+    poleZeroCanvas.setViewModel(tone.filterViewMode)
+    freqResponseCanvas.setViewModel(tone.filterViewMode)
 
-    _updateOutputWaveform()
+    updateOutputWaveform()
 
-  private def _updateOutputWaveform(): Unit =
+  private def updateOutputWaveform(): Unit =
     viewModel.getActiveTone.toModel() match
       case Some(tone) =>
         SynthesisExecutor.synthesizeTone(tone) { audio =>
-          _outputWaveformCanvas.setAudioBuffer(audio)
+          outputWaveformCanvas.setAudioBuffer(audio)
         }
       case None =>
-        _outputWaveformCanvas.clearAudio()
+        outputWaveformCanvas.clearAudio()

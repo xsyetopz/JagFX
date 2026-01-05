@@ -1,8 +1,9 @@
 package jagfx.ui.controller.rack
 
-import jagfx.ui.viewmodel.ToneViewModel
 import jagfx.ui.viewmodel.EnvelopeViewModel
+import jagfx.ui.viewmodel.ToneViewModel
 
+/** Rack cell content type determining inspector behavior. */
 enum CellType:
   case Envelope(
       getter: ToneViewModel => EnvelopeViewModel,
@@ -11,6 +12,7 @@ enum CellType:
   case Filter
   case Output
 
+/** Definition for single rack cell with title, description, and type. */
 case class RackCellDef(
     title: String,
     desc: String,
@@ -18,8 +20,9 @@ case class RackCellDef(
     enabled: Boolean = true
 )
 
+/** Rack cell definitions for all envelope and filter slots. */
 object RackDefs:
-  val cellDefs = Vector(
+  val cellDefs: Vector[RackCellDef] = Vector(
     RackCellDef(
       "PITCH",
       "Defines base pitch trajectory. Envelope values are added to fundamental frequency over time.",
@@ -42,7 +45,7 @@ object RackDefs:
     ),
     RackCellDef(
       "VOLUME",
-      "Shapes overall loudness over time. Use to create attacks, decays, and swells.",
+      "Shapes overall loudness over time. Use to create durations, decays, and swells.",
       CellType.Envelope(_.volume)
     ),
     RackCellDef(
@@ -66,14 +69,14 @@ object RackDefs:
       CellType.Output
     ),
     RackCellDef(
-      "G.REL",
-      "ontrols duration of silence (gate closed) phase.",
-      CellType.Envelope(_.gateRelease)
+      "G.SIL",
+      "Controls duration of silence (gate closed) phase.",
+      CellType.Envelope(_.gateSilence)
     ),
     RackCellDef(
-      "G.ATT",
+      "G.DUR",
       "Controls duration of audible (gate open) phase.",
-      CellType.Envelope(_.gateAttack)
+      CellType.Envelope(_.gateDuration)
     ),
     RackCellDef(
       "BODE",

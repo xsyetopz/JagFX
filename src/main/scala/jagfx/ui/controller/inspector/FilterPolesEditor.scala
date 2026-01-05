@@ -1,79 +1,81 @@
 package jagfx.ui.controller.inspector
 
-import javafx.scene.layout._
-import javafx.scene.control._
-import javafx.geometry.Pos
-import jagfx.ui.viewmodel.FilterViewModel
-import jagfx.ui.components.field.JagNumericField
-import jagfx.ui.components.group.JagToggleGroup
 import jagfx.constants.Int16
 import jagfx.ui.components.button.JagButton
+import jagfx.ui.components.field.JagNumericField
+import jagfx.ui.components.group.JagToggleGroup
+import jagfx.ui.viewmodel.FilterViewModel
+import javafx.geometry.Pos
+import javafx.scene.control.*
+import javafx.scene.layout.*
 
+/** Editor for filter poles/zeros with direction and time toggle. */
 class FilterPolesEditor extends VBox:
-  private var _currentModel: Option[FilterViewModel] = None
-  private var _currentDir = 0 // 0 = FF (Zeros), 1 = FB (Poles)
-  private var _showEnd = false
+  // Fields
+  private var currentModel: Option[FilterViewModel] = None
+  private var currentDir = 0
+  private var showEnd = false
+  private val typeGroup = JagToggleGroup(("Zeros (FF)", ""), ("Poles (FB)", ""))
+  private val timeBtn = JagButton("S")
+  private val contentBox = VBox(2)
+  private val headerRow = HBox(2)
 
-  private val _typeGroup = JagToggleGroup(
-    ("Zeros (FF)", ""),
-    ("Poles (FB)", "")
-  )
-
-  private val _timeBtn = JagButton("S")
-
-  private val _contentBox = VBox(2)
-
+  // Init: styling
   setSpacing(4)
   getStyleClass.add("segment-editor")
 
-  _typeGroup.setSelected("Zeros (FF)")
-  _typeGroup.setAlignment(Pos.CENTER)
-  _typeGroup.selectedProperty.addListener((_, _, newVal) =>
-    _currentDir = if newVal == "Poles (FB)" then 1 else 0
-    _refresh()
+  typeGroup.setSelected("Zeros (FF)")
+  typeGroup.setAlignment(Pos.CENTER)
+
+  timeBtn.setPrefWidth(20)
+  headerRow.setAlignment(Pos.CENTER_LEFT)
+
+  // Init: listeners
+  typeGroup.selectedProperty.addListener((_, _, newVal) =>
+    currentDir = if newVal == "Poles (FB)" then 1 else 0
+    refresh()
   )
 
-  _timeBtn.setPrefWidth(20)
-  _timeBtn.setOnAction(_ =>
-    _showEnd = !_showEnd
-    _timeBtn.setText(if _showEnd then "E" else "S")
-    _refresh()
+  timeBtn.setOnAction(_ =>
+    showEnd = !showEnd
+    timeBtn.setText(if showEnd then "E" else "S")
+    refresh()
   )
 
-  private val _headerRow = HBox(2)
-  _headerRow.setAlignment(Pos.CENTER_LEFT)
-  _headerRow.getChildren.addAll(
-    _createHead("SLOT", 24),
-    _createHead("MAG", 28),
-    _createHead("PHS", 28),
+  // Init: build hierarchy
+  headerRow.getChildren.addAll(
+    createHead("SLOT", 24),
+    createHead("MAG", 28),
+    createHead("PHS", 28),
     new Region() { HBox.setHgrow(this, Priority.ALWAYS) },
-    _timeBtn
+    timeBtn
   )
 
-  getChildren.addAll(_typeGroup, _headerRow, _contentBox)
+  getChildren.addAll(typeGroup, headerRow, contentBox)
 
+  /** Binds filter view model to editor. */
   def bind(model: FilterViewModel): Unit =
-    _currentModel = Some(model)
-    model.addChangeListener(() => _refresh())
-    _refresh()
+    currentModel = Some(model)
+    model.addChangeListener(() => refresh())
+    refresh()
 
-  private def _createHead(text: String, w: Double): Label =
+  private def createHead(text: String, width: Double): Label =
     val l = Label(text)
-    l.setPrefWidth(w)
-    l.getStyleClass.add("h-head-small")
+    l.setPrefWidth(width)
+    l.getStyleClass.add("height-head-small")
     l
 
-  private def _refresh(): Unit =
-    _contentBox.getChildren.clear()
-    _currentModel.foreach { model =>
+  private def refresh(): Unit =
+    contentBox.getChildren.clear()
+    currentModel.foreach { model =>
       val count =
-        if _currentDir == 0 then model.pairCount0.get else model.pairCount1.get
+        if currentDir == 0 then model.pairCount0.get else model.pairCount1.get
       for i <- 0 until 4 do
         val active = i < count
-        _contentBox.getChildren.add(_createRow(i, active, model))
+        contentBox.getChildren.add(createRow(i, active, model))
     }
 
-  private def _createRow(
+  private def createRow(
       idx: Int,
       active: Boolean,
       model: FilterViewModel
@@ -86,18 +88,15 @@ class FilterPolesEditor extends VBox:
     idxLbl.setPrefWidth(24)
     idxLbl.getStyleClass.add("dim-label")
 
-    val pointIdx = if _showEnd then 1 else 0
+    val pointIdx = if showEnd then 1 else 0
+    val magProp = model.pairMagnitude(currentDir)(idx)(pointIdx)
+    val phsProp = model.pairPhase(currentDir)(idx)(pointIdx)
 
-    val magProp = model.pairMagnitude(_currentDir)(idx)(pointIdx)
-    val phsProp = model.pairPhase(_currentDir)(idx)(pointIdx)
-
-    // Mag 0-100%
     val magField =
       JagNumericField(0, Int16.Range, 0, 100.0 / Int16.Range, "%.0f")
     magField.setPrefWidth(28)
     magField.valueProperty.bindBidirectional(magProp)
 
-    // Phase 0-360
     val phsField =
       JagNumericField(0, Int16.Range, 0, 360.0 / Int16.Range, "%.0f")
     phsField.setPrefWidth(28)

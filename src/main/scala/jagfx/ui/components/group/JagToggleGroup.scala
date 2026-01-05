@@ -1,17 +1,17 @@
 package jagfx.ui.components.group
 
-import javafx.beans.property._
-import javafx.scene.layout.HBox
-import jagfx.utils.IconUtils
 import jagfx.ui.components.button.JagButton
+import jagfx.utils.IconUtils
 
-/** Mutual-exclusion button group. */
+/** Mutual-exclusion button group with icon or text buttons. */
 class JagToggleGroup(items: (String, String)*)
     extends JagBaseGroup(items.headOption.map(_._1).getOrElse("")):
 
+  // Init: styling
   getStyleClass.add("jag-toggle-group")
   setSpacing(2)
 
+  // Init: build buttons
   items.foreach { case (value, iconCode) =>
     val btn = JagButton()
     if iconCode.nonEmpty then btn.setGraphic(IconUtils.icon(iconCode))
@@ -23,6 +23,7 @@ class JagToggleGroup(items: (String, String)*)
   }
 
 object JagToggleGroup:
+  /** Creates toggle group from value-icon pairs. */
   def apply(items: (String, String)*): JagToggleGroup = new JagToggleGroup(
     items*
   )

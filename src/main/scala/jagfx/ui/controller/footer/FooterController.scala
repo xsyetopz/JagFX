@@ -1,23 +1,24 @@
 package jagfx.ui.controller.footer
 
-import javafx.scene.layout._
-import jagfx.ui.viewmodel.SynthViewModel
-import jagfx.ui.controller.ControllerLike
 import jagfx.ui.BindingManager
-import javafx.scene.control.Label
+import jagfx.ui.controller.ControllerLike
+import jagfx.ui.viewmodel.SynthViewModel
+import javafx.scene.layout.*
 
 /** Footer controller containing tones, partials, echo, and mode panels. */
 class FooterController(viewModel: SynthViewModel) extends ControllerLike[VBox]:
-  private val _content = HBox()
-  _content.getStyleClass.add("footer")
+  // Fields
+  protected val view: VBox = VBox()
+  private val content = HBox()
+  private val echoBindings = BindingManager()
+  private val tonesPanel = TonesPanel.create(viewModel)
+  private val partialsPanel = PartialsPanel.create(viewModel)
+  private val echoPanel = EchoPanel.create(viewModel, echoBindings)
 
-  private val _echoBindings = BindingManager()
+  // Init: styling
+  content.getStyleClass.add("footer")
 
-  private val _tonesPanel = TonesPanel.create(viewModel)
-  private val _partialsPanel = PartialsPanel.create(viewModel)
-  private val _echoPanel = EchoPanel.create(viewModel, _echoBindings)
-
-  _content.getChildren.addAll(_tonesPanel, _partialsPanel, _echoPanel)
-  HBox.setHgrow(_partialsPanel, Priority.ALWAYS)
-
-  protected val view = VBox(_content)
+  // Init: build hierarchy
+  content.getChildren.addAll(tonesPanel, partialsPanel, echoPanel)
+  HBox.setHgrow(partialsPanel, Priority.ALWAYS)
+  view.getChildren.add(content)

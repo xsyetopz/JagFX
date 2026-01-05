@@ -1,18 +1,18 @@
 package jagfx.ui.controller.rack
 
-import javafx.scene.layout._
+import jagfx.ui.components.canvas.*
 import jagfx.ui.components.pane.JagCellPane
-import jagfx.ui.components.canvas._
-import jagfx.ui.viewmodel.SynthViewModel
+import javafx.scene.layout.*
 
+/** Factory for creating rack cells with appropriate canvas bindings. */
 class RackCellFactory(
-    viewModel: SynthViewModel,
     poleZeroCanvas: JagPoleZeroCanvas,
     freqResponseCanvas: JagFrequencyResponseCanvas,
     outputWaveformCanvas: JagWaveformCanvas,
     onSelect: Int => Unit,
     onMaximize: Int => Unit
 ):
+  /** Creates cell for given definition index. */
   def createCell(defIdx: Int): JagCellPane =
     val defCell = RackDefs.cellDefs(defIdx)
     val cell = JagCellPane(defCell.title)
@@ -21,18 +21,18 @@ class RackCellFactory(
     else cell.setOnMouseClicked(_ => onSelect(defIdx))
 
     defCell.cellType match
-      case CellType.Filter         => _configureFilterCell(cell, defIdx)
-      case CellType.Output         => _configureOutputCell(cell)
+      case CellType.Filter         => configureFilterCell(cell, defIdx)
+      case CellType.Output         => configureOutputCell(cell)
       case CellType.Envelope(_, _) =>
         cell.setOnMaximizeToggle(() => onMaximize(defIdx))
-      case null => // no-op
+      case null =>
 
     GridPane.setHgrow(cell, Priority.ALWAYS)
     GridPane.setVgrow(cell, Priority.ALWAYS)
     cell
 
-  private def _configureFilterCell(cell: JagCellPane, idx: Int): Unit =
-    cell.setFeatures(false, false)
+  private def configureFilterCell(cell: JagCellPane, idx: Int): Unit =
+    cell.setFeatures(false)
     val container = cell.getChildren.get(0).asInstanceOf[VBox]
     val wrapper = container.getChildren.get(1).asInstanceOf[Pane]
     cell.getCanvas.setVisible(false)
@@ -44,7 +44,7 @@ class RackCellFactory(
       canvas.heightProperty.bind(wrapper.heightProperty)
     cell.setAlternateCanvas(canvas)
 
-  private def _configureOutputCell(cell: JagCellPane): Unit =
+  private def configureOutputCell(cell: JagCellPane): Unit =
     val container = cell.getChildren.get(0).asInstanceOf[VBox]
     val wrapper = container.getChildren.get(1).asInstanceOf[Pane]
     cell.getCanvas.setVisible(false)
