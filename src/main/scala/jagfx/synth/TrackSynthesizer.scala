@@ -2,6 +2,7 @@ package jagfx.synth
 
 import jagfx.model._
 import jagfx.Constants
+import jagfx.utils.MathUtils.clipInt16
 
 /** Orchestrates synthesis of multiple tones with loop expansion. */
 object TrackSynthesizer:
@@ -16,7 +17,7 @@ object TrackSynthesizer:
     val tonesToMix =
       if toneFilter < 0 then file.activeTones
       else file.activeTones.filter(_._1 == toneFilter)
-    val maxDuration = calculateMaxDurationFiltered(tonesToMix)
+    val maxDuration = _calculateMaxDurationFiltered(tonesToMix)
     if maxDuration == 0 then return AudioBuffer.empty(0)
 
     val sampleCount = maxDuration * Constants.SampleRate / 1000
@@ -24,20 +25,20 @@ object TrackSynthesizer:
     val loopStop = file.loop.end * Constants.SampleRate / 1000
 
     val effectiveLoopCount =
-      validateLoopRegion(file, sampleCount, loopStart, loopStop, loopCount)
+      _validateLoopRegion(file, sampleCount, loopStart, loopStop, loopCount)
     val totalSampleCount =
       sampleCount + (loopStop - loopStart) * math.max(0, effectiveLoopCount - 1)
 
-    val buffer = mixTonesFiltered(tonesToMix, sampleCount, totalSampleCount)
+    val buffer = _mixTonesFiltered(tonesToMix, sampleCount, totalSampleCount)
     if effectiveLoopCount > 1 then
-      applyLoopExpansion(
+      _applyLoopExpansion(
         buffer,
         sampleCount,
         loopStart,
         loopStop,
         effectiveLoopCount
       )
-    clipBuffer(buffer)
+    clipInt16(buffer)
 
     val output = new Array[Int](totalSampleCount)
     System.arraycopy(buffer, 0, output, 0, totalSampleCount)
@@ -45,21 +46,21 @@ object TrackSynthesizer:
 
     AudioBuffer(output, Constants.SampleRate)
 
-  private def calculateMaxDuration(file: SynthFile): Int =
+  private def _calculateMaxDuration(file: SynthFile): Int =
     var maxDuration = 0
     for (_, tone) <- file.activeTones do
       val endTime = tone.duration + tone.start
       if endTime > maxDuration then maxDuration = endTime
     maxDuration
 
-  private def calculateMaxDurationFiltered(tones: Vector[(Int, Tone)]): Int =
+  private def _calculateMaxDurationFiltered(tones: Vector[(Int, Tone)]): Int =
     var maxDuration = 0
     for (_, tone) <- tones do
       val endTime = tone.duration + tone.start
       if endTime > maxDuration then maxDuration = endTime
     maxDuration
 
-  private def validateLoopRegion(
+  private def _validateLoopRegion(
       file: SynthFile,
       sampleCount: Int,
       loopStart: Int,
@@ -75,7 +76,7 @@ object TrackSynthesizer:
       0
     else loopCount
 
-  private def mixTonesFiltered(
+  private def _mixTonesFiltered(
       tones: Vector[(Int, Tone)],
       sampleCount: Int,
       totalSampleCount: Int
@@ -90,7 +91,7 @@ object TrackSynthesizer:
           buffer(pos) += toneBuffer.samples(i)
     buffer
 
-  private def applyLoopExpansion(
+  private def _applyLoopExpansion(
       buffer: Array[Int],
       sampleCount: Int,
       loopStart: Int,
@@ -106,9 +107,3 @@ object TrackSynthesizer:
       val offset = (loopStop - loopStart) * loop
       for sample <- loopStart until loopStop do
         buffer(sample + offset) = buffer(sample)
-
-  private def clipBuffer(buffer: Array[Int]): Unit =
-    import Constants._
-    for i <- buffer.indices do
-      if buffer(i) < Int16.Min then buffer(i) = Int16.Min
-      if buffer(i) > Int16.Max then buffer(i) = Int16.Max
