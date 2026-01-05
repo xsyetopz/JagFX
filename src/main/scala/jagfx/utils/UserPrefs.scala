@@ -1,6 +1,7 @@
 package jagfx.utils
 
 import java.util.prefs.Preferences
+
 import javafx.beans.property.*
 
 // Constants

@@ -4,12 +4,12 @@ import java.nio.file.*
 
 import scala.collection.mutable.ListBuffer
 
+import jagfx.Constants
 import jagfx.Constants.MaxPartials
 import jagfx.Constants.MaxTones
 import jagfx.model.*
 import jagfx.types.*
 import jagfx.utils.ArrayUtils
-import jagfx.Constants
 
 /** Parser for `.synth` binary format to `SynthFile` domain model. */
 object SynthReader:

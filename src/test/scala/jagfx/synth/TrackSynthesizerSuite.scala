@@ -1,7 +1,7 @@
 package jagfx.synth
 
-import jagfx.TestFixtures.*
 import jagfx.Constants
+import jagfx.TestFixtures.*
 import jagfx.io.SynthReader
 import jagfx.model.*
 import jagfx.synth.TrackSynthesizer
