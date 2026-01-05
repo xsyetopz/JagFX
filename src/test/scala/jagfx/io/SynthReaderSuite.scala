@@ -1,6 +1,7 @@
 package jagfx.io
 
 import jagfx.model._
+import jagfx.types._
 import jagfx.TestFixtures._
 
 class SynthReaderSuite extends munit.FunSuite:
@@ -47,4 +48,4 @@ class SynthReaderSuite extends munit.FunSuite:
     val result = SynthReader.read(cowDeathHex).toOption.get
     val (_, tone) = result.activeTones.head
     assertEquals(tone.partials.length, 2)
-    assertEquals(tone.partials(0).volume, 100)
+    assertEquals(tone.partials(0).volume, Percent(100))
