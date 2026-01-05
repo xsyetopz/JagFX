@@ -1,7 +1,7 @@
 package jagfx.synth
 
-import jagfx.Constants
-import jagfx.Constants.SampleRate
+import jagfx.constants
+import jagfx.constants.SampleRate
 import jagfx.utils.MathUtils
 
 /** Container for synthesized audio samples with mixing and conversion

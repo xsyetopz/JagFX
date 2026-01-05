@@ -1,7 +1,7 @@
 package jagfx.synth
 
 import jagfx.model._
-import jagfx.Constants.Int16
+import jagfx.constants.Int16
 
 /** Stateful envelope evaluator that interpolates between segments over time.
   * Call `reset()` before each synthesis pass, then `evaluate()` for each

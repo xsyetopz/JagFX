@@ -1,7 +1,7 @@
 package jagfx.synth
 
 import jagfx.model._
-import jagfx.Constants
+import jagfx.constants
 import jagfx.utils.MathUtils.clipInt16
 
 /** Orchestrates synthesis of multiple tones with loop expansion. */
@@ -20,9 +20,9 @@ object TrackSynthesizer:
     val maxDuration = _calculateMaxDurationFiltered(tonesToMix)
     if maxDuration == 0 then return AudioBuffer.empty(0)
 
-    val sampleCount = maxDuration * Constants.SampleRate / 1000
-    val loopStart = file.loop.begin * Constants.SampleRate / 1000
-    val loopStop = file.loop.end * Constants.SampleRate / 1000
+    val sampleCount = maxDuration * constants.SampleRate / 1000
+    val loopStart = file.loop.begin * constants.SampleRate / 1000
+    val loopStop = file.loop.end * constants.SampleRate / 1000
 
     val effectiveLoopCount =
       _validateLoopRegion(file, sampleCount, loopStart, loopStop, loopCount)
@@ -44,7 +44,7 @@ object TrackSynthesizer:
     System.arraycopy(buffer, 0, output, 0, totalSampleCount)
     BufferPool.release(buffer)
 
-    AudioBuffer(output, Constants.SampleRate)
+    AudioBuffer(output, constants.SampleRate)
 
   private def _calculateMaxDuration(file: SynthFile): Int =
     var maxDuration = 0
@@ -84,7 +84,7 @@ object TrackSynthesizer:
     val buffer = BufferPool.acquire(totalSampleCount)
     for (idx, tone) <- tones do
       val toneBuffer = ToneSynthesizer.synthesize(tone)
-      val startOffset = tone.start * Constants.SampleRate / 1000
+      val startOffset = tone.start * constants.SampleRate / 1000
       for i <- 0 until toneBuffer.length do
         val pos = i + startOffset
         if pos >= 0 && pos < sampleCount then

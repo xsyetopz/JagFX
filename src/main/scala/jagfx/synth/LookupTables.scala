@@ -2,7 +2,7 @@ package jagfx.synth
 
 import jagfx.utils.MathUtils
 import java.util.SplittableRandom
-import jagfx.Constants.{Int16, SemitoneRange, SinTableDivisor, CircleSegments}
+import jagfx.constants.{Int16, SemitoneRange, SinTableDivisor, CircleSegments}
 
 /** Precomputed lookup tables for DSP and rendering operations. */
 object LookupTables:

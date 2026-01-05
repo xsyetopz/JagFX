@@ -2,7 +2,7 @@ package jagfx.io
 
 import jagfx.model._
 import jagfx.types._
-import jagfx.Constants
+import jagfx.constants
 import java.nio.file._
 
 /** Serializer for `SynthFile` domain model to `.synth` binary format. */
@@ -24,7 +24,7 @@ object SynthWriter:
       buf: BinaryBuffer,
       tones: Vector[Option[Tone]]
   ): Unit =
-    for tone <- tones.take(Constants.MaxTones) do
+    for tone <- tones.take(constants.MaxTones) do
       tone match
         case Some(t) => _writeTone(buf, t)
         case None    => buf.writeUInt8(0)
@@ -134,7 +134,7 @@ object SynthWriter:
       partials: Vector[Partial]
   ): Unit =
     val activePartials =
-      partials.filter(_.volume.value > 0).take(Constants.MaxPartials)
+      partials.filter(_.volume.value > 0).take(constants.MaxPartials)
     for h <- activePartials do
       buf.writeUSmart(USmart(h.volume.value))
       buf.writeSmart(Smart(h.pitchOffset))

@@ -3,7 +3,7 @@ package jagfx.ui.components.canvas
 import jagfx.ui.viewmodel.EnvelopeViewModel
 import jagfx.utils.ColorUtils._
 import jagfx.utils.DrawingUtils._
-import jagfx.Constants.Int16
+import jagfx.constants.Int16
 
 /** Canvas rendering envelope segments with grid. */
 class JagEnvelopeCanvas extends JagBaseCanvas:

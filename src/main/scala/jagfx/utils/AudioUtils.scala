@@ -1,10 +1,10 @@
 package jagfx.utils
 
-import jagfx.Constants
+import jagfx.constants
 
 object AudioUtils:
   import jagfx.types._
-  import Constants._
+  import constants._
 
   def msToSamples(ms: Millis): Samples =
     ms.toSamples

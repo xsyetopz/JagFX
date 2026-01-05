@@ -1,8 +1,8 @@
 package jagfx.synth
 
 import jagfx.model._
-import jagfx.Constants
-import jagfx.Constants.{Int16, PhaseScale, NoisePhaseDiv, PhaseMask}
+import jagfx.constants
+import jagfx.constants.{Int16, PhaseScale, NoisePhaseDiv, PhaseMask}
 import jagfx.utils.MathUtils.{clamp, clipInt16}
 
 /** Synthesizes single `Tone` into audio samples using FM/AM modulation and
@@ -14,7 +14,7 @@ object ToneSynthesizer:
     * Returns `AudioBuffer` with rendered samples.
     */
   def synthesize(tone: Tone): AudioBuffer =
-    val sampleCount = tone.duration * Constants.SampleRate / 1000
+    val sampleCount = tone.duration * constants.SampleRate / 1000
     if sampleCount <= 0 || tone.duration < 10 then return AudioBuffer.empty(0)
 
     val samplesPerStep = sampleCount.toDouble / tone.duration.toDouble
@@ -35,7 +35,7 @@ object ToneSynthesizer:
     val output = new Array[Int](sampleCount)
     System.arraycopy(buffer, 0, output, 0, sampleCount)
     BufferPool.release(buffer)
-    AudioBuffer(output, Constants.SampleRate)
+    AudioBuffer(output, constants.SampleRate)
 
   private case class SynthState(
       freqBaseEval: EnvelopeEvaluator,
@@ -126,13 +126,13 @@ object ToneSynthesizer:
       tone: Tone,
       samplesPerStep: Double
   ): (Array[Int], Array[Int], Array[Int], Array[Int]) =
-    val delays = new Array[Int](Constants.MaxPartials)
-    val volumes = new Array[Int](Constants.MaxPartials)
-    val semitones = new Array[Int](Constants.MaxPartials)
-    val starts = new Array[Int](Constants.MaxPartials)
+    val delays = new Array[Int](constants.MaxPartials)
+    val volumes = new Array[Int](constants.MaxPartials)
+    val semitones = new Array[Int](constants.MaxPartials)
+    val starts = new Array[Int](constants.MaxPartials)
 
     for partial <- 0 until math.min(
-        Constants.MaxPartials,
+        constants.MaxPartials,
         tone.partials.length
       )
     do
@@ -156,7 +156,7 @@ object ToneSynthesizer:
       state: SynthState,
       sampleCount: Int
   ): Unit =
-    val phases = new Array[Int](Constants.MaxPartials)
+    val phases = new Array[Int](constants.MaxPartials)
     var frequencyPhase = 0
     var amplitudePhase = 0
 
@@ -232,7 +232,7 @@ object ToneSynthesizer:
           tone.tremoloRate.get.waveform
         ) >> 1
         val newAmp =
-          amplitude * (mod + Constants.Int16.UnsignedMaxValue) >> 15
+          amplitude * (mod + constants.Int16.UnsignedMaxValue) >> 15
         val nextPhase =
           phase + (rate * state.amplitudeStart >> 16) + state.amplitudeDuration
         (newAmp, nextPhase)
@@ -249,7 +249,7 @@ object ToneSynthesizer:
       phases: Array[Int]
   ): Unit =
     for partial <- 0 until math.min(
-        Constants.MaxPartials,
+        constants.MaxPartials,
         tone.partials.length
       )
     do

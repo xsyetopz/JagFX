@@ -1,7 +1,7 @@
 package jagfx.io
 
 import jagfx.types._
-import jagfx.Constants
+import jagfx.constants
 
 /** Binary buffer for reading and writing primitive types with explicit
   * endianness. Tracks current position for sequential access.
@@ -66,7 +66,7 @@ class BinaryBuffer(val data: Array[Byte]):
   def readInt16BE(): Int =
     if _checkTruncation(2) then 0
     else
-      import Constants._
+      import constants._
       _position += 2
       var value =
         ((data(_position - 2) & 0xff) << 8) + (data(_position - 1) & 0xff)
@@ -87,16 +87,16 @@ class BinaryBuffer(val data: Array[Byte]):
   def readSmart(): Smart =
     if remaining == 0 then return Smart(0)
     val value = peek()
-    if value < Constants.Smart.Threshold then
-      Smart(readUInt8() - Constants.Smart.SignedOffset)
-    else Smart(readUInt16BE() - Constants.Smart.SignedBaseOffset)
+    if value < constants.Smart.Threshold then
+      Smart(readUInt8() - constants.Smart.SignedOffset)
+    else Smart(readUInt16BE() - constants.Smart.SignedBaseOffset)
 
   /** Reads unsigned variable-length smart integer (`1` or `2` bytes). */
   def readUSmart(): USmart =
-    import Constants._
+    import constants._
     if remaining == 0 then return USmart(0)
     val value = peek()
-    if value < Constants.Smart.Threshold then USmart(readUInt8())
+    if value < constants.Smart.Threshold then USmart(readUInt8())
     else USmart(readUInt16BE() - Int16.UnsignedMaxValue)
 
   /** Writes signed 32-bit big-endian integer, advances position by `4`. */
@@ -135,19 +135,19 @@ class BinaryBuffer(val data: Array[Byte]):
   /** Writes unsigned variable-length smart integer (`1` or `2` bytes). */
   def writeUSmart(value: USmart): Unit =
     val v = value.value
-    if v < Constants.Smart.Threshold then writeUInt8(v)
+    if v < constants.Smart.Threshold then writeUInt8(v)
     else
-      writeUInt8((v >> 8) + Constants.Smart.Threshold)
+      writeUInt8((v >> 8) + constants.Smart.Threshold)
       writeUInt8(v & 0xff)
 
   /** Writes signed variable-length smart integer (`1` or `2` bytes). */
   def writeSmart(value: Smart): Unit =
     val v = value.value
-    val adjusted = v + Constants.Smart.SignedOffset
-    if adjusted >= 0 && adjusted < Constants.Smart.Threshold then
+    val adjusted = v + constants.Smart.SignedOffset
+    if adjusted >= 0 && adjusted < constants.Smart.Threshold then
       writeUInt8(adjusted)
     else
-      val enc = v + Constants.Smart.SignedBaseOffset
+      val enc = v + constants.Smart.SignedBaseOffset
       writeUInt8((enc >> 8) & 0xff)
       writeUInt8(enc & 0xff)
 

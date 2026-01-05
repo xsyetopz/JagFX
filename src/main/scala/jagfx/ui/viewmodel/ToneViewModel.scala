@@ -2,7 +2,7 @@ package jagfx.ui.viewmodel
 
 import javafx.beans.property._
 import jagfx.model._
-import jagfx.Constants
+import jagfx.constants
 
 /** `ViewModel` for single `Tone`. */
 class ToneViewModel extends ViewModelLike:
@@ -28,7 +28,7 @@ class ToneViewModel extends ViewModelLike:
   val echoDelay = new SimpleIntegerProperty(0)
   val echoMix = new SimpleIntegerProperty(0)
 
-  val partials = Array.fill(Constants.MaxPartials)(new PartialViewModel())
+  val partials = Array.fill(constants.MaxPartials)(new PartialViewModel())
 
   override protected def registerPropertyListeners(cb: () => Unit): Unit =
     Seq(
@@ -80,7 +80,7 @@ class ToneViewModel extends ViewModelLike:
         echoDelay.set(t.echoDelay)
         echoMix.set(t.echoMix)
 
-        for i <- 0 until Constants.MaxTones do
+        for i <- 0 until constants.MaxTones do
           if i < t.partials.length then partials(i).load(t.partials(i))
           else partials(i).clear()
 
@@ -111,7 +111,7 @@ class ToneViewModel extends ViewModelLike:
     else
       val activePartials =
         partials
-          .take(Constants.MaxPartials / 2)
+          .take(constants.MaxPartials / 2)
           .filter(_.active.get)
           .map(_.toModel())
           .toVector

@@ -1,11 +1,11 @@
 package jagfx.io
 
-import jagfx.Constants
+import jagfx.constants
 import java.nio.file._
 
 /** WAV file format writer for 8-bit mono PCM audio. */
 object WavWriter:
-  import Constants.Wav._
+  import constants.Wav._
 
   /** Converts audio samples to complete WAV file bytes.
     *
@@ -25,12 +25,12 @@ object WavWriter:
     buf.writeInt32BE(FmtMagic)
     buf.writeInt32LE(FmtChunkSize)
     buf.writeInt16LE(PcmFormat)
-    buf.writeInt16LE(Constants.NumChannels)
-    buf.writeInt32LE(Constants.SampleRate)
+    buf.writeInt16LE(constants.NumChannels)
+    buf.writeInt32LE(constants.SampleRate)
     buf.writeInt32LE(
-      Constants.SampleRate * Constants.NumChannels * bitsPerSample / 8
+      constants.SampleRate * constants.NumChannels * bitsPerSample / 8
     )
-    buf.writeInt16LE(Constants.NumChannels * bitsPerSample / 8)
+    buf.writeInt16LE(constants.NumChannels * bitsPerSample / 8)
     buf.writeInt16LE(bitsPerSample)
     buf.writeInt32BE(DataMagic)
     buf.writeInt32LE(dataSize)

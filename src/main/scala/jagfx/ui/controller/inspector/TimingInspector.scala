@@ -5,7 +5,7 @@ import javafx.scene.control.Label
 import javafx.geometry.Pos
 import jagfx.ui.viewmodel.ToneViewModel
 import jagfx.ui.components.field._
-import jagfx.Constants.Int16
+import jagfx.constants.Int16
 import javafx.scene.layout.Region
 
 private val _TimingFieldSize = 55

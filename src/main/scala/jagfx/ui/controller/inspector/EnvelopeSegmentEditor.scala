@@ -7,7 +7,7 @@ import jagfx.ui.viewmodel.EnvelopeViewModel
 import jagfx.ui.components.field.JagNumericField
 import jagfx.ui.components.button.JagButton
 import jagfx.utils.IconUtils
-import jagfx.Constants.Int16
+import jagfx.constants.Int16
 
 private val _HeaderWidth = 55
 

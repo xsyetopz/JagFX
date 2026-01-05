@@ -2,7 +2,7 @@ package jagfx.io
 
 import jagfx.types._
 import jagfx.model._
-import jagfx.Constants.{MaxTones, MaxPartials}
+import jagfx.constants.{MaxTones, MaxPartials}
 import java.nio.file._
 import scala.collection.mutable.ListBuffer
 

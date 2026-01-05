@@ -3,7 +3,7 @@ package jagfx.ui.components.canvas
 import jagfx.synth.AudioBuffer
 import jagfx.utils.ColorUtils._
 import jagfx.utils.DrawingUtils._
-import jagfx.Constants.Int16
+import jagfx.constants.Int16
 
 /** Canvas rendering synthesized audio waveform with playhead.
   */

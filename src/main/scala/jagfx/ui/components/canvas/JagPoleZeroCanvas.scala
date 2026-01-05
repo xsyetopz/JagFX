@@ -5,7 +5,7 @@ import jagfx.utils.ColorUtils._
 import jagfx.utils.DrawingUtils._
 import jagfx.utils.MathUtils
 import jagfx.synth.LookupTables
-import jagfx.Constants.Int16
+import jagfx.constants.Int16
 
 /** Canvas rendering pole-zero diagram on unit circle. */
 class JagPoleZeroCanvas extends JagBaseCanvas:

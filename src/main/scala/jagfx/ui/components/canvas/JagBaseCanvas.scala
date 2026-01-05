@@ -6,7 +6,7 @@ import javafx.scene.input._
 import javafx.animation.AnimationTimer
 import jagfx.utils.ColorUtils._
 import jagfx.utils.DrawingUtils._
-import jagfx.Constants.MinFrameNanos
+import jagfx.constants.MinFrameNanos
 
 /** Base canvas with throttled rendering and buffer management. */
 abstract class JagBaseCanvas extends Canvas:

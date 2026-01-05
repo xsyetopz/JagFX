@@ -7,7 +7,7 @@ import jagfx.ui.viewmodel.SynthViewModel
 import jagfx.ui.components.button._
 import jagfx.ui.components.field._
 import jagfx.utils.IconUtils
-import jagfx.Constants
+import jagfx.constants
 
 /** Tones selection panel (`1-10` buttons with copy/paste). */
 object TonesPanel:
@@ -41,7 +41,7 @@ object TonesPanel:
     col2.setPercentWidth(50)
     grid.getColumnConstraints.addAll(col1, col2)
 
-    import Constants._
+    import constants._
     val buttons = new Array[JagButton](MaxTones)
     for i <- 0 until MaxTones do
       val btn = JagButton((i + 1).toString)

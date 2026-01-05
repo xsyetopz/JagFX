@@ -4,7 +4,7 @@ import jagfx.io.BinaryBuffer
 import jagfx.model._
 import jagfx.types._
 import java.nio.file._
-import jagfx.Constants
+import jagfx.constants
 
 object SynthInspector:
   def main(args: Array[String]): Unit =
@@ -103,7 +103,7 @@ object SynthInspector:
     println("--- PARTIALS ---")
     var continue = true
     var count = 0
-    while continue && count < Constants.MaxPartials do
+    while continue && count < constants.MaxPartials do
       val marker = buf.peek()
       if marker != 0 then
         val term = buf.readSmart("H. TERM VOL")

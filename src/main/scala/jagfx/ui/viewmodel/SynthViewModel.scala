@@ -3,7 +3,7 @@ package jagfx.ui.viewmodel
 import javafx.beans.property._
 import javafx.collections._
 import jagfx.model._
-import jagfx.Constants
+import jagfx.constants
 import scala.jdk.CollectionConverters._
 import jagfx.synth.SynthesisExecutor
 
@@ -30,7 +30,7 @@ class SynthViewModel:
   def currentFilePathProperty: StringProperty = _currentFilePath
   def setCurrentFilePath(path: String): Unit = _currentFilePath.set(path)
 
-  for _ <- 0 until Constants.MaxTones do _tones.add(new ToneViewModel())
+  for _ <- 0 until constants.MaxTones do _tones.add(new ToneViewModel())
 
   initDefault()
 
@@ -78,7 +78,7 @@ class SynthViewModel:
   def fileLoadedProperty: ObjectProperty[java.lang.Long] = _fileLoaded
 
   def load(file: SynthFile): Unit =
-    import Constants._
+    import constants._
     SynthesisExecutor.cancelPending()
 
     _loopStart.set(file.loop.begin)

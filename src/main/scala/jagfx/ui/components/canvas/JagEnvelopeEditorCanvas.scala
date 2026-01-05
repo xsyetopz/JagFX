@@ -4,7 +4,7 @@ import javafx.scene.input.MouseEvent
 import jagfx.ui.viewmodel.EnvelopeViewModel
 import jagfx.utils.ColorUtils._
 import jagfx.utils.DrawingUtils._
-import jagfx.Constants.Int16
+import jagfx.constants.Int16
 
 private val _PointRadius = 5
 private val _HitRadius = 10

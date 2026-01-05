@@ -1,6 +1,6 @@
 package jagfx
 
-import jagfx.Constants.SampleRate
+import jagfx.constants.SampleRate
 
 /** Opaque types for type-safe value handling with zero runtime overhead.
   */

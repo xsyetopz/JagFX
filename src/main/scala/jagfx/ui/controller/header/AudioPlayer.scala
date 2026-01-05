@@ -5,7 +5,7 @@ import javafx.animation.AnimationTimer
 import javafx.application.Platform
 import jagfx.ui.viewmodel.SynthViewModel
 import jagfx.synth.TrackSynthesizer
-import jagfx.Constants
+import jagfx.constants
 import jagfx.utils.AudioUtils
 import jagfx.synth.AudioBuffer
 import java.util.concurrent.atomic.AtomicLong
@@ -71,7 +71,7 @@ class AudioPlayer(viewModel: SynthViewModel):
           TrackSynthesizer.synthesize(model, loopCount, toneFilter)
 
         val clip = AudioSystem.getClip()
-        val format = new AudioFormat(Constants.SampleRate, 16, 1, true, true)
+        val format = new AudioFormat(constants.SampleRate, 16, 1, true, true)
         val bytes = audio.toBytes16BE
         clip.open(format, bytes, 0, bytes.length)
 

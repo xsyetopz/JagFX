@@ -10,7 +10,7 @@ import jagfx.ui.viewmodel.SynthViewModel
 import jagfx.ui.components.slider._
 import jagfx.ui.components.field._
 import jagfx.ui.components.button._
-import jagfx.Constants
+import jagfx.constants
 
 /** Partials panel with P1-5/P6-10 bank switcher. */
 object PartialsPanel:
@@ -23,7 +23,7 @@ object PartialsPanel:
       dRow: PartialsRow
   )
 
-  private val _HalfMaxPartials = Constants.MaxPartials - 5
+  private val _HalfMaxPartials = constants.MaxPartials - 5
 
   def create(viewModel: SynthViewModel): VBox =
     val panel = VBox()

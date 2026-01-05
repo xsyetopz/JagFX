@@ -4,7 +4,7 @@ import jagfx.ui.viewmodel.FilterViewModel
 import jagfx.utils.ColorUtils._
 import jagfx.utils.DrawingUtils._
 import jagfx.utils.MathUtils
-import jagfx.Constants.Int16
+import jagfx.constants.Int16
 
 /** Canvas rendering frequency response curve from filter poles/zeros. */
 class JagFrequencyResponseCanvas extends JagBaseCanvas:

@@ -8,7 +8,7 @@ import jagfx.ui.viewmodel.SynthViewModel
 import jagfx.ui.controller.ControllerLike
 import jagfx.ui.components.button._
 import jagfx.ui.components.field._
-import jagfx.Constants
+import jagfx.constants
 import jagfx.utils._
 import javafx.beans.property.SimpleBooleanProperty
 
@@ -17,7 +17,7 @@ private val _LoopParamSize = 34
 /** Header controller containing transport, file, and settings controls. */
 class HeaderController(viewModel: SynthViewModel)
     extends ControllerLike[GridPane]:
-  import Constants._
+  import constants._
 
   private val _audioPlayer = AudioPlayer(viewModel)
   private val _fileOps =

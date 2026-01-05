@@ -2,7 +2,7 @@ package jagfx.synth
 
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.Arrays
-import jagfx.Constants.{MaxPoolSize, MaxBufferSize}
+import jagfx.constants.{MaxPoolSize, MaxBufferSize}
 
 /** Thread-safe pool for reusable integer arrays. */
 object BufferPool:

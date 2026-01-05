@@ -1,8 +1,8 @@
 package jagfx.synth
 
 import jagfx.model._
-import jagfx.Constants
-import jagfx.Constants.{Int16, FilterUpdateRate}
+import jagfx.constants
+import jagfx.constants.{Int16, FilterUpdateRate}
 import jagfx.utils.MathUtils._
 
 private case class FilterCoefs(count0: Int, count1: Int, inverseA0: Int)
@@ -200,4 +200,4 @@ object FilterSynthesizer:
 
   private def _getOctavePhase(pow2Value: Float): Float =
     val frequencyHz = Math.pow(2.0, pow2Value) * 32.703197
-    (frequencyHz * TwoPi / Constants.SampleRate).toFloat
+    (frequencyHz * TwoPi / constants.SampleRate).toFloat

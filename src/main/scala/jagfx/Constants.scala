@@ -1,7 +1,7 @@
 package jagfx
 
 /** Public constants for external use (e.g., GUI, plugins). */
-object Constants:
+object constants:
   /** Audio sample rate in Hz. */
   val SampleRate: Int = 22050
 

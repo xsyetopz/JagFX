@@ -7,7 +7,7 @@ import jagfx.ui.viewmodel.FilterViewModel
 import jagfx.ui.components.field._
 import jagfx.ui.components.group._
 import jagfx.ui.components.slider._
-import jagfx.Constants.Int16
+import jagfx.constants.Int16
 
 /** Inspector panel for filter parameters. */
 class FilterInspector extends VBox:

@@ -6,7 +6,7 @@ import javafx.geometry.Pos
 import jagfx.ui.viewmodel.FilterViewModel
 import jagfx.ui.components.field.JagNumericField
 import jagfx.ui.components.group.JagToggleGroup
-import jagfx.Constants.Int16
+import jagfx.constants.Int16
 import jagfx.ui.components.button.JagButton
 
 class FilterPolesEditor extends VBox:
