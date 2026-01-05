@@ -8,8 +8,8 @@ import javafx.scene.control.Label
 import javafx.scene.layout.*
 
 // Constants
-private final val PanelSize = 120
-private final val SliderSize = 100
+private final val EchoPanelSize = 120
+private final val EchoSliderSize = 100
 
 /** Echo controls panel. */
 object EchoPanel:
@@ -17,9 +17,9 @@ object EchoPanel:
   def create(viewModel: SynthViewModel, bindings: BindingManager): VBox =
     val panel = VBox()
     panel.getStyleClass.add("panel")
-    panel.setMinWidth(PanelSize)
-    panel.setPrefWidth(PanelSize)
-    panel.setMaxWidth(PanelSize)
+    panel.setMinWidth(EchoPanelSize)
+    panel.setPrefWidth(EchoPanelSize)
+    panel.setMaxWidth(EchoPanelSize)
     HBox.setHgrow(panel, Priority.NEVER)
 
     val head = Label("ECHO")
@@ -27,8 +27,8 @@ object EchoPanel:
     head.setMaxWidth(Double.MaxValue)
     head.setAlignment(Pos.CENTER)
 
-    val mixSlider = JagBarSlider(0, SliderSize, 0, "MIX:")
-    val delaySlider = JagBarSlider(0, SliderSize, 0, "DEL:")
+    val mixSlider = JagBarSlider(0, EchoSliderSize, 0, "MIX:")
+    val delaySlider = JagBarSlider(0, EchoSliderSize, 0, "DEL:")
 
     viewModel.activeToneIndexProperty.addListener((_, _, _) =>
       bindings.unbindAll()

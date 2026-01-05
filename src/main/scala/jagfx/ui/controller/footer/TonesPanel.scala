@@ -9,8 +9,8 @@ import javafx.scene.control.Label
 import javafx.scene.layout.*
 
 // Constants
-private final val PanelSize = 70
-private final val ColumnSize = 50
+private final val TonesPanelSize = 70
+private final val TonesColumnSize = 50
 
 /** Tones selection panel (`1-10` buttons with copy/paste). */
 object TonesPanel:
@@ -21,9 +21,9 @@ object TonesPanel:
     val panel = VBox()
     panel.setId("tones-panel")
     panel.getStyleClass.add("panel")
-    panel.setMinWidth(PanelSize)
-    panel.setPrefWidth(PanelSize)
-    panel.setMaxWidth(PanelSize)
+    panel.setMinWidth(TonesPanelSize)
+    panel.setPrefWidth(TonesPanelSize)
+    panel.setMaxWidth(TonesPanelSize)
     HBox.setHgrow(panel, Priority.NEVER)
 
     val head = Label("TONES")
@@ -42,9 +42,9 @@ object TonesPanel:
     VBox.setVgrow(grid, Priority.ALWAYS)
 
     val col1 = new ColumnConstraints()
-    col1.setPercentWidth(ColumnSize)
+    col1.setPercentWidth(TonesColumnSize)
     val col2 = new ColumnConstraints()
-    col2.setPercentWidth(ColumnSize)
+    col2.setPercentWidth(TonesColumnSize)
     grid.getColumnConstraints.addAll(col1, col2)
 
     val buttons = new Array[JagButton](MaxTones)
