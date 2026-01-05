@@ -15,14 +15,14 @@ class BindingManager:
       target: Property[?]
   )
 
-  private val listeners = mutable.ArrayBuffer[ListenerBinding[?]]()
-  private val bidirectionals = mutable.ArrayBuffer[BidirectionalBinding]()
+  private val _listeners = mutable.ArrayBuffer[ListenerBinding[?]]()
+  private val _bidirectionals = mutable.ArrayBuffer[BidirectionalBinding]()
 
   /** Adds change listener with auto-removal on `unbindAll()`. */
   def listen[T](property: Property[T])(handler: T => Unit): Unit =
     val listener: ChangeListener[T] = (_, _, newVal) => handler(newVal)
     property.addListener(listener)
-    listeners += ListenerBinding(property, listener)
+    _listeners += ListenerBinding(property, listener)
 
   /** Creates bidirectional binding with auto-unbind on `unbindAll()`. */
   def bindBidirectional(
@@ -30,21 +30,21 @@ class BindingManager:
       target: IntegerProperty
   ): Unit =
     source.bindBidirectional(target)
-    bidirectionals += BidirectionalBinding(source, target)
+    _bidirectionals += BidirectionalBinding(source, target)
 
   /** Removes all registered listeners and bindings. */
   def unbindAll(): Unit =
-    listeners.foreach { case ListenerBinding(prop, listener) =>
+    _listeners.foreach { case ListenerBinding(prop, listener) =>
       prop.removeListener(listener.asInstanceOf[ChangeListener[Any]])
     }
-    listeners.clear()
+    _listeners.clear()
 
-    bidirectionals.foreach { case BidirectionalBinding(src, tgt) =>
+    _bidirectionals.foreach { case BidirectionalBinding(src, tgt) =>
       src
         .asInstanceOf[Property[Any]]
         .unbindBidirectional(tgt.asInstanceOf[Property[Any]])
     }
-    bidirectionals.clear()
+    _bidirectionals.clear()
 
 object BindingManager:
   def apply(): BindingManager = new BindingManager()

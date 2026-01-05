@@ -72,9 +72,9 @@ class SynthViewModel:
   def isTargetAll: Boolean = _targetMode.get
 
   // max of `tone.duration + tone.start` across all active tones
-  private val totalDuration = new SimpleIntegerProperty(0)
+  private val _totalDuration = new SimpleIntegerProperty(0)
 
-  def totalDurationProperty: IntegerProperty = totalDuration
+  def totalDurationProperty: IntegerProperty = _totalDuration
   def fileLoadedProperty: ObjectProperty[java.lang.Long] = _fileLoaded
 
   def load(file: SynthFile): Unit =
@@ -92,7 +92,7 @@ class SynthViewModel:
       .map(t => t.duration + t.start)
       .maxOption
       .getOrElse(0)
-    totalDuration.set(maxDur)
+    _totalDuration.set(maxDur)
     _activeToneIndex.set(0) // go `Tone 1` whenever file loaded
     _fileLoaded.set(System.currentTimeMillis())
 

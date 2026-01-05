@@ -10,42 +10,42 @@ import jagfx.Constants.Int16
 class JagFrequencyResponseCanvas extends JagBaseCanvas:
   import JagFrequencyResponseCanvas._
 
-  private var viewModel: Option[FilterViewModel] = None
+  private var _viewModel: Option[FilterViewModel] = None
 
   getStyleClass.add("jag-freq-response-canvas")
 
   def setViewModel(vm: FilterViewModel): Unit =
-    viewModel = Some(vm)
+    _viewModel = Some(vm)
     vm.addChangeListener(() =>
       javafx.application.Platform.runLater(() => requestRedraw())
     )
     requestRedraw()
 
   override protected def drawContent(buffer: Array[Int], w: Int, h: Int): Unit =
-    drawGrid(buffer, w, h)
+    _drawGrid(buffer, w, h)
     drawCenterLine(buffer, w, h)
-    viewModel.foreach(vm => drawResponseCurve(buffer, w, h, vm))
+    _viewModel.foreach(vm => _drawResponseCurve(buffer, w, h, vm))
 
-  private def drawGrid(buffer: Array[Int], w: Int, h: Int): Unit =
-    for i <- 1 until GridCols do
-      val x = i * w / GridCols
+  private def _drawGrid(buffer: Array[Int], w: Int, h: Int): Unit =
+    for i <- 1 until _GridCols do
+      val x = i * w / _GridCols
       line(buffer, w, h, x, 0, x, h, GridLineFaint)
-    for i <- 1 until GridRows do
-      val y = i * h / GridRows
+    for i <- 1 until _GridRows do
+      val y = i * h / _GridRows
       line(buffer, w, h, 0, y, w, y, GridLineFaint)
 
-  private def drawResponseCurve(
+  private def _drawResponseCurve(
       buffer: Array[Int],
       w: Int,
       h: Int,
       vm: FilterViewModel
   ): Unit =
     if vm.isEmpty then return
-    val points = computeResponsePoints(w, h, vm)
+    val points = _computeResponsePoints(w, h, vm)
     for x <- 1 until w do
       line(buffer, w, h, x - 1, points(x - 1), x, points(x), FilterResponse)
 
-  private def computeResponsePoints(
+  private def _computeResponsePoints(
       w: Int,
       h: Int,
       vm: FilterViewModel
@@ -53,23 +53,23 @@ class JagFrequencyResponseCanvas extends JagBaseCanvas:
     val points = new Array[Int](w)
     for x <- 0 until w do
       val freq = x.toDouble / w
-      val response = computeFrequencyResponse(vm, freq)
-      val dB = MathUtils.clamp(MathUtils.linearToDb(response), MinDb, MaxDb)
-      val y = decibelsToY(dB, h)
+      val response = _computeFrequencyResponse(vm, freq)
+      val dB = MathUtils.clamp(MathUtils.linearToDb(response), _MinDb, _MaxDb)
+      val y = _decibelsToY(dB, h)
       points(x) = MathUtils.clamp(y, 0, h - 1)
     points
 
-  private def computeFrequencyResponse(
+  private def _computeFrequencyResponse(
       vm: FilterViewModel,
       normalizedFreq: Double
   ): Double =
     val omega = normalizedFreq * math.Pi
-    val zeroContrib = computeZeroContribution(vm, omega)
-    val poleContrib = computePoleContribution(vm, omega)
-    val unity = vm.unity0.get / Int16.Range + MinGain
+    val zeroContrib = _computeZeroContrib(vm, omega)
+    val poleContrib = _computePoleContrib(vm, omega)
+    val unity = vm.unity0.get / Int16.Range + _MinGain
     unity * zeroContrib / poleContrib
 
-  private def computeZeroContribution(
+  private def _computeZeroContrib(
       vm: FilterViewModel,
       omega: Double
   ): Double =
@@ -83,7 +83,7 @@ class JagFrequencyResponseCanvas extends JagBaseCanvas:
       contrib *= MathUtils.distance(eReal, eImag, zReal, zImag)
     contrib
 
-  private def computePoleContribution(
+  private def _computePoleContrib(
       vm: FilterViewModel,
       omega: Double
   ): Double =
@@ -95,19 +95,19 @@ class JagFrequencyResponseCanvas extends JagBaseCanvas:
       val pReal = mag * math.cos(phase)
       val pImag = mag * math.sin(phase)
       contrib *= math.max(
-        MinGain,
+        _MinGain,
         MathUtils.distance(eReal, eImag, pReal, pImag)
       )
     contrib
 
-  private def decibelsToY(dB: Double, h: Int): Int =
-    (h / 2 - (dB / MaxDb * h / 2)).toInt
+  private def _decibelsToY(dB: Double, h: Int): Int =
+    (h / 2 - (dB / _MaxDb * h / 2)).toInt
 
 object JagFrequencyResponseCanvas:
-  private val GridCols = 8
-  private val GridRows = 4
-  private val MinGain = 0.001
-  private val MinDb = -24.0
-  private val MaxDb = 24.0
+  private val _GridCols = 8
+  private val _GridRows = 4
+  private val _MinGain = 0.001
+  private val _MinDb = -24.0
+  private val _MaxDb = 24.0
 
   def apply(): JagFrequencyResponseCanvas = new JagFrequencyResponseCanvas()

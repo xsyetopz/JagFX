@@ -13,16 +13,16 @@ import jagfx.model.SynthFile
 
 /** Audio playback controller for synth. */
 class AudioPlayer(viewModel: SynthViewModel):
-  private var currentClip: Option[Clip] = None
-  private var playheadTimer: Option[AnimationTimer] = None
-  private val generation = new AtomicLong(0)
+  private var _currentClip: Option[Clip] = None
+  private var _playheadTimer: Option[AnimationTimer] = None
+  private val _generation = new AtomicLong(0)
 
   private case class RenderParams(
       model: SynthFile,
       loopCount: Int,
       toneFilter: Int
   )
-  private var currentParams: Option[RenderParams] = None
+  private var _currentParams: Option[RenderParams] = None
 
   /** Callback for playhead position updates (`0.0` to `1.0`, or `-1` when
     * stopped).
@@ -39,31 +39,31 @@ class AudioPlayer(viewModel: SynthViewModel):
 
     val newParams = RenderParams(modelSnapshot, loopCount, toneFilter)
 
-    if trySmartReplay(newParams) then return
-    startAsyncSynthesis(modelSnapshot, loopCount, toneFilter, newParams)
+    if _trySmartReplay(newParams) then return
+    _startAsyncSynthesis(modelSnapshot, loopCount, toneFilter, newParams)
 
   def stop(): Unit =
-    stopInternal(resetGen = true)
+    _stopInternal(resetGen = true)
 
-  private def trySmartReplay(params: RenderParams): Boolean =
-    if currentParams.contains(params) && currentClip.exists(_.isOpen) then
-      val clip = currentClip.get
-      playheadTimer.foreach(_.stop())
+  private def _trySmartReplay(params: RenderParams): Boolean =
+    if _currentParams.contains(params) && _currentClip.exists(_.isOpen) then
+      val clip = _currentClip.get
+      _playheadTimer.foreach(_.stop())
       clip.stop()
       clip.setFramePosition(0)
       clip.start()
-      startTimer(clip)
+      _startTimer(clip)
       true
     else false
 
-  private def startAsyncSynthesis(
+  private def _startAsyncSynthesis(
       model: SynthFile,
       loopCount: Int,
       toneFilter: Int,
       params: RenderParams
   ): Unit =
-    stopInternal(resetGen = false)
-    val currentGen = generation.incrementAndGet()
+    _stopInternal(resetGen = false)
+    val currentGen = _generation.incrementAndGet()
 
     new Thread(() => {
       try
@@ -76,29 +76,29 @@ class AudioPlayer(viewModel: SynthViewModel):
         clip.open(format, bytes, 0, bytes.length)
 
         Platform.runLater(() => {
-          if generation.get() == currentGen then
-            currentParams = Some(params)
-            startPlayback(clip)
+          if _generation.get() == currentGen then
+            _currentParams = Some(params)
+            _startPlayback(clip)
           else clip.close()
         })
       catch case e: Exception => e.printStackTrace()
     }).start()
 
-  private def startPlayback(clip: Clip): Unit =
+  private def _startPlayback(clip: Clip): Unit =
     try
-      currentClip = Some(clip)
+      _currentClip = Some(clip)
 
-      if viewModel.isLoopEnabled && configureLoopPoints(clip) then
+      if viewModel.isLoopEnabled && _configureLoopPoints(clip) then
         val count = viewModel.loopCountProperty.get
         clip.loop(if count == 0 then Clip.LOOP_CONTINUOUSLY else count - 1)
       else clip.start()
 
-      startTimer(clip)
+      _startTimer(clip)
     catch
       case e: Exception =>
         e.printStackTrace()
 
-  private def startTimer(clip: Clip): Unit =
+  private def _startTimer(clip: Clip): Unit =
     val totalFrames = clip.getFrameLength.toDouble
     val timer = new AnimationTimer:
       def handle(now: Long): Unit =
@@ -109,9 +109,9 @@ class AudioPlayer(viewModel: SynthViewModel):
           onPlayheadUpdate(-1)
           this.stop()
     timer.start()
-    playheadTimer = Some(timer)
+    _playheadTimer = Some(timer)
 
-  private def configureLoopPoints(clip: Clip): Boolean =
+  private def _configureLoopPoints(clip: Clip): Boolean =
     val startMs = math.max(0, viewModel.loopStartProperty.get)
     val endMs = math.max(startMs, viewModel.loopEndProperty.get)
     if endMs <= startMs then return false
@@ -127,16 +127,16 @@ class AudioPlayer(viewModel: SynthViewModel):
       true
     else false
 
-  private def stopInternal(resetGen: Boolean): Unit =
-    if resetGen then generation.incrementAndGet()
+  private def _stopInternal(resetGen: Boolean): Unit =
+    if resetGen then _generation.incrementAndGet()
 
-    playheadTimer.foreach(_.stop())
-    playheadTimer = None
+    _playheadTimer.foreach(_.stop())
+    _playheadTimer = None
     onPlayheadUpdate(-1)
 
-    currentClip.foreach { clip =>
+    _currentClip.foreach { clip =>
       if clip.isRunning then clip.stop()
       clip.close()
     }
-    currentClip = None
-    currentParams = None
+    _currentClip = None
+    _currentParams = None

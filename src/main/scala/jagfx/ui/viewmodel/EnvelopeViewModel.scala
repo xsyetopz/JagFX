@@ -10,46 +10,46 @@ class EnvelopeViewModel extends IViewModel:
   val end = new SimpleIntegerProperty(0)
   val notes = new SimpleIntegerProperty(0)
 
-  private var segments: Vector[EnvelopeSegment] = Vector.empty
+  private var _segments: Vector[EnvelopeSegment] = Vector.empty
 
-  def getSegments: Vector[Int] = segments.map(_.peak)
+  def getSegments: Vector[Int] = _segments.map(_.peak)
 
-  def getFullSegments: Vector[EnvelopeSegment] = segments
+  def getFullSegments: Vector[EnvelopeSegment] = _segments
 
   def addSegment(duration: Int, peak: Int): Unit =
-    segments = segments :+ EnvelopeSegment(duration, peak)
+    _segments = _segments :+ EnvelopeSegment(duration, peak)
     notifyListeners()
 
   def removeSegment(index: Int): Unit =
-    if index >= 0 && index < segments.length then
-      segments = segments.patch(index, Nil, 1)
+    if index >= 0 && index < _segments.length then
+      _segments = _segments.patch(index, Nil, 1)
       notifyListeners()
 
   def updateSegment(index: Int, duration: Int, peak: Int): Unit =
-    if index >= 0 && index < segments.length then
-      segments = segments.updated(index, EnvelopeSegment(duration, peak))
+    if index >= 0 && index < _segments.length then
+      _segments = _segments.updated(index, EnvelopeSegment(duration, peak))
       notifyListeners()
 
-  def isEmpty: Boolean = segments.isEmpty && form.get == WaveForm.Off
+  def isEmpty: Boolean = _segments.isEmpty && form.get == WaveForm.Off
   def isZero: Boolean =
-    start.get == 0 && end.get == 0 && segments.forall(_.peak == 0)
+    start.get == 0 && end.get == 0 && _segments.forall(_.peak == 0)
 
   def load(env: Envelope): Unit =
     form.set(env.form)
     start.set(env.start)
     end.set(env.end)
-    segments = env.segments
+    _segments = env.segments
     notifyListeners()
 
   def clear(): Unit =
     form.set(WaveForm.Off)
     start.set(0)
     end.set(0)
-    segments = Vector.empty
+    _segments = Vector.empty
     notifyListeners()
 
   def toModel(): Envelope =
-    Envelope(form.get, start.get, end.get, segments)
+    Envelope(form.get, start.get, end.get, _segments)
 
   override protected def registerPropertyListeners(cb: () => Unit): Unit =
     form.addListener((_, _, _) => cb())

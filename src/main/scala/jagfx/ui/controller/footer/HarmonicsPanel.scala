@@ -23,7 +23,7 @@ object HarmonicsPanel:
       dRow: HarmonicsRow
   )
 
-  private val HalfMaxHarmonics = Constants.MaxHarmonics - 5
+  private val _HalfMaxHarmonics = Constants.MaxHarmonics - 5
 
   def create(viewModel: SynthViewModel): VBox =
     val panel = VBox()
@@ -52,20 +52,20 @@ object HarmonicsPanel:
     grid.setId("harmonics")
     VBox.setVgrow(grid, Priority.ALWAYS)
 
-    val strips = new Array[HStrip](HalfMaxHarmonics)
+    val strips = new Array[HStrip](_HalfMaxHarmonics)
 
-    for i <- 0 until HalfMaxHarmonics do
-      val hs = createStrip(i)
+    for i <- 0 until _HalfMaxHarmonics do
+      val hs = _createStrip(i)
       strips(i) = hs
       grid.getChildren.add(hs.strip)
 
     var volListeners =
       Array.fill[Option[(IntegerProperty, ChangeListener[Number])]](
-        HalfMaxHarmonics
+        _HalfMaxHarmonics
       )(None)
 
     def bindHarmonics(): Unit =
-      for i <- 0 until HalfMaxHarmonics do
+      for i <- 0 until _HalfMaxHarmonics do
         val hIdx = bankOffset + i
         val h = viewModel.getActiveTone.harmonics(hIdx)
 
@@ -80,14 +80,14 @@ object HarmonicsPanel:
         hs.vRow.bind(h.volume)
         hs.dRow.bind(h.delay)
 
-        val volListener = createVolListener(hs)
+        val volListener = _createVolListener(hs)
         h.volume.addListener(volListener)
         volListeners(i) = Some((h.volume, volListener))
 
         volListener.changed(null, null, h.volume.get)
 
     bankBtn.setOnAction(_ =>
-      bankOffset = if bankOffset == 0 then HalfMaxHarmonics else 0
+      bankOffset = if bankOffset == 0 then _HalfMaxHarmonics else 0
       bankBtn.setText(if bankOffset == 0 then "1-5" else "6-10")
       bindHarmonics()
     )
@@ -98,7 +98,7 @@ object HarmonicsPanel:
     panel.getChildren.addAll(headRow, grid)
     panel
 
-  private def createStrip(index: Int): HStrip =
+  private def _createStrip(index: Int): HStrip =
     val strip = VBox()
     strip.getStyleClass.add("h-strip")
     HBox.setHgrow(strip, Priority.ALWAYS)
@@ -113,7 +113,7 @@ object HarmonicsPanel:
     strip.getChildren.addAll(label, sRow.view, vRow.view, dRow.view)
     HStrip(strip, label, sRow, vRow, dRow)
 
-  private def createVolListener(hs: HStrip): ChangeListener[Number] =
+  private def _createVolListener(hs: HStrip): ChangeListener[Number] =
     (_, _, newVal) =>
       val dim = newVal.intValue == 0
       hs.strip.setOpacity(if dim then 0.5 else 1.0)
@@ -162,12 +162,12 @@ class HarmonicsRow(
   topRow.getChildren.addAll(label, spacer, input)
   view.getChildren.addAll(topRow, barBox)
 
-  private var currentProp: Option[IntegerProperty] = None
+  private var _currentProp: Option[IntegerProperty] = None
 
   def bind(prop: IntegerProperty): Unit =
-    currentProp.foreach(input.valueProperty.unbindBidirectional)
+    _currentProp.foreach(input.valueProperty.unbindBidirectional)
     input.valueProperty.bindBidirectional(prop)
-    currentProp = Some(prop)
+    _currentProp = Some(prop)
 
     barFill.prefWidthProperty.bind(
       barBox.widthProperty.multiply(

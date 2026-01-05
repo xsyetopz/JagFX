@@ -6,36 +6,36 @@ import jagfx.utils.ColorUtils._
 import jagfx.utils.DrawingUtils._
 import jagfx.Constants.Int16
 
+private val _PointRadius = 5
+private val _HitRadius = 10
+
 /** Interactive canvas for envelope editing with draggable control points.
   */
 class JagEnvelopeEditorCanvas extends JagBaseCanvas:
-  private var viewModel: Option[EnvelopeViewModel] = None
-  private var hoveredPointIndex: Int = -1
-  private var selectedPointIndex: Int = -1
-  private var isDragging: Boolean = false
-  private var dragStartY: Double = 0
-
-  private val PointRadius = 5
-  private val HitRadius = 10
+  private var _viewModel: Option[EnvelopeViewModel] = None
+  private var _hoveredPointIndex: Int = -1
+  private var _selectedPointIndex: Int = -1
+  private var _dragging: Boolean = false
+  private var _dragStartY: Double = 0
 
   getStyleClass.add("jag-envelope-editor-canvas")
 
   def setViewModel(vm: EnvelopeViewModel): Unit =
-    viewModel = Some(vm)
+    _viewModel = Some(vm)
     vm.addChangeListener(() =>
       javafx.application.Platform.runLater(() => requestRedraw())
     )
     requestRedraw()
 
-  def getViewModel: Option[EnvelopeViewModel] = viewModel
+  def getViewModel: Option[EnvelopeViewModel] = _viewModel
 
   override protected def drawContent(buffer: Array[Int], w: Int, h: Int): Unit =
-    drawGrid(buffer, w, h)
+    _drawGrid(buffer, w, h)
     drawCenterLine(buffer, w, h)
-    viewModel.foreach(vm => drawEnvelope(buffer, w, h, vm))
-    viewModel.foreach(vm => drawControlPoints(buffer, w, h, vm))
+    _viewModel.foreach(vm => _drawEnvelope(buffer, w, h, vm))
+    _viewModel.foreach(vm => _drawControlPoints(buffer, w, h, vm))
 
-  private def drawGrid(buffer: Array[Int], w: Int, h: Int): Unit =
+  private def _drawGrid(buffer: Array[Int], w: Int, h: Int): Unit =
     val majorCols = 8
     for i <- 1 until majorCols do
       val x = i * w / majorCols
@@ -45,7 +45,7 @@ class JagEnvelopeEditorCanvas extends JagBaseCanvas:
       val y = i * h / rows
       line(buffer, w, h, 0, y, w, y, GridLineFaint)
 
-  private def drawEnvelope(
+  private def _drawEnvelope(
       buffer: Array[Int],
       w: Int,
       h: Int,
@@ -66,7 +66,7 @@ class JagEnvelopeEditorCanvas extends JagBaseCanvas:
         prevX = x
         prevY = y
 
-  private def drawControlPoints(
+  private def _drawControlPoints(
       buffer: Array[Int],
       w: Int,
       h: Int,
@@ -83,14 +83,14 @@ class JagEnvelopeEditorCanvas extends JagBaseCanvas:
       val y = ((1.0 - segments(i) / range) * h).toInt
 
       val color =
-        if i == selectedPointIndex then PointSelected
-        else if i == hoveredPointIndex then PointHover
+        if i == _selectedPointIndex then PointSelected
+        else if i == _hoveredPointIndex then PointHover
         else PointNormal
 
-      fillCircle(buffer, w, h, x, y, PointRadius, color)
-      drawCircle(buffer, w, h, x, y, PointRadius, White)
+      _fillCircle(buffer, w, h, x, y, _PointRadius, color)
+      _drawCircle(buffer, w, h, x, y, _PointRadius, White)
 
-  private def fillCircle(
+  private def _fillCircle(
       buffer: Array[Int],
       w: Int,
       h: Int,
@@ -107,7 +107,7 @@ class JagEnvelopeEditorCanvas extends JagBaseCanvas:
           if px >= 0 && px < w && py >= 0 && py < h then
             buffer(py * w + px) = color
 
-  private def drawCircle(
+  private def _drawCircle(
       buffer: Array[Int],
       w: Int,
       h: Int,
@@ -120,21 +120,21 @@ class JagEnvelopeEditorCanvas extends JagBaseCanvas:
     var y = 0
     var err = 0
     while x >= y do
-      setPixel(buffer, w, h, cx + x, cy + y, color)
-      setPixel(buffer, w, h, cx + y, cy + x, color)
-      setPixel(buffer, w, h, cx - y, cy + x, color)
-      setPixel(buffer, w, h, cx - x, cy + y, color)
-      setPixel(buffer, w, h, cx - x, cy - y, color)
-      setPixel(buffer, w, h, cx - y, cy - x, color)
-      setPixel(buffer, w, h, cx + y, cy - x, color)
-      setPixel(buffer, w, h, cx + x, cy - y, color)
+      _setPixel(buffer, w, h, cx + x, cy + y, color)
+      _setPixel(buffer, w, h, cx + y, cy + x, color)
+      _setPixel(buffer, w, h, cx - y, cy + x, color)
+      _setPixel(buffer, w, h, cx - x, cy + y, color)
+      _setPixel(buffer, w, h, cx - x, cy - y, color)
+      _setPixel(buffer, w, h, cx - y, cy - x, color)
+      _setPixel(buffer, w, h, cx + y, cy - x, color)
+      _setPixel(buffer, w, h, cx + x, cy - y, color)
       y += 1
       err += 1 + 2 * y
       if 2 * (err - x) + 1 > 0 then
         x -= 1
         err += 1 - 2 * x
 
-  private def setPixel(
+  private def _setPixel(
       buffer: Array[Int],
       w: Int,
       h: Int,
@@ -144,8 +144,8 @@ class JagEnvelopeEditorCanvas extends JagBaseCanvas:
   ): Unit =
     if x >= 0 && x < w && y >= 0 && y < h then buffer(y * w + x) = color
 
-  private def findPointAt(mx: Double, my: Double): Int =
-    viewModel match
+  private def _findPointAt(mx: Double, my: Double): Int =
+    _viewModel match
       case None     => -1
       case Some(vm) =>
         val segments = vm.getSegments
@@ -160,29 +160,29 @@ class JagEnvelopeEditorCanvas extends JagBaseCanvas:
             val x = i * step
             val y = (1.0 - segments(i) / range) * h
             val dist = math.sqrt((mx - x) * (mx - x) + (my - y) * (my - y))
-            dist <= HitRadius
+            dist <= _HitRadius
           }
 
   setOnMouseMoved((e: MouseEvent) =>
-    val newHover = findPointAt(e.getX, e.getY)
-    if newHover != hoveredPointIndex then
-      hoveredPointIndex = newHover
+    val newHover = _findPointAt(e.getX, e.getY)
+    if newHover != _hoveredPointIndex then
+      _hoveredPointIndex = newHover
       requestRedraw()
   )
 
   setOnMousePressed((e: MouseEvent) =>
-    val pointIdx = findPointAt(e.getX, e.getY)
+    val pointIdx = _findPointAt(e.getX, e.getY)
     if pointIdx >= 0 then
-      selectedPointIndex = pointIdx
-      isDragging = true
-      dragStartY = e.getY
+      _selectedPointIndex = pointIdx
+      _dragging = true
+      _dragStartY = e.getY
       requestRedraw()
       e.consume()
   )
 
   setOnMouseDragged((e: MouseEvent) =>
-    if isDragging && selectedPointIndex >= 0 then
-      viewModel.foreach { vm =>
+    if _dragging && _selectedPointIndex >= 0 then
+      _viewModel.foreach { vm =>
         val h = getHeight
         val range = Int16.Range.toDouble
 
@@ -190,20 +190,20 @@ class JagEnvelopeEditorCanvas extends JagBaseCanvas:
         val newPeak = (normalizedY * range).toInt.max(0).min(Int16.Range - 1)
 
         val fullSegments = vm.getFullSegments
-        if selectedPointIndex < fullSegments.length then
-          val seg = fullSegments(selectedPointIndex)
-          vm.updateSegment(selectedPointIndex, seg.duration, newPeak)
+        if _selectedPointIndex < fullSegments.length then
+          val seg = fullSegments(_selectedPointIndex)
+          vm.updateSegment(_selectedPointIndex, seg.duration, newPeak)
 
         requestRedraw()
       }
       e.consume()
   )
 
-  setOnMouseReleased((e: MouseEvent) => isDragging = false)
+  setOnMouseReleased((e: MouseEvent) => _dragging = false)
 
   setOnMouseExited((e: MouseEvent) =>
-    if !isDragging then
-      hoveredPointIndex = -1
+    if !_dragging then
+      _hoveredPointIndex = -1
       requestRedraw()
   )
 

@@ -13,9 +13,9 @@ import jagfx.ui.components.canvas._
 import jagfx.ui.components.button.JagButton
 
 class JagCellPane(title: String) extends StackPane:
-  private val selected = SimpleBooleanProperty(false)
+  private val _selected = SimpleBooleanProperty(false)
 
-  def selectedProperty: BooleanProperty = selected
+  def selectedProperty: BooleanProperty = _selected
 
   getStyleClass.add("jag-cell")
   setMinWidth(0)
@@ -31,146 +31,146 @@ class JagCellPane(title: String) extends StackPane:
     e.consume()
   )
 
-  private val header = HBox()
-  header.getStyleClass.add("cell-head")
-  header.setSpacing(4)
-  header.setPickOnBounds(false)
+  private val _header = HBox()
+  _header.getStyleClass.add("cell-head")
+  _header.setSpacing(4)
+  _header.setPickOnBounds(false)
 
-  private val titleLabel = Label(title)
-  titleLabel.getStyleClass.add("cell-title")
-  titleLabel.setMaxWidth(Double.MaxValue)
-  titleLabel.setAlignment(Pos.CENTER_LEFT)
-  HBox.setHgrow(titleLabel, Priority.ALWAYS)
+  private val _titleLabel = Label(title)
+  _titleLabel.getStyleClass.add("cell-title")
+  _titleLabel.setMaxWidth(Double.MaxValue)
+  _titleLabel.setAlignment(Pos.CENTER_LEFT)
+  HBox.setHgrow(_titleLabel, Priority.ALWAYS)
 
-  private var onMaximizeToggle: Option[() => Unit] = None
+  private var _onMaximizeToggle: Option[() => Unit] = None
 
   /** Set callback for when maximize (editor mode) toggled via double-click on
     * title.
     */
   def setOnMaximizeToggle(handler: () => Unit): Unit =
-    onMaximizeToggle = Some(handler)
+    _onMaximizeToggle = Some(handler)
 
-  titleLabel.setOnMouseClicked(e =>
+  _titleLabel.setOnMouseClicked(e =>
     if e.getClickCount == 2 then
-      onMaximizeToggle.foreach(_())
+      _onMaximizeToggle.foreach(_())
       e.consume()
   )
 
-  private val toolbar = HBox()
-  toolbar.setSpacing(1)
+  private val _toolbar = HBox()
+  _toolbar.setSpacing(1)
 
-  private val btnX1 = createToolButton("X1")
-  private val btnX2 = createToolButton("X2")
-  private val btnX4 = createToolButton("X4")
+  private val _btnX1 = _createToolButton("X1")
+  private val _btnX2 = _createToolButton("X2")
+  private val _btnX4 = _createToolButton("X4")
 
-  private val btnMenu = createToolButton()
-  btnMenu.setGraphic(IconUtils.icon("mdi2d-dots-horizontal"))
+  private val _btnMenu = _createToolButton()
+  _btnMenu.setGraphic(IconUtils.icon("mdi2d-dots-horizontal"))
 
-  private val zooms = Seq((btnX1, 1), (btnX2, 2), (btnX4, 4))
-  private var alternateCanvas: Option[JagBaseCanvas] = None
+  private val _zooms = Seq((_btnX1, 1), (_btnX2, 2), (_btnX4, 4))
+  private var _alternateCanvas: Option[JagBaseCanvas] = None
 
   /** Set alternate canvas that zoom buttons will control instead of built-in
     * envelope canvas.
     */
   def setAlternateCanvas(alt: JagBaseCanvas): Unit =
-    alternateCanvas = Some(alt)
-    btnX1.fire() // force [X1] zoom
+    _alternateCanvas = Some(alt)
+    _btnX1.fire() // force [X1] zoom
 
-  zooms.foreach { case (btn, level) =>
+  _zooms.foreach { case (btn, level) =>
     btn.setOnAction(_ =>
-      zooms.foreach(_._1.setActive(false))
+      _zooms.foreach(_._1.setActive(false))
       btn.setActive(true)
-      alternateCanvas.getOrElse(canvas).setZoom(level)
+      _alternateCanvas.getOrElse(_canvas).setZoom(level)
       // allow drag/scroll panning via mouse when zoomed in
-      canvasWrapper.setMouseTransparent(level == 1)
+      _canvasWrapper.setMouseTransparent(level == 1)
     )
   }
-  btnX1.setActive(true)
+  _btnX1.setActive(true)
 
-  private val contextMenu = new ContextMenu()
+  private val _contextMenu = new ContextMenu()
 
   def updateMenu(): Unit =
-    contextMenu.getItems.clear()
-    val iX1 = new MenuItem("x1"); iX1.setOnAction(_ => btnX1.fire())
-    val iX2 = new MenuItem("x2"); iX2.setOnAction(_ => btnX2.fire())
-    val iX4 = new MenuItem("x4"); iX4.setOnAction(_ => btnX4.fire())
-    contextMenu.getItems.addAll(iX1, iX2, iX4)
+    _contextMenu.getItems.clear()
+    val iX1 = new MenuItem("x1"); iX1.setOnAction(_ => _btnX1.fire())
+    val iX2 = new MenuItem("x2"); iX2.setOnAction(_ => _btnX2.fire())
+    val iX4 = new MenuItem("x4"); iX4.setOnAction(_ => _btnX4.fire())
+    _contextMenu.getItems.addAll(iX1, iX2, iX4)
 
-  btnMenu.setOnAction(e =>
+  _btnMenu.setOnAction(e =>
     updateMenu()
-    contextMenu.show(btnMenu, Side.BOTTOM, 0, 0)
+    _contextMenu.show(_btnMenu, Side.BOTTOM, 0, 0)
   )
 
-  private var showCollapse = true
-  private var showZoomButtons = true
+  private var _showCollapse = true
+  private var _showZoomButtons = true
 
   def setFeatures(showMute: Boolean, showCollapse: Boolean): Unit =
-    this.showCollapse = showCollapse
-    updateToolbar()
+    this._showCollapse = showCollapse
+    _updateToolbar()
 
   /** Hide zoom buttons. */
   def setShowZoomButtons(show: Boolean): Unit =
-    showZoomButtons = show
-    updateToolbar()
+    _showZoomButtons = show
+    _updateToolbar()
 
-  private def updateToolbar(): Unit =
-    toolbar.getChildren.clear()
-    if !showZoomButtons then return
+  widthProperty.addListener((_, _, _) => _updateToolbar())
+  _updateToolbar()
+  _header.getChildren.addAll(_titleLabel, _toolbar)
+
+  private val _canvasWrapper = new Pane()
+  _canvasWrapper.setMouseTransparent(true) // make sure clicks pass thru
+  VBox.setVgrow(_canvasWrapper, Priority.ALWAYS)
+
+  private val _canvas = JagEnvelopeCanvas()
+  _canvas.setPickOnBounds(false)
+  _canvas.widthProperty.bind(_canvasWrapper.widthProperty)
+  _canvas.heightProperty.bind(_canvasWrapper.heightProperty)
+  _canvasWrapper.getChildren.add(_canvas)
+  container.getChildren.addAll(_header, _canvasWrapper)
+  getChildren.add(container)
+
+  _selected.addListener((_, _, isSelected) =>
+    if isSelected then getStyleClass.add("selected")
+    else getStyleClass.remove("selected")
+  )
+
+  private var _currentVm: Option[EnvelopeViewModel] = None
+
+  private val _dimmingListener: () => Unit = () =>
+    _currentVm.foreach(vm => _updateDimming(vm))
+
+  def setViewModel(vm: EnvelopeViewModel): Unit =
+    _currentVm.foreach(_.removeChangeListener(_dimmingListener))
+    _currentVm = Some(vm)
+
+    vm.addChangeListener(_dimmingListener)
+    _updateDimming(vm)
+
+    _canvas.setViewModel(vm)
+
+  def getCanvas: JagEnvelopeCanvas = _canvas
+
+  private def _createToolButton(text: String = ""): JagButton =
+    val b = JagButton(text)
+    b.getStyleClass.add("t-btn")
+    b
+
+  private def _updateToolbar(): Unit =
+    _toolbar.getChildren.clear()
+    if !_showZoomButtons then return
 
     val w = getWidth
 
-    val titleWidth = titleLabel.prefWidth(-1)
+    val titleWidth = _titleLabel.prefWidth(-1)
     var toolsCount = 3 // X1, X2, X4
-    if showCollapse then toolsCount += 1
+    if _showCollapse then toolsCount += 1
 
     val toolsWidth = toolsCount * 25
     val padding = 5
 
     val isNarrow = w > 0 && w < (titleWidth + toolsWidth + padding)
-    if isNarrow then toolbar.getChildren.add(btnMenu)
-    else toolbar.getChildren.addAll(btnX1, btnX2, btnX4)
+    if isNarrow then _toolbar.getChildren.add(_btnMenu)
+    else _toolbar.getChildren.addAll(_btnX1, _btnX2, _btnX4)
 
-  widthProperty.addListener((_, _, _) => updateToolbar())
-  updateToolbar()
-  header.getChildren.addAll(titleLabel, toolbar)
-
-  private val canvasWrapper = new Pane()
-  canvasWrapper.setMouseTransparent(true) // make sure clicks pass thru
-  VBox.setVgrow(canvasWrapper, Priority.ALWAYS)
-
-  private val canvas = JagEnvelopeCanvas()
-  canvas.setPickOnBounds(false)
-  canvas.widthProperty.bind(canvasWrapper.widthProperty)
-  canvas.heightProperty.bind(canvasWrapper.heightProperty)
-  canvasWrapper.getChildren.add(canvas)
-  container.getChildren.addAll(header, canvasWrapper)
-  getChildren.add(container)
-
-  selected.addListener((_, _, isSelected) =>
-    if isSelected then getStyleClass.add("selected")
-    else getStyleClass.remove("selected")
-  )
-
-  private var currentVm: Option[EnvelopeViewModel] = None
-
-  private val dimmingListener: () => Unit = () =>
-    currentVm.foreach(vm => updateDimming(vm))
-
-  private def updateDimming(vm: EnvelopeViewModel): Unit =
+  private def _updateDimming(vm: EnvelopeViewModel): Unit =
     container.setOpacity(if vm.isZero then 0.5 else 1.0)
-
-  def setViewModel(vm: EnvelopeViewModel): Unit =
-    currentVm.foreach(_.removeChangeListener(dimmingListener))
-    currentVm = Some(vm)
-
-    vm.addChangeListener(dimmingListener)
-    updateDimming(vm)
-
-    canvas.setViewModel(vm)
-
-  def getCanvas: JagEnvelopeCanvas = canvas
-
-  private def createToolButton(text: String = ""): JagButton =
-    val b = JagButton(text)
-    b.getStyleClass.add("t-btn")
-    b

@@ -5,7 +5,7 @@ import jagfx.TestFixtures._
 
 class SynthWriterSuite extends munit.FunSuite:
 
-  private def assertByteIdentical(
+  private def _assertByteIdentical(
       written: Array[Byte],
       original: Array[Byte],
       name: String

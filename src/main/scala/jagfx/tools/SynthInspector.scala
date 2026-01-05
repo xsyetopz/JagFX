@@ -165,30 +165,30 @@ object SynthInspector:
 class DebugBuffer(data: Array[Byte]) extends BinaryBuffer(data):
   def readU8(label: String): Int =
     val v = super.readU8()
-    log(1, label, v)
+    _log(1, label, v)
     v
   def readS32BE(label: String): Int =
     val v = super.readS32BE()
-    log(4, label, v)
+    _log(4, label, v)
     v
   def readU16BE(label: String): Int =
     val v = super.readU16BE()
-    log(2, label, v)
+    _log(2, label, v)
     v
   def readSmart(label: String): Int =
     val startPos = pos
     val v = super.readSmart()
     val len = pos - startPos
-    log(len, label, v)
+    _log(len, label, v)
     v
   def readSmartUnsigned(label: String): Int =
     val startPos = pos
     val v = super.readSmartUnsigned()
     val len = pos - startPos
-    log(len, label, v)
+    _log(len, label, v)
     v
 
-  private def log(len: Int, label: String, value: Any): Unit =
+  private def _log(len: Int, label: String, value: Any): Unit =
     val offsetStr = f"[${pos - len}%04X]"
     val hex =
       (0 until len)

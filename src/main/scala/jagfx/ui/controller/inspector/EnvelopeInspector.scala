@@ -10,29 +10,29 @@ import jagfx.ui.components.slider._
 import jagfx.ui.components.pane._
 import jagfx.model.WaveForm
 
-private val RangeFieldSize = 48
+private val _RangeFieldSize = 48
 
 /** Inspector panel for envelope parameters. */
 class EnvelopeInspector extends VBox:
-  private var currentEnvelope: Option[EnvelopeViewModel] = None
+  private var _currentEnvelope: Option[EnvelopeViewModel] = None
 
   setSpacing(8)
 
   // Wave section
-  private val waveLabel = Label("WAVE")
-  waveLabel.getStyleClass.addAll("label", "h-head")
+  private val _waveLabel = Label("WAVE")
+  _waveLabel.getStyleClass.addAll("label", "h-head")
 
-  private val waveGrid = JagToggleGroup(
+  private val _waveGrid = JagToggleGroup(
     ("Off", "mdi2v-volume-off"),
     ("Sqr", "mdi2s-square-wave"),
     ("Sin", "mdi2s-sine-wave"),
     ("Saw", "mdi2s-sawtooth-wave"),
     ("Nse", "mdi2w-waveform")
   )
-  waveGrid.setAlignment(Pos.CENTER)
+  _waveGrid.setAlignment(Pos.CENTER)
 
-  waveGrid.selectedProperty.addListener((_, _, newVal) =>
-    currentEnvelope.foreach { env =>
+  _waveGrid.selectedProperty.addListener((_, _, newVal) =>
+    _currentEnvelope.foreach { env =>
       val form = newVal match
         case "Off" => WaveForm.Off
         case "Sqr" => WaveForm.Square
@@ -45,53 +45,53 @@ class EnvelopeInspector extends VBox:
   )
 
   // Range section
-  private val rangeLabel = Label("RANGE")
-  rangeLabel.getStyleClass.addAll("label", "h-head")
+  private val _rangeLabel = Label("RANGE")
+  _rangeLabel.getStyleClass.addAll("label", "h-head")
 
-  private val maxRangeValue = 999999
+  private val _maxRangeValue = 999999
 
-  private val startField = JagNumericField(-maxRangeValue, maxRangeValue, 0)
-  startField.setPrefWidth(RangeFieldSize)
-  startField.setTooltip(new Tooltip("Envelope start value"))
-  startField.valueProperty.addListener((_, _, nv) =>
-    currentEnvelope.foreach(_.start.set(nv.intValue))
+  private val _startField = JagNumericField(-_maxRangeValue, _maxRangeValue, 0)
+  _startField.setPrefWidth(_RangeFieldSize)
+  _startField.setTooltip(new Tooltip("Envelope start value"))
+  _startField.valueProperty.addListener((_, _, nv) =>
+    _currentEnvelope.foreach(_.start.set(nv.intValue))
   )
 
-  private val endField = JagNumericField(-maxRangeValue, maxRangeValue, 0)
-  endField.setPrefWidth(RangeFieldSize)
-  endField.setTooltip(new Tooltip("Envelope end value"))
-  endField.valueProperty.addListener((_, _, nv) =>
-    currentEnvelope.foreach(_.end.set(nv.intValue))
+  private val _endField = JagNumericField(-_maxRangeValue, _maxRangeValue, 0)
+  _endField.setPrefWidth(_RangeFieldSize)
+  _endField.setTooltip(new Tooltip("Envelope end value"))
+  _endField.valueProperty.addListener((_, _, nv) =>
+    _currentEnvelope.foreach(_.end.set(nv.intValue))
   )
 
-  private val rangeRow = HBox(4)
-  rangeRow.setAlignment(Pos.CENTER_LEFT)
-  rangeRow.getChildren.addAll(
+  private val _rangeRow = HBox(4)
+  _rangeRow.setAlignment(Pos.CENTER_LEFT)
+  _rangeRow.getChildren.addAll(
     Label("S:"),
-    startField,
+    _startField,
     new Region() { HBox.setHgrow(this, Priority.ALWAYS) },
     Label("E:"),
-    endField
+    _endField
   )
 
   // Segments section
-  private val segLabel = Label("SEGMENTS")
-  segLabel.getStyleClass.addAll("label", "h-head")
+  private val _segLabel = Label("SEGMENTS")
+  _segLabel.getStyleClass.addAll("label", "h-head")
 
-  private val segmentEditor = EnvelopeSegmentEditor()
+  private val _segmentEditor = EnvelopeSegmentEditor()
 
   getChildren.addAll(
-    waveLabel,
-    waveGrid,
-    rangeLabel,
-    rangeRow,
-    segLabel,
-    segmentEditor
+    _waveLabel,
+    _waveGrid,
+    _rangeLabel,
+    _rangeRow,
+    _segLabel,
+    _segmentEditor
   )
 
   /** Bind to envelope view model. */
   def bind(envelope: EnvelopeViewModel): Unit =
-    currentEnvelope = Some(envelope)
+    _currentEnvelope = Some(envelope)
 
     val formStr = envelope.form.get match
       case WaveForm.Square => "Sqr"
@@ -100,7 +100,7 @@ class EnvelopeInspector extends VBox:
       case WaveForm.Noise  => "Nse"
       case _               => "Off"
 
-    waveGrid.setSelected(formStr)
-    startField.setValue(envelope.start.get)
-    endField.setValue(envelope.end.get)
-    segmentEditor.bind(envelope)
+    _waveGrid.setSelected(formStr)
+    _startField.setValue(envelope.start.get)
+    _endField.setValue(envelope.end.get)
+    _segmentEditor.bind(envelope)

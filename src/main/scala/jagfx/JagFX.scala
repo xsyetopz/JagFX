@@ -6,21 +6,21 @@ import javafx.scene.layout.BorderPane
 import javafx.stage.Stage
 import jagfx.ui.controller.MainController
 
-private val (minWidth, minHeight) = (800, 520)
+private val (_MinWidth, _MinHeigh) = (800, 520)
 
 /** GUI application entry point. */
 class JagFX extends Application:
   override def start(stage: Stage): Unit =
     val root = MainController.createRoot()
-    val scene = Scene(root, minWidth, minHeight)
+    val scene = Scene(root, _MinWidth, _MinHeigh)
     scene.getStylesheets.add(
       getClass.getResource("/jagfx/style.css").toExternalForm
     )
 
     stage.setTitle("JagFX")
     stage.setScene(scene)
-    stage.setMinWidth(minWidth)
-    stage.setMinHeight(minHeight)
+    stage.setMinWidth(_MinWidth)
+    stage.setMinHeight(_MinHeigh)
     stage.setResizable(false)
     stage.setOnCloseRequest(_ => {
       Platform.exit()

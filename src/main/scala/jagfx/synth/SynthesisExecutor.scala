@@ -7,24 +7,24 @@ import jagfx.model._
 
 /** Executes synthesis operations on background thread. */
 object SynthesisExecutor:
-  private val executor = Executors.newSingleThreadExecutor { r =>
+  private val _executor = Executors.newSingleThreadExecutor { r =>
     val t = new Thread(r, "JagFX-Synth")
     t.setDaemon(true)
     t.setPriority(Thread.NORM_PRIORITY - 1)
     t
   }
 
-  private val generation = new AtomicLong(0)
+  private val _generation = new AtomicLong(0)
 
   /** Synthesizes tone on background thread with auto-cancellation. */
   def synthesizeTone(tone: Tone)(onComplete: AudioBuffer => Unit): Unit =
-    val thisGen = generation.incrementAndGet()
-    executor.submit(
+    val thisGen = _generation.incrementAndGet()
+    _executor.submit(
       (
           () =>
-            if generation.get() == thisGen then
+            if _generation.get() == thisGen then
               val audio = ToneSynthesizer.synthesize(tone)
-              if generation.get() == thisGen then
+              if _generation.get() == thisGen then
                 Platform.runLater(() => onComplete(audio))
       ): Runnable
     )
@@ -35,20 +35,20 @@ object SynthesisExecutor:
       loopCount: Int,
       toneFilter: Int = -1
   )(onComplete: AudioBuffer => Unit): Unit =
-    val thisGen = generation.incrementAndGet()
-    executor.submit(
+    val thisGen = _generation.incrementAndGet()
+    _executor.submit(
       (
           () =>
-            if generation.get() == thisGen then
+            if _generation.get() == thisGen then
               val audio =
                 TrackSynthesizer.synthesize(file, loopCount, toneFilter)
-              if generation.get() == thisGen then
+              if _generation.get() == thisGen then
                 Platform.runLater(() => onComplete(audio))
       ): Runnable
     )
 
   /** Cancels all pending synthesis operations. */
-  def cancelPending(): Unit = generation.incrementAndGet()
+  def cancelPending(): Unit = _generation.incrementAndGet()
 
   /** Shuts down executor. */
-  def shutdown(): Unit = executor.shutdownNow()
+  def shutdown(): Unit = _executor.shutdownNow()

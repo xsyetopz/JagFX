@@ -24,11 +24,12 @@ abstract class JagBaseCanvas extends Canvas:
   setHeight(100)
 
   private val redrawTimer = new AnimationTimer:
-    private var lastFrame = 0L
+    private var _lastFrame = 0L
+
     def handle(now: Long): Unit =
-      if _dirty && now - lastFrame >= MinFrameNanos then
+      if _dirty && now - _lastFrame >= MinFrameNanos then
         _dirty = false
-        lastFrame = now
+        _lastFrame = now
         _performDraw()
 
   redrawTimer.start()

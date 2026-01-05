@@ -12,30 +12,30 @@ class JagGatePane extends JagBasePane("GATE"):
   getStyleClass.add("gate-pane")
   setSpacing(2)
 
-  private val row = HBox(2)
-  row.setAlignment(Pos.CENTER)
-  VBox.setVgrow(row, Priority.ALWAYS)
+  private val _row = HBox(2)
+  _row.setAlignment(Pos.CENTER)
+  VBox.setVgrow(_row, Priority.ALWAYS)
 
-  private val silenceCell = JagCellPane("SILENCE")
-  private val durationCell = JagCellPane("DURATION")
+  private val _silenceCell = JagCellPane("SILENCE")
+  private val _durationCell = JagCellPane("DURATION")
 
   // Compact mode for mini cells
-  silenceCell.setFeatures(false, false)
-  durationCell.setFeatures(false, false)
+  _silenceCell.setFeatures(false, false)
+  _durationCell.setFeatures(false, false)
 
-  HBox.setHgrow(silenceCell, Priority.ALWAYS)
-  HBox.setHgrow(durationCell, Priority.ALWAYS)
+  HBox.setHgrow(_silenceCell, Priority.ALWAYS)
+  HBox.setHgrow(_durationCell, Priority.ALWAYS)
 
-  row.getChildren.addAll(silenceCell, durationCell)
+  _row.getChildren.addAll(_silenceCell, _durationCell)
 
-  getChildren.add(row)
+  getChildren.add(_row)
 
   def bind(tone: ToneViewModel): Unit =
-    silenceCell.setViewModel(tone.gateSilence)
-    durationCell.setViewModel(tone.gateDuration)
+    _silenceCell.setViewModel(tone.gateSilence)
+    _durationCell.setViewModel(tone.gateDuration)
 
   def getCells: Seq[JagCellPane] =
-    Seq(silenceCell, durationCell)
+    Seq(_silenceCell, _durationCell)
 
 object JagGatePane:
   def apply(): JagGatePane = new JagGatePane()

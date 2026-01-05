@@ -23,10 +23,10 @@ object FilterSynthesizer:
 
     var i = 0
     while i < sampleCount do
-      val chunkEnd = computeChunkEnd(i, sampleCount, count0)
+      val chunkEnd = _computeChunkEnd(i, sampleCount, count0)
 
       while i < chunkEnd do
-        buffer(i) = processSample(
+        buffer(i) = _processSample(
           input,
           buffer,
           i,
@@ -50,11 +50,11 @@ object FilterSynthesizer:
         count1 = coefs.count1
         inverseA0 = coefs.inverseA0
 
-  private def computeChunkEnd(i: Int, sampleCount: Int, count0: Int): Int =
+  private def _computeChunkEnd(i: Int, sampleCount: Int, count0: Int): Int =
     val nextChunk = math.min(i + FilterUpdateRate, sampleCount)
     if nextChunk < sampleCount - count0 then nextChunk else sampleCount
 
-  private def processSample(
+  private def _processSample(
       input: Array[Int],
       buffer: Array[Int],
       i: Int,
@@ -87,16 +87,16 @@ object FilterSynthesizer:
   private class FilterState(filter: Filter):
     val feedforward: Array[Int] = Array.ofDim[Int](8)
     val feedback: Array[Int] = Array.ofDim[Int](8)
-    private val floatCoefs = Array.ofDim[Float](2, 8)
+    private val _floatCoefs = Array.ofDim[Float](2, 8)
 
     def update(envelopeFactor: Float): FilterCoefs =
-      val inverseA0 = computeInverseA0(envelopeFactor)
+      val inverseA0 = _computeInverseA0(envelopeFactor)
       val floatInvA0 = inverseA0 / Int16.Range.toFloat
-      val c0 = computeCoefs(0, envelopeFactor, floatInvA0)
-      val c1 = computeCoefs(1, envelopeFactor, 1.0f)
+      val c0 = _computeCoefs(0, envelopeFactor, floatInvA0)
+      val c1 = _computeCoefs(1, envelopeFactor, 1.0f)
       FilterCoefs(c0, c1, inverseA0)
 
-    private def computeInverseA0(envelopeFactor: Float): Int =
+    private def _computeInverseA0(envelopeFactor: Float): Int =
       val unityGain0 = filter.unity(0)
       val unityGain1 = filter.unity(1)
       val interpolatedGain =
@@ -105,7 +105,7 @@ object FilterSynthesizer:
       val floatInvA0 = Math.pow(0.1, gainDb / 20.0).toFloat
       (floatInvA0 * Int16.Range).toInt
 
-    private def computeCoefs(
+    private def _computeCoefs(
         dir: Int,
         envelopeFactor: Float,
         floatInvA0: Float
@@ -113,47 +113,47 @@ object FilterSynthesizer:
       val pairCount = filter.pairCounts(dir)
       if pairCount == 0 then return 0
 
-      initFirstPair(dir, envelopeFactor)
-      cascadeRemainingPairs(dir, pairCount, envelopeFactor)
-      applyGainAndConvert(dir, pairCount, floatInvA0)
+      _initFirstPair(dir, envelopeFactor)
+      _cascadeRemainingPairs(dir, pairCount, envelopeFactor)
+      _applyGainAndConvert(dir, pairCount, floatInvA0)
 
-    private def initFirstPair(dir: Int, envelopeFactor: Float): Unit =
-      val amp = getAmplitude(filter, dir, 0, envelopeFactor)
-      val phase = calculatePhase(filter, dir, 0, envelopeFactor)
+    private def _initFirstPair(dir: Int, envelopeFactor: Float): Unit =
+      val amp = _getAmplitude(filter, dir, 0, envelopeFactor)
+      val phase = _calculatePhase(filter, dir, 0, envelopeFactor)
       val cosPhase = Math.cos(phase).toFloat
-      floatCoefs(dir)(0) = -2.0f * amp * cosPhase
-      floatCoefs(dir)(1) = amp * amp
+      _floatCoefs(dir)(0) = -2.0f * amp * cosPhase
+      _floatCoefs(dir)(1) = amp * amp
 
-    private def cascadeRemainingPairs(
+    private def _cascadeRemainingPairs(
         dir: Int,
         pairCount: Int,
         envelopeFactor: Float
     ): Unit =
       var p = 1
       while p < pairCount do
-        val ampP = getAmplitude(filter, dir, p, envelopeFactor)
-        val phaseP = calculatePhase(filter, dir, p, envelopeFactor)
+        val ampP = _getAmplitude(filter, dir, p, envelopeFactor)
+        val phaseP = _calculatePhase(filter, dir, p, envelopeFactor)
         val cosPhaseP = Math.cos(phaseP).toFloat
         val term1 = -2.0f * ampP * cosPhaseP
         val term2 = ampP * ampP
 
-        floatCoefs(dir)(p * 2 + 1) = floatCoefs(dir)(p * 2 - 1) * term2
-        floatCoefs(dir)(p * 2) = floatCoefs(dir)(
+        _floatCoefs(dir)(p * 2 + 1) = _floatCoefs(dir)(p * 2 - 1) * term2
+        _floatCoefs(dir)(p * 2) = _floatCoefs(dir)(
           p * 2 - 1
-        ) * term1 + floatCoefs(dir)(p * 2 - 2) * term2
+        ) * term1 + _floatCoefs(dir)(p * 2 - 2) * term2
 
         var k = p * 2 - 1
         while k >= 2 do
-          floatCoefs(dir)(k) += floatCoefs(dir)(k - 1) * term1 + floatCoefs(
+          _floatCoefs(dir)(k) += _floatCoefs(dir)(k - 1) * term1 + _floatCoefs(
             dir
           )(k - 2) * term2
           k -= 1
 
-        floatCoefs(dir)(1) += floatCoefs(dir)(0) * term1 + term2
-        floatCoefs(dir)(0) += term1
+        _floatCoefs(dir)(1) += _floatCoefs(dir)(0) * term1 + term2
+        _floatCoefs(dir)(0) += term1
         p += 1
 
-    private def applyGainAndConvert(
+    private def _applyGainAndConvert(
         dir: Int,
         pairCount: Int,
         floatInvA0: Float
@@ -164,17 +164,17 @@ object FilterSynthesizer:
       if dir == 0 then
         var k = 0
         while k < coefCount do
-          floatCoefs(0)(k) *= floatInvA0
+          _floatCoefs(0)(k) *= floatInvA0
           k += 1
 
       var k = 0
       while k < coefCount do
-        iCoef(k) = (floatCoefs(dir)(k) * Int16.Range).toInt
+        iCoef(k) = (_floatCoefs(dir)(k) * Int16.Range).toInt
         k += 1
 
       coefCount
 
-  private def getAmplitude(
+  private def _getAmplitude(
       filter: Filter,
       dir: Int,
       pair: Int,
@@ -186,7 +186,7 @@ object FilterSynthesizer:
     val dbValue = interpolatedMag * 0.0015258789f
     1.0f - dBToLinear(-dbValue).toFloat
 
-  private def calculatePhase(
+  private def _calculatePhase(
       filter: Filter,
       dir: Int,
       pair: Int,
@@ -196,8 +196,8 @@ object FilterSynthesizer:
     val phase1 = filter.pairPhase(dir)(1)(pair)
     val interpolatedPhase = phase0.toFloat + factor * (phase1 - phase0)
     val scaledPhase = interpolatedPhase * 1.2207031e-4f
-    getOctavePhase(scaledPhase)
+    _getOctavePhase(scaledPhase)
 
-  private def getOctavePhase(pow2Value: Float): Float =
+  private def _getOctavePhase(pow2Value: Float): Float =
     val frequencyHz = Math.pow(2.0, pow2Value) * 32.703197
     (frequencyHz * TwoPi / Constants.SampleRate).toFloat

@@ -31,20 +31,20 @@ object SynthReader:
         Left(ParseError(s"IO Error: ${e.getMessage}", -1))
 
   private class SynthParser(buf: BinaryBuffer):
-    private val warnings = ListBuffer[String]()
+    private val _warnings = ListBuffer[String]()
 
     def parse(): Either[ParseError, SynthFile] =
       try
-        val tones = readTones()
+        val tones = _readTones()
 
         val loopParams =
           if buf.remaining >= 4 then
             LoopParams(buf.readU16BE(), buf.readU16BE())
           else
-            warnings += "File truncated; defaulting loop parameters..."
+            _warnings += "File truncated; defaulting loop parameters..."
             LoopParams(0, 0)
 
-        Right(SynthFile(tones, loopParams, warnings.toList))
+        Right(SynthFile(tones, loopParams, _warnings.toList))
       catch
         case e: Exception =>
           scribe.error(
@@ -53,14 +53,14 @@ object SynthReader:
           e.printStackTrace()
           Left(ParseError(e.getMessage, buf.pos))
 
-    private def readTones(): Vector[Option[Tone]] =
+    private def _readTones(): Vector[Option[Tone]] =
       // Rev377 files have 0x00 padding bytes after each tone's data
       // Rev245 files pack tones consecutively with no padding
       (0 until MaxTones).map { _ =>
         if buf.remaining > 4 then
           val marker = buf.peek()
           if marker != 0 then
-            val tone = readTone()
+            val tone = _readTone()
             // skip Rev377's trailing 0x00 padding after each tone (if there)
             if buf.remaining > 0 && buf.peek() == 0 then buf.skip(1)
             Some(tone)
@@ -70,20 +70,20 @@ object SynthReader:
         else None
       }.toVector
 
-    private def readTone(): Tone =
-      val pitchEnvelope = readEnvelope()
-      val volumeEnvelope = readEnvelope()
+    private def _readTone(): Tone =
+      val pitchEnvelope = _readEnvelope()
+      val volumeEnvelope = _readEnvelope()
 
-      val (vibratoRate, vibratoDepth) = readOptionalEnvelopePair()
-      val (tremoloRate, tremoloDepth) = readOptionalEnvelopePair()
-      val (gateSilence, gateDuration) = readOptionalEnvelopePair()
+      val (vibratoRate, vibratoDepth) = _readOptionalEnvelopePair()
+      val (tremoloRate, tremoloDepth) = _readOptionalEnvelopePair()
+      val (gateSilence, gateDuration) = _readOptionalEnvelopePair()
 
-      val harmonics = readHarmonics()
+      val harmonics = _readHarmonics()
       val reverbDelay = buf.readSmartUnsigned()
       val reverbVolume = buf.readSmartUnsigned()
       val duration = buf.readU16BE()
       val start = buf.readU16BE()
-      val filter = readFilter()
+      val filter = _readFilter()
 
       def fixEnvelope(env: Envelope, dur: Int): Envelope =
         if env.segments.isEmpty && env.start != env.end then
@@ -107,7 +107,7 @@ object SynthReader:
         filter = filter
       )
 
-    private def readFilter(): Option[Filter] =
+    private def _readFilter(): Option[Filter] =
       if buf.remaining == 0 then return None
 
       // Rev377 uses 0x00 as explicit "no filter" marker
@@ -150,11 +150,11 @@ object SynthReader:
 
       val envelope =
         if modulationMask != 0 || unity1 != unity0 then
-          Some(readEnvelopeSegments())
+          Some(_readEnvelopeSegments())
         else None
 
       if buf.isTruncated then
-        warnings += "Filter truncated (discarding partial data)"
+        _warnings += "Filter truncated (discarding partial data)"
         None
       else
         val freqIArray = IArray.tabulate(2)(d =>
@@ -173,7 +173,7 @@ object SynthReader:
           )
         )
 
-    private def readEnvelope(): Envelope =
+    private def _readEnvelope(): Envelope =
       val formId = buf.readU8()
       val start = buf.readS32BE()
       val end = buf.readS32BE()
@@ -186,7 +186,7 @@ object SynthReader:
 
       Envelope(form, start, end, segments)
 
-    private def readEnvelopeSegments(): Envelope =
+    private def _readEnvelopeSegments(): Envelope =
       val length = buf.readU8()
       val segments = (0 until length).map { _ =>
         val dur = buf.readU16BE()
@@ -196,18 +196,18 @@ object SynthReader:
 
       Envelope(WaveForm.Off, 0, 0, segments)
 
-    private def readOptionalEnvelopePair()
+    private def _readOptionalEnvelopePair()
         : (Option[Envelope], Option[Envelope]) =
       val marker = buf.peek()
       if marker != 0 then
-        val env1 = readEnvelope()
-        val env2 = readEnvelope()
+        val env1 = _readEnvelope()
+        val env2 = _readEnvelope()
         (Some(env1), Some(env2))
       else
         buf.skip(1) // eat '0' flag
         (None, None)
 
-    private def readHarmonics(): Vector[Harmonic] =
+    private def _readHarmonics(): Vector[Harmonic] =
       val builder = Vector.newBuilder[Harmonic]
       builder.sizeHint(MaxHarmonics)
       var continue = true

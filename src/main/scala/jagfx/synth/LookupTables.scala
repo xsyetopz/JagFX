@@ -23,7 +23,7 @@ object LookupTables:
 
   /** Semitone multipliers mapping index `0-240` to semitones `-120` to `+120`.
     */
-  private lazy val semitoneCache: Array[Double] =
+  private lazy val _semitoneCache: Array[Double] =
     Array.tabulate(241)(i => math.pow(SemitoneBase, i - SemitoneRange))
 
   /** Returns multiplier for given semitone offset. Uses cache for
@@ -31,7 +31,7 @@ object LookupTables:
     */
   def getSemitoneMultiplier(semitone: Int): Double =
     if semitone >= -SemitoneRange && semitone <= SemitoneRange then
-      semitoneCache(semitone + SemitoneRange)
+      _semitoneCache(semitone + SemitoneRange)
     else math.pow(SemitoneBase, semitone.toDouble)
 
   /** Unit circle X coordinates for `64`-segment rendering. */

@@ -21,10 +21,8 @@ class RackCellFactory(
     else cell.setOnMouseClicked(_ => onSelect(defIdx))
 
     defCell.cellType match
-      case CellType.Filter =>
-        configureFilterCell(cell, defIdx)
-      case CellType.Output =>
-        configureOutputCell(cell)
+      case CellType.Filter         => _configureFilterCell(cell, defIdx)
+      case CellType.Output         => _configureOutputCell(cell)
       case CellType.Envelope(_, _) =>
         cell.setOnMaximizeToggle(() => onMaximize(defIdx))
       case null => // no-op
@@ -33,7 +31,7 @@ class RackCellFactory(
     GridPane.setVgrow(cell, Priority.ALWAYS)
     cell
 
-  private def configureFilterCell(cell: JagCellPane, idx: Int): Unit =
+  private def _configureFilterCell(cell: JagCellPane, idx: Int): Unit =
     cell.setFeatures(false, false)
     val container = cell.getChildren.get(0).asInstanceOf[VBox]
     val wrapper = container.getChildren.get(1).asInstanceOf[Pane]
@@ -46,7 +44,7 @@ class RackCellFactory(
       canvas.heightProperty.bind(wrapper.heightProperty)
     cell.setAlternateCanvas(canvas)
 
-  private def configureOutputCell(cell: JagCellPane): Unit =
+  private def _configureOutputCell(cell: JagCellPane): Unit =
     val container = cell.getChildren.get(0).asInstanceOf[VBox]
     val wrapper = container.getChildren.get(1).asInstanceOf[Pane]
     cell.getCanvas.setVisible(false)

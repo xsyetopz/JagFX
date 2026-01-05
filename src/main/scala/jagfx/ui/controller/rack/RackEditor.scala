@@ -7,7 +7,7 @@ import jagfx.ui.viewmodel.SynthViewModel
 import jagfx.ui.viewmodel.EnvelopeViewModel
 
 class RackEditor(viewModel: SynthViewModel):
-  private var editorModeCell: Option[Int] = None
+  private var _editorModeCell: Option[Int] = None
 
   val canvas = JagEnvelopeEditorCanvas()
 
@@ -36,11 +36,11 @@ class RackEditor(viewModel: SynthViewModel):
   def getView: StackPane = overlay
 
   def exitEditorMode(): Unit =
-    editorModeCell = None
+    _editorModeCell = None
     overlay.setVisible(false)
 
   def toggleEditorMode(cellIdx: Int): Unit =
-    editorModeCell match
+    _editorModeCell match
       case Some(current) if current == cellIdx => exitEditorMode()
       case _                                   =>
         val cellDef = RackDefs.cellDefs(cellIdx)
@@ -50,7 +50,7 @@ class RackEditor(viewModel: SynthViewModel):
             val env = getter(tone)
             canvas.setViewModel(env)
             title.setText(s"${cellDef.title} EDITOR")
-            editorModeCell = Some(cellIdx)
+            _editorModeCell = Some(cellIdx)
             overlay.setVisible(true)
             overlay.toFront()
           case _ => // ignore

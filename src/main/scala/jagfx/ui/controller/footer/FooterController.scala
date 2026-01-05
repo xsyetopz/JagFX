@@ -8,16 +8,16 @@ import javafx.scene.control.Label
 
 /** Footer controller containing tones, harmonics, reverb, and mode panels. */
 class FooterController(viewModel: SynthViewModel) extends IController[VBox]:
-  private val content = HBox()
-  content.getStyleClass.add("footer")
+  private val _content = HBox()
+  _content.getStyleClass.add("footer")
 
-  private val reverbBindings = BindingManager()
+  private val _reverbBindings = BindingManager()
 
-  private val tonesPanel = TonesPanel.create(viewModel)
-  private val harmonicsPanel = HarmonicsPanel.create(viewModel)
-  private val reverbPanel = ReverbPanel.create(viewModel, reverbBindings)
+  private val _tonesPanel = TonesPanel.create(viewModel)
+  private val _harmonicsPanel = HarmonicsPanel.create(viewModel)
+  private val _reverbPanel = ReverbPanel.create(viewModel, _reverbBindings)
 
-  content.getChildren.addAll(tonesPanel, harmonicsPanel, reverbPanel)
-  HBox.setHgrow(harmonicsPanel, Priority.ALWAYS)
+  _content.getChildren.addAll(_tonesPanel, _harmonicsPanel, _reverbPanel)
+  HBox.setHgrow(_harmonicsPanel, Priority.ALWAYS)
 
-  protected val view = VBox(content)
+  protected val view = VBox(_content)

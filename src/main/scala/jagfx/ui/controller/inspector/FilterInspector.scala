@@ -11,82 +11,82 @@ import jagfx.Constants.Int16
 
 /** Inspector panel for filter parameters. */
 class FilterInspector extends VBox:
-  private var currentFilter: Option[FilterViewModel] = None
+  private var _currentFilter: Option[FilterViewModel] = None
 
   setSpacing(8)
 
   // Pairs section
-  private val pairsLabel = Label("PAIRS")
-  pairsLabel.getStyleClass.addAll("label", "h-head")
+  private val _pairsLabel = Label("PAIRS")
+  _pairsLabel.getStyleClass.addAll("label", "h-head")
 
-  private val ffField = JagNumericField(0, 4, 0)
-  ffField.setPrefWidth(28)
-  ffField.valueProperty.addListener((_, _, nv) =>
-    currentFilter.foreach(_.pairCount0.set(nv.intValue))
+  private val _ffField = JagNumericField(0, 4, 0)
+  _ffField.setPrefWidth(28)
+  _ffField.valueProperty.addListener((_, _, nv) =>
+    _currentFilter.foreach(_.pairCount0.set(nv.intValue))
   )
 
-  private val fbField = JagNumericField(0, 4, 0)
-  fbField.setPrefWidth(28)
-  fbField.valueProperty.addListener((_, _, nv) =>
-    currentFilter.foreach(_.pairCount1.set(nv.intValue))
+  private val _fbField = JagNumericField(0, 4, 0)
+  _fbField.setPrefWidth(28)
+  _fbField.valueProperty.addListener((_, _, nv) =>
+    _currentFilter.foreach(_.pairCount1.set(nv.intValue))
   )
 
-  private val pairsRow = HBox(4)
-  pairsRow.setAlignment(Pos.CENTER_LEFT)
-  pairsRow.getChildren.addAll(
+  private val _pairsRow = HBox(4)
+  _pairsRow.setAlignment(Pos.CENTER_LEFT)
+  _pairsRow.getChildren.addAll(
     Label("FF"),
-    ffField,
+    _ffField,
     new Region() { HBox.setHgrow(this, Priority.ALWAYS) },
     Label("FB"),
-    fbField
+    _fbField
   )
 
   // Unity section
-  private val unityLabel = Label("UNITY")
-  unityLabel.getStyleClass.addAll("label", "h-head")
+  private val _unityLabel = Label("UNITY")
+  _unityLabel.getStyleClass.addAll("label", "h-head")
 
-  private val unity0Field = JagNumericField(0, Int16.Range, 0)
-  unity0Field.setPrefWidth(55)
-  unity0Field.valueProperty.addListener((_, _, nv) =>
-    currentFilter.foreach(_.unity0.set(nv.intValue))
+  private val _unity0Field = JagNumericField(0, Int16.Range, 0)
+  _unity0Field.setPrefWidth(55)
+  _unity0Field.valueProperty.addListener((_, _, nv) =>
+    _currentFilter.foreach(_.unity0.set(nv.intValue))
   )
 
-  private val unity1Field = JagNumericField(0, Int16.Range, 0)
-  unity1Field.setPrefWidth(55)
-  unity1Field.valueProperty.addListener((_, _, nv) =>
-    currentFilter.foreach(_.unity1.set(nv.intValue))
+  private val _unity1Field = JagNumericField(0, Int16.Range, 0)
+  _unity1Field.setPrefWidth(55)
+  _unity1Field.valueProperty.addListener((_, _, nv) =>
+    _currentFilter.foreach(_.unity1.set(nv.intValue))
   )
 
-  private val unityRow = HBox(4)
-  unityRow.setAlignment(Pos.CENTER_LEFT)
-  unityRow.getChildren.addAll(
+  private val _unityRow = HBox(4)
+  _unityRow.setAlignment(Pos.CENTER_LEFT)
+  _unityRow.getChildren.addAll(
     Label("S:"),
-    unity0Field,
+    _unity0Field,
     new Region() { HBox.setHgrow(this, Priority.ALWAYS) },
     Label("E:"),
-    unity1Field
+    _unity1Field
   )
 
   // Poles info
-  private val polesLabel = Label("POLES")
-  polesLabel.getStyleClass.addAll("label", "h-head")
+  private val _polesLabel = Label("POLES")
+  _polesLabel.getStyleClass.addAll("label", "h-head")
 
-  private val polesEditor = FilterPolesEditor()
+  private val _polesEditor = FilterPolesEditor()
 
   getChildren.addAll(
-    pairsLabel,
-    pairsRow,
-    unityLabel,
-    unityRow,
-    polesLabel,
-    polesEditor
+    _pairsLabel,
+    _pairsRow,
+    _unityLabel,
+    _unityRow,
+    _polesLabel,
+    _polesEditor
   )
 
   /** Bind to filter view model. */
   def bind(filter: FilterViewModel): Unit =
-    currentFilter = Some(filter)
-    ffField.setValue(filter.pairCount0.get)
-    fbField.setValue(filter.pairCount1.get)
-    unity0Field.setValue(filter.unity0.get)
-    unity1Field.setValue(filter.unity1.get)
-    polesEditor.bind(filter)
+    _currentFilter = Some(filter)
+    _ffField.setValue(filter.pairCount0.get)
+    _fbField.setValue(filter.pairCount1.get)
+    _unity0Field.setValue(filter.unity0.get)
+    _unity1Field.setValue(filter.unity1.get)
+    _polesEditor.bind(filter)

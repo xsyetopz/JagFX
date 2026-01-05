@@ -16,16 +16,16 @@ import jagfx.ui.controller.rack.RackController
 
 /** Root controller wiring all UI sections. */
 object MainController:
-  private val viewModel = new SynthViewModel()
+  private val _viewModel = new SynthViewModel()
 
   def createRoot(): BorderPane =
     val root = BorderPane()
     root.getStyleClass.add("root")
 
-    val header = new HeaderController(viewModel)
-    val inspector = new InspectorController(viewModel)
-    val rack = new RackController(viewModel, inspector)
-    val footer = new FooterController(viewModel)
+    val header = new HeaderController(_viewModel)
+    val inspector = new InspectorController(_viewModel)
+    val rack = new RackController(_viewModel, inspector)
+    val footer = new FooterController(_viewModel)
 
     root.setTop(header.getView)
     root.setLeft(inspector.getView)
@@ -40,10 +40,10 @@ object MainController:
 
     Platform.runLater(() =>
       val stage = root.getScene.getWindow.asInstanceOf[javafx.stage.Stage]
-      viewModel.currentFilePathProperty.addListener((_, _, path) =>
+      _viewModel.currentFilePathProperty.addListener((_, _, path) =>
         stage.setTitle(s"JagFX - $path")
       )
-      stage.setTitle(s"JagFX - ${viewModel.currentFilePathProperty.get}")
+      stage.setTitle(s"JagFX - ${_viewModel.currentFilePathProperty.get}")
     )
 
     root

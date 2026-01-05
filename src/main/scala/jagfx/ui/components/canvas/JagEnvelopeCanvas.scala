@@ -7,33 +7,33 @@ import jagfx.Constants.Int16
 
 /** Canvas rendering envelope segments with grid. */
 class JagEnvelopeCanvas extends JagBaseCanvas:
-  private var viewModel: Option[EnvelopeViewModel] = None
+  private var _viewModel: Option[EnvelopeViewModel] = None
 
   getStyleClass.add("jag-envelope-canvas")
 
-  private var graphColor: Int = Graph
+  private var _graphColor: Int = Graph
 
   def setGraphColor(color: Int): Unit =
-    graphColor = color
+    _graphColor = color
     requestRedraw()
 
   def setViewModel(vm: EnvelopeViewModel): Unit =
-    viewModel = Some(vm)
+    _viewModel = Some(vm)
     vm.addChangeListener(() =>
       javafx.application.Platform.runLater(() => requestRedraw())
     )
     requestRedraw()
 
   override protected def drawContent(buffer: Array[Int], w: Int, h: Int): Unit =
-    drawGrid(buffer, w, h)
+    _drawGrid(buffer, w, h)
     drawCenterLine(buffer, w, h)
-    viewModel.foreach(vm => drawEnvelope(buffer, w, h, vm))
+    _viewModel.foreach(vm => _drawEnvelope(buffer, w, h, vm))
 
-  private def drawGrid(buffer: Array[Int], w: Int, h: Int): Unit =
-    drawVerticalGrid(buffer, w, h)
-    drawHorizontalGrid(buffer, w, h)
+  private def _drawGrid(buffer: Array[Int], w: Int, h: Int): Unit =
+    _drawVerticalGrid(buffer, w, h)
+    _drawHorizontalGrid(buffer, w, h)
 
-  private def drawVerticalGrid(buffer: Array[Int], w: Int, h: Int): Unit =
+  private def _drawVerticalGrid(buffer: Array[Int], w: Int, h: Int): Unit =
     val zoomedWidth = w * zoomLevel
     val majorCols = 8
     val majorWidth = zoomedWidth / majorCols
@@ -50,13 +50,13 @@ class JagEnvelopeCanvas extends JagBaseCanvas:
       val x = (i * majorWidth) - panOffset
       if x >= 0 && x < w then line(buffer, w, h, x, 0, x, h, GridLineFaint)
 
-  private def drawHorizontalGrid(buffer: Array[Int], w: Int, h: Int): Unit =
+  private def _drawHorizontalGrid(buffer: Array[Int], w: Int, h: Int): Unit =
     val rows = 4
     for i <- 1 until rows do
       val y = i * h / rows
       line(buffer, w, h, 0, y, w, y, GridLineFaint)
 
-  private def drawEnvelope(
+  private def _drawEnvelope(
       buffer: Array[Int],
       w: Int,
       h: Int,
@@ -72,16 +72,16 @@ class JagEnvelopeCanvas extends JagBaseCanvas:
       val range = Int16.Range.toDouble
       var prevY = ((1.0 - segments(0) / range) * h).toInt
       if prevX >= 0 && prevX < w then
-        fillRect(buffer, w, h, prevX - 1, prevY - 1, 3, 3, graphColor)
+        fillRect(buffer, w, h, prevX - 1, prevY - 1, 3, 3, _graphColor)
 
       for i <- 1 until segments.length do
         val x = (i * step).toInt - panOffset
         val y = ((1.0 - segments(i) / range) * h).toInt
         // only draw if visible
         if x >= -w && x < w * 2 && prevX >= -w && prevX < w * 2 then
-          line(buffer, w, h, prevX, prevY, x, y, graphColor)
+          line(buffer, w, h, prevX, prevY, x, y, _graphColor)
           if x >= 0 && x < w then
-            fillRect(buffer, w, h, x - 1, y - 1, 3, 3, graphColor)
+            fillRect(buffer, w, h, x - 1, y - 1, 3, 3, _graphColor)
         prevX = x
         prevY = y
 

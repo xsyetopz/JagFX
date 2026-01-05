@@ -16,82 +16,88 @@ class InspectorController(viewModel: SynthViewModel)
   view.setFitToWidth(true)
   view.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER)
 
-  private val content = VBox()
-  content.getStyleClass.add("inspector-content")
-  content.setSpacing(8)
-  view.setContent(content)
+  private val _content = VBox()
+  _content.getStyleClass.add("inspector-content")
+  _content.setSpacing(8)
+  view.setContent(_content)
 
-  private val envInspector = EnvelopeInspector()
-  private val fltInspector = FilterInspector()
-  private val timingInspector = TimingInspector()
+  private val _envInspector = EnvelopeInspector()
+  private val _fltInspector = FilterInspector()
+  private val _timingInspector = TimingInspector()
 
   // Sections
-  private val topSection = VBox(8)
-  topSection.setAlignment(Pos.TOP_LEFT)
+  private val _topSection = VBox(8)
+  _topSection.setAlignment(Pos.TOP_LEFT)
 
-  private val midSection = VBox(8)
-  midSection.setAlignment(Pos.TOP_LEFT)
+  private val _midSection = VBox(8)
+  _midSection.setAlignment(Pos.TOP_LEFT)
 
-  private val infoSection = VBox(8)
-  infoSection.setAlignment(Pos.TOP_LEFT)
+  private val _infoSection = VBox(8)
+  _infoSection.setAlignment(Pos.TOP_LEFT)
 
   // Separators
-  private val sep1 = new Separator()
-  private val sep2 = new Separator()
+  private val _sep1 = new Separator()
+  private val _sep2 = new Separator()
 
   // Info Text
-  private val infoLabel = Label()
-  infoLabel.getStyleClass.add("help-text")
-  infoLabel.setWrapText(true)
-  infoSection.getChildren.add(infoLabel)
+  private val _infoLabel = Label()
+  _infoLabel.getStyleClass.add("help-text")
+  _infoLabel.setWrapText(true)
+  _infoSection.getChildren.add(_infoLabel)
 
   // Assemble
-  topSection.getChildren.addAll(envInspector, fltInspector)
-  midSection.getChildren.add(timingInspector)
+  _topSection.getChildren.addAll(_envInspector, _fltInspector)
+  _midSection.getChildren.add(_timingInspector)
 
-  content.getChildren.addAll(topSection, sep1, midSection, sep2, infoSection)
+  _content.getChildren.addAll(
+    _topSection,
+    _sep1,
+    _midSection,
+    _sep2,
+    _infoSection
+  )
 
   // Initial State
-  envInspector.setVisible(false); envInspector.setManaged(false)
-  fltInspector.setVisible(false); fltInspector.setManaged(false)
-  timingInspector.setVisible(false); timingInspector.setManaged(false)
+  _envInspector.setVisible(false); _envInspector.setManaged(false)
+  _fltInspector.setVisible(false); _fltInspector.setManaged(false)
+  _timingInspector.setVisible(false); _timingInspector.setManaged(false)
 
   view.setVisible(false)
 
-  private def show(): Unit =
-    view.setVisible(true)
-
   def bind(envelope: EnvelopeViewModel, title: String, desc: String): Unit =
-    show()
+    _show()
 
-    envInspector.setVisible(true); envInspector.setManaged(true)
-    fltInspector.setVisible(false); fltInspector.setManaged(false)
+    _envInspector.setVisible(true); _envInspector.setManaged(true)
+    _fltInspector.setVisible(false); _fltInspector.setManaged(false)
 
-    envInspector.bind(envelope)
+    _envInspector.bind(envelope)
 
-    timingInspector.setVisible(true); timingInspector.setManaged(true)
-    timingInspector.bind(viewModel.getActiveTone)
+    _timingInspector.setVisible(true); _timingInspector.setManaged(true)
+    _timingInspector.bind(viewModel.getActiveTone)
 
-    infoLabel.setText(s"$desc")
+    _infoLabel.setText(s"$desc")
 
   def bindFilter(filter: FilterViewModel, title: String, desc: String): Unit =
-    show()
+    _show()
 
-    envInspector.setVisible(false); envInspector.setManaged(false)
-    fltInspector.setVisible(true); fltInspector.setManaged(true)
+    _envInspector.setVisible(false); _envInspector.setManaged(false)
+    _fltInspector.setVisible(true); _fltInspector.setManaged(true)
 
-    fltInspector.bind(filter)
+    _fltInspector.bind(filter)
 
-    timingInspector.setVisible(true); timingInspector.setManaged(true)
-    timingInspector.bind(viewModel.getActiveTone)
+    _timingInspector.setVisible(true); _timingInspector.setManaged(true)
+    _timingInspector.bind(viewModel.getActiveTone)
 
-    infoLabel.setText(s"$desc")
+    _infoLabel.setText(s"$desc")
 
   def hide(): Unit =
     view.setVisible(false)
-    envInspector.setVisible(false)
-    envInspector.setManaged(false)
-    fltInspector.setVisible(false)
-    fltInspector.setManaged(false)
-    timingInspector.setVisible(false)
-    timingInspector.setManaged(false)
+    _envInspector.setVisible(false)
+    _envInspector.setManaged(false)
+    _fltInspector.setVisible(false)
+    _fltInspector.setManaged(false)
+    _timingInspector.setVisible(false)
+    _timingInspector.setManaged(false)
+
+  private def _show(): Unit =
+    view.setVisible(true)

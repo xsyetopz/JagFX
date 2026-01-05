@@ -8,7 +8,7 @@ import javafx.util.converter.DefaultStringConverter
 import java.util.function.UnaryOperator
 import java.util.regex.Pattern
 
-private val FieldSize = 40
+private val _FieldSize = 40
 
 /** Integer input field with min/max validation. */
 class JagNumericField(
@@ -19,12 +19,12 @@ class JagNumericField(
     format: String = "%.0f"
 ) extends JagBaseField(initial):
 
-  private val validPattern = Pattern.compile("-?(([0-9]*)|([0-9]*\\.[0-9]*))")
+  private val _validPattern = Pattern.compile("-?(([0-9]*)|([0-9]*\\.[0-9]*))")
 
   getStyleClass.add("jag-input")
   setAlignment(Pos.CENTER_RIGHT)
-  setPrefWidth(FieldSize)
-  setMinWidth(FieldSize)
+  setPrefWidth(_FieldSize)
+  setMinWidth(_FieldSize)
 
   setOnScroll(e =>
     if isFocused || isHover then
@@ -55,9 +55,9 @@ class JagNumericField(
       e.consume() // prevent scrolling parent container
   )
 
-  private val filter: UnaryOperator[TextFormatter.Change] = change =>
+  private val _filter: UnaryOperator[TextFormatter.Change] = change =>
     val newText = change.getControlNewText
-    if validPattern.matcher(newText).matches() then
+    if _validPattern.matcher(newText).matches() then
       if newText.isEmpty || newText == "-" || newText == "." || newText == "-."
       then change
       else
@@ -71,9 +71,9 @@ class JagNumericField(
         catch case _: NumberFormatException => null
     else null
 
-  private val formatter =
-    new TextFormatter[String](DefaultStringConverter(), null, filter)
-  setTextFormatter(formatter)
+  private val _formatter =
+    new TextFormatter[String](DefaultStringConverter(), null, _filter)
+  setTextFormatter(_formatter)
 
   setText(String.format(format, (initial / scale).asInstanceOf[Object]))
 

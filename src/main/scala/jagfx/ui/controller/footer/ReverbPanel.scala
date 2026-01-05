@@ -7,17 +7,17 @@ import jagfx.ui.viewmodel.SynthViewModel
 import jagfx.ui.components.slider._
 import jagfx.ui.BindingManager
 
-private val PanelSize = 120
-private val SliderSize = 100
+private val _PanelSize = 120
+private val _SliderSize = 100
 
 /** Reverb controls panel (`MIX`/`DAMP`). */
 object ReverbPanel:
   def create(viewModel: SynthViewModel, bindings: BindingManager): VBox =
     val panel = VBox()
     panel.getStyleClass.add("panel")
-    panel.setMinWidth(PanelSize)
-    panel.setPrefWidth(PanelSize)
-    panel.setMaxWidth(PanelSize)
+    panel.setMinWidth(_PanelSize)
+    panel.setPrefWidth(_PanelSize)
+    panel.setMaxWidth(_PanelSize)
     HBox.setHgrow(panel, Priority.NEVER)
     val head = Label("REVERB")
     head.getStyleClass.add("panel-head")
@@ -25,8 +25,8 @@ object ReverbPanel:
     head.setAlignment(Pos.CENTER)
     head.setMaxWidth(Double.MaxValue)
 
-    val volume = JagBarSlider(0, SliderSize, 0, "VOL:")
-    val delay = JagBarSlider(0, SliderSize, 0, "DEL:")
+    val volume = JagBarSlider(0, _SliderSize, 0, "VOL:")
+    val delay = JagBarSlider(0, _SliderSize, 0, "DEL:")
 
     viewModel.activeToneIndexProperty.addListener((_, _, _) =>
       bindings.unbindAll()
