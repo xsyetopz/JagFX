@@ -2,7 +2,7 @@ package jagfx.ui.components.canvas
 
 import scala.collection.mutable.ListBuffer
 
-import jagfx.constants.Int16
+import jagfx.Constants.Int16
 import jagfx.model.EnvelopeSegment
 import jagfx.ui.viewmodel.EnvelopeViewModel
 import jagfx.utils.ColorUtils.*

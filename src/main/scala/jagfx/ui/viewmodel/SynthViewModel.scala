@@ -2,7 +2,7 @@ package jagfx.ui.viewmodel
 
 import scala.jdk.CollectionConverters.*
 
-import jagfx.constants
+import jagfx.Constants
 import jagfx.model.*
 import jagfx.synth.SynthesisExecutor
 import javafx.beans.property.*
@@ -37,7 +37,7 @@ class SynthViewModel:
   /** Currently selected cell index (`-1` if none). */
   val selectedCellIndex = new SimpleIntegerProperty(-1)
 
-  for _ <- 0 until constants.MaxTones do tones.add(new ToneViewModel())
+  for _ <- 0 until Constants.MaxTones do tones.add(new ToneViewModel())
 
   initDefault()
 
@@ -111,7 +111,7 @@ class SynthViewModel:
 
   /** Loads `.synth` file data into all tone view models. */
   def load(file: SynthFile): Unit =
-    import constants._
+    import Constants._
     SynthesisExecutor.cancelPending()
 
     loopStart.set(file.loop.begin)

@@ -1,6 +1,6 @@
 package jagfx.ui.controller.inspector
 
-import jagfx.constants.Int16
+import jagfx.Constants.Int16
 import jagfx.ui.components.field.*
 import jagfx.ui.viewmodel.ToneViewModel
 import javafx.geometry.Pos

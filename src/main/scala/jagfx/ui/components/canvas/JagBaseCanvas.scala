@@ -1,6 +1,6 @@
 package jagfx.ui.components.canvas
 
-import jagfx.constants.MinFrameNanos
+import jagfx.Constants.MinFrameNanos
 import jagfx.utils.ColorUtils.*
 import jagfx.utils.DrawingUtils.*
 import javafx.animation.AnimationTimer

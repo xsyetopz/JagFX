@@ -1,6 +1,6 @@
 package jagfx.ui.controller.inspector
 
-import jagfx.constants.Int16
+import jagfx.Constants.Int16
 import jagfx.ui.components.button.JagButton
 import jagfx.ui.components.field.JagNumericField
 import jagfx.ui.viewmodel.EnvelopeViewModel

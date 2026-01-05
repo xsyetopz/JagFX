@@ -1,6 +1,6 @@
 package jagfx.ui.controller.footer
 
-import jagfx.constants
+import jagfx.Constants
 import jagfx.ui.components.button.*
 import jagfx.ui.viewmodel.SynthViewModel
 import jagfx.utils.IconUtils
@@ -15,7 +15,7 @@ private val ColumnSize = 50
 object TonesPanel:
   /** Creates tones panel with tone selection and copy/paste buttons. */
   def create(viewModel: SynthViewModel): VBox =
-    import constants._
+    import Constants._
 
     val panel = VBox()
     panel.setId("tones-panel")

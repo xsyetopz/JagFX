@@ -1,6 +1,6 @@
 package jagfx.ui.controller.footer
 
-import jagfx.constants
+import jagfx.Constants
 import jagfx.ui.components.button.*
 import jagfx.ui.components.field.*
 import jagfx.ui.viewmodel.SynthViewModel
@@ -11,7 +11,7 @@ import javafx.geometry.Pos
 import javafx.scene.control.*
 import javafx.scene.layout.*
 
-private val HalfMaxPartials = constants.MaxPartials - 5
+private val HalfMaxPartials = Constants.MaxPartials - 5
 
 /** Partials panel with P1-5/P6-10 bank switcher. */
 object PartialsPanel:

@@ -1,6 +1,6 @@
 package jagfx.ui.controller.header
 
-import jagfx.constants
+import jagfx.Constants
 import jagfx.ui.components.button.*
 import jagfx.ui.components.field.*
 import jagfx.ui.controller.ControllerLike
@@ -15,7 +15,7 @@ private val LoopParamSize = 34
 /** Header controller containing transport, file, and settings controls. */
 class HeaderController(viewModel: SynthViewModel)
     extends ControllerLike[GridPane]:
-  import constants._
+  import Constants._
 
   // Fields
   protected val view: GridPane = GridPane()

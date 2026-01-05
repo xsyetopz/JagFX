@@ -1,6 +1,6 @@
 package jagfx.ui.components.canvas
 
-import jagfx.constants.Int16
+import jagfx.Constants.Int16
 import jagfx.ui.viewmodel.EnvelopeViewModel
 import jagfx.utils.ColorUtils.*
 import jagfx.utils.DrawingUtils.*
