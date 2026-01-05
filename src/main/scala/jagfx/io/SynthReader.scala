@@ -42,7 +42,7 @@ object SynthReader:
           if buf.remaining >= 4 then
             LoopParams(buf.readUInt16BE(), buf.readUInt16BE())
           else
-            _warnings += "File truncated; defaulting loop parameters..."
+            _warnings += s"File truncated at 0x${buf.position.toHexString.toUpperCase}; defaulting loop parameters..."
             LoopParams(0, 0)
 
         Right(SynthFile(tones, loopParams, _warnings.toList))
@@ -117,9 +117,11 @@ object SynthReader:
       if peeked == 0 then
         buf.skip(1) // consume Rev377's "no filter" marker
         return None
-      if peeked >= 1 && peeked <= 4 then
-        // next tone's WaveformID, not filter - leave alone
-        return None
+      // PACKED_PAIRS can also be 1-4 (e.g. 0x01 = 0 pairs ch0, 1 pair ch1)
+      // separate diffs by checking byte 9: env has seg count (small), filt has freq data (large)
+      if peeked >= 1 && peeked <= 4 && buf.remaining >= 10 then
+        val possibleSegCount = buf.peekAt(9)
+        if possibleSegCount <= 15 then return None
 
       val wasTruncated = buf.isTruncated
 
