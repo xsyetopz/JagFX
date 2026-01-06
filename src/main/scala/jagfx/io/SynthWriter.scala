@@ -11,7 +11,7 @@ object SynthWriter:
   /** Serializes `SynthFile` to `.synth` binary data. */
   def write(file: SynthFile): Array[Byte] =
     val buf = BinaryBuffer(4096)
-    writeTones(buf, file.tones)
+    writeVoices(buf, file.voices)
     buf.writeUInt16BE(file.loop.begin)
     buf.writeUInt16BE(file.loop.end)
     buf.data.take(buf.position)
@@ -21,27 +21,27 @@ object SynthWriter:
     val bytes = write(file)
     Files.write(path, bytes)
 
-  private def writeTones(
+  private def writeVoices(
       buf: BinaryBuffer,
-      tones: Vector[Option[Tone]]
+      voices: Vector[Option[Voice]]
   ): Unit =
-    for tone <- tones.take(Constants.MaxTones) do
-      tone match
-        case Some(t) => writeTone(buf, t)
+    for voice <- voices.take(Constants.MaxVoices) do
+      voice match
+        case Some(t) => writeVoice(buf, t)
         case None    => buf.writeUInt8(0)
 
-  private def writeTone(buf: BinaryBuffer, tone: Tone): Unit =
-    writeEnvelope(buf, tone.pitchEnvelope)
-    writeEnvelope(buf, tone.volumeEnvelope)
-    writeOptionalEnvelopePair(buf, tone.vibratoRate, tone.vibratoDepth)
-    writeOptionalEnvelopePair(buf, tone.tremoloRate, tone.tremoloDepth)
-    writeOptionalEnvelopePair(buf, tone.gateSilence, tone.gateDuration)
-    writePartials(buf, tone.partials)
-    buf.writeUSmart(USmart(tone.echoDelay))
-    buf.writeUSmart(USmart(tone.echoMix))
-    buf.writeUInt16BE(tone.duration)
-    buf.writeUInt16BE(tone.start)
-    writeFilter(buf, tone.filter)
+  private def writeVoice(buf: BinaryBuffer, voice: Voice): Unit =
+    writeEnvelope(buf, voice.pitchEnvelope)
+    writeEnvelope(buf, voice.volumeEnvelope)
+    writeOptionalEnvelopePair(buf, voice.vibratoRate, voice.vibratoDepth)
+    writeOptionalEnvelopePair(buf, voice.tremoloRate, voice.tremoloDepth)
+    writeOptionalEnvelopePair(buf, voice.gateSilence, voice.gateDuration)
+    writePartials(buf, voice.partials)
+    buf.writeUSmart(USmart(voice.echoDelay))
+    buf.writeUSmart(USmart(voice.echoMix))
+    buf.writeUInt16BE(voice.duration)
+    buf.writeUInt16BE(voice.start)
+    writeFilter(buf, voice.filter)
 
   private def writeEnvelope(buf: BinaryBuffer, env: Envelope): Unit =
     buf.writeUInt8(env.waveform.id)

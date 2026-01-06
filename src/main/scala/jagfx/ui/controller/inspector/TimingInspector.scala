@@ -2,7 +2,7 @@ package jagfx.ui.controller.inspector
 
 import jagfx.Constants.Int16
 import jagfx.ui.components.field.*
-import jagfx.ui.viewmodel.ToneViewModel
+import jagfx.ui.viewmodel.VoiceViewModel
 import javafx.geometry.Pos
 import javafx.scene.control.Label
 import javafx.scene.layout.*
@@ -10,10 +10,10 @@ import javafx.scene.layout.*
 // Constants
 private final val TimingFieldSize = 55
 
-/** Inspector panel for tone timing parameters (`Duration`, `StartOffset`). */
+/** Inspector panel for voice timing parameters (`Duration`, `StartOffset`). */
 class TimingInspector extends VBox:
   // Fields
-  private var currentTone: Option[ToneViewModel] = None
+  private var currentVoice: Option[VoiceViewModel] = None
   private val timingLabel = Label("TIMING")
   private val durField = JagNumericField(0, Int16.Range, 1000)
   private val ofsField = JagNumericField(0, Int16.Range, 0)
@@ -34,10 +34,10 @@ class TimingInspector extends VBox:
 
   // Init: listeners
   durField.valueProperty.addListener((_, _, nv) =>
-    currentTone.foreach(_.duration.set(nv.intValue))
+    currentVoice.foreach(_.duration.set(nv.intValue))
   )
   ofsField.valueProperty.addListener((_, _, nv) =>
-    currentTone.foreach(_.startOffset.set(nv.intValue))
+    currentVoice.foreach(_.startOffset.set(nv.intValue))
   )
 
   // Init: build hierarchy
@@ -51,8 +51,8 @@ class TimingInspector extends VBox:
 
   getChildren.addAll(timingLabel, timingRow)
 
-  /** Binds tone view model to inspector. */
-  def bind(tone: ToneViewModel): Unit =
-    currentTone = Some(tone)
-    durField.setValue(tone.duration.get)
-    ofsField.setValue(tone.startOffset.get)
+  /** Binds voice view model to inspector. */
+  def bind(voice: VoiceViewModel): Unit =
+    currentVoice = Some(voice)
+    durField.setValue(voice.duration.get)
+    ofsField.setValue(voice.startOffset.get)

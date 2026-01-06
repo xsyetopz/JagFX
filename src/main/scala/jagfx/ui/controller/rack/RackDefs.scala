@@ -1,12 +1,12 @@
 package jagfx.ui.controller.rack
 
 import jagfx.ui.viewmodel.EnvelopeViewModel
-import jagfx.ui.viewmodel.ToneViewModel
+import jagfx.ui.viewmodel.VoiceViewModel
 
 /** Rack cell content type determining inspector behavior. */
 enum CellType:
   case Envelope(
-      getter: ToneViewModel => EnvelopeViewModel,
+      getter: VoiceViewModel => EnvelopeViewModel,
       inspectorMode: Boolean = true
   )
   case Filter
@@ -65,7 +65,7 @@ object RackDefs:
     ),
     RackCellDef(
       "OUTPUT",
-      "Real-time visualization of synthesized waveform for active tone.",
+      "Real-time visualization of synthesized waveform for active voice.",
       CellType.Output
     ),
     RackCellDef(

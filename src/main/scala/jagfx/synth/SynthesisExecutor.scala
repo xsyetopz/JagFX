@@ -18,14 +18,14 @@ object SynthesisExecutor:
 
   private val generation = new AtomicLong(0)
 
-  /** Synthesizes tone on background thread with auto-cancellation. */
-  def synthesizeTone(tone: Tone)(onComplete: AudioBuffer => Unit): Unit =
+  /** Synthesizes voice on background thread with auto-cancellation. */
+  def synthesizeVoice(voice: Voice)(onComplete: AudioBuffer => Unit): Unit =
     val thisGen = generation.incrementAndGet()
     executor.submit(
       (
           () =>
             if generation.get() == thisGen then
-              val audio = ToneSynthesizer.synthesize(tone)
+              val audio = VoiceSynthesizer.synthesize(voice)
               if generation.get() == thisGen then
                 Platform.runLater(() => onComplete(audio))
       ): Runnable
@@ -35,7 +35,7 @@ object SynthesisExecutor:
   def synthesizeTrack(
       file: SynthFile,
       loopCount: Int,
-      toneFilter: Int = -1
+      voiceFilter: Int = -1
   )(onComplete: AudioBuffer => Unit): Unit =
     val thisGen = generation.incrementAndGet()
     executor.submit(
@@ -43,7 +43,7 @@ object SynthesisExecutor:
           () =>
             if generation.get() == thisGen then
               val audio =
-                TrackSynthesizer.synthesize(file, loopCount, toneFilter)
+                TrackSynthesizer.synthesize(file, loopCount, voiceFilter)
               if generation.get() == thisGen then
                 Platform.runLater(() => onComplete(audio))
       ): Runnable

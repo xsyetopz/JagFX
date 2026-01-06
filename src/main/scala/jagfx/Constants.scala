@@ -8,7 +8,7 @@ object Constants:
   final val NumChannels: Int = 1
 
   // Limits
-  final val MaxTones: Int = 10
+  final val MaxVoices: Int = 10
   final val MaxPartials: Int = 10
   final val MaxFilterPairs: Int = 4
 

@@ -9,21 +9,21 @@ import javafx.scene.control.Label
 import javafx.scene.layout.*
 
 // Constants
-private final val TonesPanelSize = 70
-private final val TonesColumnSize = 50
+private final val VoicesPanelSize = 70
+private final val VoicesColumnSize = 50
 
-/** Tones selection panel (`1-10` buttons with copy/paste). */
-object TonesPanel:
-  /** Creates tones panel with tone selection and copy/paste buttons. */
+/** Voices selection panel (`1-10` buttons with copy/paste). */
+object VoicesPanel:
+  /** Creates voices panel with voice selection and copy/paste buttons. */
   def create(viewModel: SynthViewModel): VBox =
     import Constants._
 
     val panel = VBox()
-    panel.setId("tones-panel")
+    panel.setId("voices-panel")
     panel.getStyleClass.add("panel")
-    panel.setMinWidth(TonesPanelSize)
-    panel.setPrefWidth(TonesPanelSize)
-    panel.setMaxWidth(TonesPanelSize)
+    panel.setMinWidth(VoicesPanelSize)
+    panel.setPrefWidth(VoicesPanelSize)
+    panel.setMaxWidth(VoicesPanelSize)
     HBox.setHgrow(panel, Priority.NEVER)
 
     val head = Label("TONES")
@@ -32,53 +32,53 @@ object TonesPanel:
     head.setAlignment(Pos.CENTER)
 
     val container = VBox()
-    container.setId("tones-container")
+    container.setId("voices-container")
     VBox.setVgrow(container, Priority.ALWAYS)
 
     val grid = GridPane()
-    grid.setId("tones")
+    grid.setId("voices")
     grid.setHgap(2)
     grid.setVgap(2)
     VBox.setVgrow(grid, Priority.ALWAYS)
 
     val col1 = new ColumnConstraints()
-    col1.setPercentWidth(TonesColumnSize)
+    col1.setPercentWidth(VoicesColumnSize)
     val col2 = new ColumnConstraints()
-    col2.setPercentWidth(TonesColumnSize)
+    col2.setPercentWidth(VoicesColumnSize)
     grid.getColumnConstraints.addAll(col1, col2)
 
-    val buttons = new Array[JagButton](MaxTones)
-    for i <- 0 until MaxTones do
+    val buttons = new Array[JagButton](MaxVoices)
+    for i <- 0 until MaxVoices do
       val btn = JagButton((i + 1).toString)
       btn.setMaxWidth(Double.MaxValue)
       btn.setOnAction(_ =>
         buttons.foreach(_.setActive(false))
         btn.setActive(true)
-        viewModel.setActiveToneIndex(i)
+        viewModel.setActiveVoiceIndex(i)
       )
       btn.setOnMouseClicked(e =>
         if e.getClickCount == 2 then
-          val tone = viewModel.getTones.get(i)
-          tone.enabled.set(!tone.enabled.get)
+          val voice = viewModel.getVoices.get(i)
+          voice.enabled.set(!voice.enabled.get)
       )
       if i == 0 then btn.setActive(true)
 
-      val tone = viewModel.getTones.get(i)
+      val voice = viewModel.getVoices.get(i)
       val updateDim = (enabled: Boolean) =>
         btn.setOpacity(if enabled then 1.0 else 0.5)
 
-      tone.enabled.addListener((_, _, enabled) => updateDim(enabled))
-      updateDim(tone.enabled.get)
+      voice.enabled.addListener((_, _, enabled) => updateDim(enabled))
+      updateDim(voice.enabled.get)
 
       buttons(i) = btn
       grid.add(btn, i % 2, i / 2)
 
-    viewModel.activeToneIndexProperty.addListener((_, _, newIdx) =>
-      for i <- 0 until MaxTones do buttons(i).setActive(i == newIdx.intValue)
+    viewModel.activeVoiceIndexProperty.addListener((_, _, newIdx) =>
+      for i <- 0 until MaxVoices do buttons(i).setActive(i == newIdx.intValue)
     )
 
     val ops = HBox()
-    ops.setId("tone-ops")
+    ops.setId("voice-ops")
     val copyBtn = JagButton()
     copyBtn.setGraphic(IconUtils.icon("mdi2c-content-copy"))
     val pasteBtn = JagButton()
@@ -88,8 +88,8 @@ object TonesPanel:
     copyBtn.setMaxWidth(Double.MaxValue)
     pasteBtn.setMaxWidth(Double.MaxValue)
 
-    copyBtn.setOnAction(_ => viewModel.copyActiveTone())
-    pasteBtn.setOnAction(_ => viewModel.pasteToActiveTone())
+    copyBtn.setOnAction(_ => viewModel.copyActiveVoice())
+    pasteBtn.setOnAction(_ => viewModel.pasteToActiveVoice())
 
     ops.getChildren.addAll(copyBtn, pasteBtn)
 

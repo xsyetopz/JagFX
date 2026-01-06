@@ -8,7 +8,7 @@ import jagfx.synth.TrackSynthesizer
 
 class TrackSynthesizerSuite extends munit.FunSuite:
 
-  test("synthesizes cow_death (1 tone)"):
+  test("synthesizes cow_death (1 voice)"):
     val file = SynthReader.read(cowDeathHex).toOption.get
     val audio = TrackSynthesizer.synthesize(file, 1)
 
@@ -16,7 +16,7 @@ class TrackSynthesizerSuite extends munit.FunSuite:
     assertEquals(audio.sampleRate, Constants.SampleRate)
     assertEquals(audio.length, 19889 - 44)
 
-  test("synthesizes protect_from_magic (2 tones)"):
+  test("synthesizes protect_from_magic (2 voices)"):
     val file = SynthReader.read(protectFromMagicHex).toOption.get
     val audio = TrackSynthesizer.synthesize(file, 1)
 
@@ -24,7 +24,7 @@ class TrackSynthesizerSuite extends munit.FunSuite:
     assertEquals(audio.sampleRate, Constants.SampleRate)
     assertEquals(audio.length, 33119 - 44)
 
-  test("synthesizes ice_cast (2 tones)"):
+  test("synthesizes ice_cast (2 voices)"):
     val file = SynthReader.read(iceCastHex).toOption.get
     val audio = TrackSynthesizer.synthesize(file, 1)
 

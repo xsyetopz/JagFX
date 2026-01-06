@@ -6,7 +6,7 @@ import scala.collection.mutable.ListBuffer
 
 import jagfx.Constants
 import jagfx.Constants.MaxPartials
-import jagfx.Constants.MaxTones
+import jagfx.Constants.MaxVoices
 import jagfx.model.*
 import jagfx.types.*
 import jagfx.utils.ArrayUtils
@@ -37,14 +37,14 @@ object SynthReader:
     /** Parses `.synth` binary data into `SynthFile`. */
     def parse(): Either[ParseError, SynthFile] =
       try
-        val tones = readTones()
+        val voices = readVoices()
         val loopParams =
           if buf.remaining >= 4 then
             LoopParams(buf.readUInt16BE(), buf.readUInt16BE())
           else
             warnings += s"File truncated at 0x${buf.position.toHexString.toUpperCase}; defaulting loop parameters..."
             LoopParams(0, 0)
-        Right(SynthFile(tones, loopParams, warnings.toList))
+        Right(SynthFile(voices, loopParams, warnings.toList))
       catch
         case e: Exception =>
           scribe.error(
@@ -53,21 +53,21 @@ object SynthReader:
           e.printStackTrace()
           Left(ParseError(e.getMessage, buf.position))
 
-    private def readTones(): Vector[Option[Tone]] =
-      (0 until MaxTones).map { _ =>
+    private def readVoices(): Vector[Option[Voice]] =
+      (0 until MaxVoices).map { _ =>
         if buf.remaining > 4 then
           val marker = buf.peek()
           if marker != 0 then
-            val tone = readTone()
-            applyRev377TonePadding()
-            Some(tone)
+            val voice = readVoice()
+            applyRev377VoicePadding()
+            Some(voice)
           else
             buf.skip(1)
             None
         else None
       }.toVector
 
-    private def readTone(): Tone =
+    private def readVoice(): Voice =
       val pitchEnvelope = readEnvelope()
       val volumeEnvelope = readEnvelope()
 
@@ -82,7 +82,7 @@ object SynthReader:
       val start = buf.readUInt16BE()
       val filter = readFilter()
 
-      Tone(
+      Voice(
         pitchEnvelope = applyRev245EnvelopePatch(pitchEnvelope, duration),
         volumeEnvelope = applyRev245EnvelopePatch(volumeEnvelope, duration),
         vibratoRate = vibratoRate,
@@ -183,7 +183,7 @@ object SynthReader:
       if peeked == 0 then
         buf.skip(1)
         return false
-      if peeked >= 1 && peeked <= 4 && buf.remaining >= Constants.MaxTones then
+      if peeked >= 1 && peeked <= 4 && buf.remaining >= Constants.MaxVoices then
         val possibleSegCount = buf.peekAt(9)
         if possibleSegCount <= 15 then return false
       true
@@ -239,7 +239,7 @@ object SynthReader:
         envelope
       )
 
-    private def applyRev377TonePadding(): Unit =
+    private def applyRev377VoicePadding(): Unit =
       if buf.remaining > 0 && buf.peek() == 0 then buf.skip(1)
 
     private def applyRev245EnvelopePatch(

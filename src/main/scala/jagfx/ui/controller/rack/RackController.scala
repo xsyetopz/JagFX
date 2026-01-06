@@ -40,26 +40,26 @@ class RackController(viewModel: SynthViewModel, inspector: InspectorController)
   outputWaveformCanvas.setZoom(4)
 
   // Init: listeners
-  bindingManager.listen(viewModel.activeToneIndexProperty)(_ =>
-    bindActiveTone()
+  bindingManager.listen(viewModel.activeVoiceIndexProperty)(_ =>
+    bindActiveVoice()
   )
-  bindingManager.listen(viewModel.fileLoadedProperty)(_ => bindActiveTone())
+  bindingManager.listen(viewModel.fileLoadedProperty)(_ => bindActiveVoice())
   bindingManager.listen(viewModel.selectedCellIndex)(_ => updateSelection())
 
-  for i <- 0 until viewModel.getTones.size do
-    val toneIdx = i
-    viewModel.getTones
+  for i <- 0 until viewModel.getVoices.size do
+    val voiceIdx = i
+    viewModel.getVoices
       .get(i)
       .addChangeListener(() =>
-        if viewModel.getActiveToneIndex == toneIdx then updateOutputWaveform()
+        if viewModel.getActiveVoiceIndex == voiceIdx then updateOutputWaveform()
       )
 
   // Init: build grid
   buildGrid()
 
-  /** Binds active tone to all cells. */
+  /** Binds active voice to all cells. */
   def bind(): Unit =
-    bindActiveTone()
+    bindActiveVoice()
 
   /** Sets playhead position on waveform canvas. */
   def setPlayheadPosition(position: Double): Unit =
@@ -141,38 +141,38 @@ class RackController(viewModel: SynthViewModel, inspector: InspectorController)
     viewModel.selectedCellIndex.set(idx)
 
   private def bindInspector(idx: Int): Unit =
-    val tone = viewModel.getActiveTone
+    val voice = viewModel.getActiveVoice
     val cellDef = RackDefs.cellDefs(idx)
     cellDef.cellType match
       case CellType.Filter =>
-        inspector.bindFilter(tone.filterViewMode, cellDef.desc)
+        inspector.bindFilter(voice.filterViewMode, cellDef.desc)
       case CellType.Envelope(getter, _) =>
-        val env = getter(tone)
+        val env = getter(voice)
         inspector.bind(env, cellDef.desc)
       case _ => inspector.hide()
 
-  private def bindActiveTone(): Unit =
-    val tone = viewModel.getActiveTone
+  private def bindActiveVoice(): Unit =
+    val voice = viewModel.getActiveVoice
     for idx <- cells.indices if cells(idx) != null do
       val cellDef = RackDefs.cellDefs(idx)
       cellDef.cellType match
         case CellType.Envelope(getter, _) =>
-          cells(idx).setViewModel(getter(tone))
+          cells(idx).setViewModel(getter(voice))
           if cellDef.title.startsWith("G.") then
             cells(idx).getCanvas match
               case c: JagEnvelopeCanvas => c.setGraphColor(ColorUtils.Gating)
               case null                 =>
         case _ =>
 
-    poleZeroCanvas.setViewModel(tone.filterViewMode)
-    freqResponseCanvas.setViewModel(tone.filterViewMode)
+    poleZeroCanvas.setViewModel(voice.filterViewMode)
+    freqResponseCanvas.setViewModel(voice.filterViewMode)
 
     updateOutputWaveform()
 
   private def updateOutputWaveform(): Unit =
-    viewModel.getActiveTone.toModel() match
-      case Some(tone) =>
-        SynthesisExecutor.synthesizeTone(tone) { audio =>
+    viewModel.getActiveVoice.toModel() match
+      case Some(voice) =>
+        SynthesisExecutor.synthesizeVoice(voice) { audio =>
           outputWaveformCanvas.setAudioBuffer(audio)
         }
       case None =>

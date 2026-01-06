@@ -1,6 +1,6 @@
 package jagfx.ui.components.pane
 
-import jagfx.ui.viewmodel.ToneViewModel
+import jagfx.ui.viewmodel.VoiceViewModel
 import javafx.geometry.Pos
 import javafx.scene.layout.*
 
@@ -30,10 +30,10 @@ class JagGatePane extends JagBasePane("GATE"):
   row.getChildren.addAll(silenceCell, durationCell)
   getChildren.add(row)
 
-  /** Binds gate envelopes from tone ViewModel. */
-  def bind(tone: ToneViewModel): Unit =
-    silenceCell.setViewModel(tone.gateSilence)
-    durationCell.setViewModel(tone.gateDuration)
+  /** Binds gate envelopes from voice ViewModel. */
+  def bind(voice: VoiceViewModel): Unit =
+    silenceCell.setViewModel(voice.gateSilence)
+    durationCell.setViewModel(voice.gateDuration)
 
   /** Returns child cells. */
   def getCells: Seq[JagCellPane] =

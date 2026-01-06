@@ -25,7 +25,7 @@ object SynthInspector:
     val buf = new DebugBuffer(bytes)
 
     try
-      inspectTones(buf)
+      inspectVoices(buf)
 
       if buf.remaining > 0 then
         println(s"\n[WARNING] ${buf.remaining} BYTES REMAINING:")
@@ -41,20 +41,20 @@ object SynthInspector:
         println("REMAINING CONTEXT:")
         println(buf.dumpRemaining(0, 64))
 
-  private def inspectTones(buf: DebugBuffer): Unit =
+  private def inspectVoices(buf: DebugBuffer): Unit =
     for i <- 0 until 10 do
       if buf.remaining > 0 then
         buf.peek() != 0
-        println(f"\n=== TONE $i (OFFSET: ${buf.position}%04X) ===")
+        println(f"\n=== VOICE $i (OFFSET: ${buf.position}%04X) ===")
 
         val marker = buf.peek()
         println(f"HEADER MARKER: $marker (VALID: ${marker != 0})")
-        if marker != 0 then inspectTone(buf)
+        if marker != 0 then inspectVoice(buf)
         else
           buf.readUInt8("EMPTY MARKER")
-          println(s"Tone $i empty")
+          println(s"Voice $i empty")
 
-  private def inspectTone(buf: DebugBuffer): Unit =
+  private def inspectVoice(buf: DebugBuffer): Unit =
     println("--- PITCH ENVELOPE ---")
     inspectEnvelope(buf)
     println("--- VOLUME ENVELOPE ---")

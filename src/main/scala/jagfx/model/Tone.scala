@@ -26,13 +26,13 @@ package jagfx.model
   * @param echoMix
   *   Echo mix level `0-100`
   * @param duration
-  *   Total tone length in milliseconds
+  *   Total voice length in milliseconds
   * @param start
   *   Offset from track start in milliseconds
   * @param filter
   *   Optional: IIR filter parameters
   */
-case class Tone(
+case class Voice(
     pitchEnvelope: Envelope,
     volumeEnvelope: Envelope,
     vibratoRate: Option[Envelope],

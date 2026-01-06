@@ -67,7 +67,7 @@ object PartialsPanel:
     def bindPartials(): Unit =
       for i <- 0 until HalfMaxPartials do
         val hIdx = bankOffset + i
-        val height = viewModel.getActiveTone.partials(hIdx)
+        val height = viewModel.getActiveVoice.partials(hIdx)
 
         volListeners(i).foreach { case (prop, listener) =>
           prop.removeListener(listener)
@@ -91,7 +91,7 @@ object PartialsPanel:
       bindPartials()
     )
 
-    viewModel.activeToneIndexProperty.addListener((_, _, _) => bindPartials())
+    viewModel.activeVoiceIndexProperty.addListener((_, _, _) => bindPartials())
     bindPartials()
 
     panel.getChildren.addAll(headRow, grid)

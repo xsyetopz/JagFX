@@ -30,13 +30,13 @@ object EchoPanel:
     val mixSlider = JagBarSlider(0, EchoSliderSize, 0, "MIX:")
     val delaySlider = JagBarSlider(0, EchoSliderSize, 0, "DEL:")
 
-    viewModel.activeToneIndexProperty.addListener((_, _, _) =>
+    viewModel.activeVoiceIndexProperty.addListener((_, _, _) =>
       bindings.unbindAll()
-      val activeTone = viewModel.getActiveTone
-      bindings.bindBidirectional(mixSlider.valueProperty, activeTone.echoMix)
+      val activeVoice = viewModel.getActiveVoice
+      bindings.bindBidirectional(mixSlider.valueProperty, activeVoice.echoMix)
       bindings.bindBidirectional(
         delaySlider.valueProperty,
-        activeTone.echoDelay
+        activeVoice.echoDelay
       )
     )
 

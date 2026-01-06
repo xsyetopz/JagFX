@@ -4,18 +4,18 @@ import jagfx.Constants
 import jagfx.model.*
 import jagfx.utils.MathUtils.clipInt16
 
-/** Orchestrates synthesis of multiple tones with loop expansion. */
+/** Orchestrates synthesis of multiple voices with loop expansion. */
 object TrackSynthesizer:
   /** Synthesizes complete `SynthFile` into audio samples. */
   def synthesize(
       file: SynthFile,
       loopCount: Int,
-      toneFilter: Int = -1
+      voiceFilter: Int = -1
   ): AudioBuffer =
-    val tonesToMix =
-      if toneFilter < 0 then file.activeTones
-      else file.activeTones.filter(_._1 == toneFilter)
-    val maxDuration = calculateMaxDuration(tonesToMix)
+    val voicesToMix =
+      if voiceFilter < 0 then file.activeVoices
+      else file.activeVoices.filter(_._1 == voiceFilter)
+    val maxDuration = calculateMaxDuration(voicesToMix)
     if maxDuration == 0 then return AudioBuffer.empty(0)
 
     val sampleCount = maxDuration * Constants.SampleRate / 1000
@@ -27,7 +27,7 @@ object TrackSynthesizer:
     val totalSampleCount =
       sampleCount + (loopStop - loopStart) * math.max(0, effectiveLoopCount - 1)
 
-    val buffer = mixTones(tonesToMix, sampleCount, totalSampleCount)
+    val buffer = mixVoices(voicesToMix, sampleCount, totalSampleCount)
     if effectiveLoopCount > 1 then
       applyLoopExpansion(
         buffer,
@@ -44,10 +44,10 @@ object TrackSynthesizer:
 
     AudioBuffer(output, Constants.SampleRate)
 
-  private def calculateMaxDuration(tones: Vector[(Int, Tone)]): Int =
+  private def calculateMaxDuration(voices: Vector[(Int, Voice)]): Int =
     var maxDuration = 0
-    for (_, tone) <- tones do
-      val endTime = tone.duration + tone.start
+    for (_, voice) <- voices do
+      val endTime = voice.duration + voice.start
       if endTime > maxDuration then maxDuration = endTime
     maxDuration
 
@@ -67,19 +67,19 @@ object TrackSynthesizer:
       0
     else loopCount
 
-  private def mixTones(
-      tones: Vector[(Int, Tone)],
+  private def mixVoices(
+      voices: Vector[(Int, Voice)],
       sampleCount: Int,
       totalSampleCount: Int
   ): Array[Int] =
     val buffer = BufferPool.acquire(totalSampleCount)
-    for (_, tone) <- tones do
-      val toneBuffer = ToneSynthesizer.synthesize(tone)
-      val startOffset = tone.start * Constants.SampleRate / 1000
-      for i <- 0 until toneBuffer.length do
+    for (_, voice) <- voices do
+      val voiceBuffer = VoiceSynthesizer.synthesize(voice)
+      val startOffset = voice.start * Constants.SampleRate / 1000
+      for i <- 0 until voiceBuffer.length do
         val pos = i + startOffset
         if pos >= 0 && pos < sampleCount then
-          buffer(pos) += toneBuffer.samples(i)
+          buffer(pos) += voiceBuffer.samples(i)
     buffer
 
   private def applyLoopExpansion(

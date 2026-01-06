@@ -17,7 +17,7 @@ class AudioPlayer(viewModel: SynthViewModel):
   private case class RenderParams(
       model: SynthFile,
       loopCount: Int,
-      toneFilter: Int
+      voiceFilter: Int
   )
 
   // Fields
@@ -33,15 +33,15 @@ class AudioPlayer(viewModel: SynthViewModel):
 
   /** Starts playback with current settings. */
   def play(): Unit =
-    val toneFilter =
-      if viewModel.isTargetAll then -1 else viewModel.getActiveToneIndex
+    val voiceFilter =
+      if viewModel.isTargetAll then -1 else viewModel.getActiveVoiceIndex
     val loopCount =
       if viewModel.isLoopEnabled then viewModel.loopCountProperty.get else 1
     val modelSnapshot = viewModel.toModel()
-    val newParams = RenderParams(modelSnapshot, loopCount, toneFilter)
+    val newParams = RenderParams(modelSnapshot, loopCount, voiceFilter)
 
     if trySmartReplay(newParams) then return
-    startAsyncSynthesis(modelSnapshot, loopCount, toneFilter, newParams)
+    startAsyncSynthesis(modelSnapshot, loopCount, voiceFilter, newParams)
 
   /** Stops current playback. */
   def stop(): Unit =
@@ -61,7 +61,7 @@ class AudioPlayer(viewModel: SynthViewModel):
   private def startAsyncSynthesis(
       model: SynthFile,
       loopCount: Int,
-      toneFilter: Int,
+      voiceFilter: Int,
       params: RenderParams
   ): Unit =
     stopInternal(resetGen = false)
@@ -69,7 +69,7 @@ class AudioPlayer(viewModel: SynthViewModel):
 
     new Thread(() => {
       try
-        val audio = TrackSynthesizer.synthesize(model, loopCount, toneFilter)
+        val audio = TrackSynthesizer.synthesize(model, loopCount, voiceFilter)
         val clip = AudioSystem.getClip()
         val format = new AudioFormat(Constants.SampleRate, 16, 1, true, true)
         val bytes = audio.toBytes16BE

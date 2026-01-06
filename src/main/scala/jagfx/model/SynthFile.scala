@@ -11,18 +11,18 @@ case class LoopParams(begin: Int, end: Int):
   /** Returns `true` if loop region is valid (`begin < end`). */
   def isActive: Boolean = begin < end
 
-/** Top-level `.synth` file representation containing up to `10` tones.
+/** Top-level `.synth` file representation containing up to `10` voices.
   *
-  * @param tones
-  *   Vector of optional tones (indices `0-9`)
+  * @param voices
+  *   Vector of optional voices (indices `0-9`)
   * @param loop
   *   Loop region parameters
   */
 case class SynthFile(
-    tones: Vector[Option[Tone]],
+    voices: Vector[Option[Voice]],
     loop: LoopParams,
     warnings: List[String] = Nil
 ):
-  /** Returns active tones with their indices. */
-  def activeTones: Vector[(Int, Tone)] =
-    tones.zipWithIndex.collect { case (Some(tone), idx) => (idx, tone) }
+  /** Returns active voices with their indices. */
+  def activeVoices: Vector[(Int, Voice)] =
+    voices.zipWithIndex.collect { case (Some(voice), idx) => (idx, voice) }

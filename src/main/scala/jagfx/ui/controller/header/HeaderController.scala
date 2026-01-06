@@ -77,7 +77,7 @@ class HeaderController(viewModel: SynthViewModel)
     val btnPlay = JagButton()
     btnPlay.setGraphic(IconUtils.icon("mdi2p-play"))
     btnPlay.setTooltip(
-      new Tooltip("Play current tone, or all tones if TGT=ALL")
+      new Tooltip("Play current voice, or all voices if TGT=ALL")
     )
     val btnStop = JagButton()
     btnStop.setGraphic(IconUtils.icon("mdi2s-stop"))
@@ -108,9 +108,9 @@ class HeaderController(viewModel: SynthViewModel)
     group.getStyleClass.add("height-grp")
 
     val btnAll = JagButton("ALL")
-    btnAll.setTooltip(new Tooltip("Edit affects all enabled tones"))
+    btnAll.setTooltip(new Tooltip("Edit affects all enabled voices"))
     val btnOne = JagButton("ONE")
-    btnOne.setTooltip(new Tooltip("Edit affects only active tone"))
+    btnOne.setTooltip(new Tooltip("Edit affects only active voice"))
 
     btnAll.setOnAction(_ => viewModel.targetModeProperty.set(true))
     btnOne.setOnAction(_ => viewModel.targetModeProperty.set(false))
@@ -130,7 +130,7 @@ class HeaderController(viewModel: SynthViewModel)
     val durationField = JagNumericField(0, Int16.Range, 1200)
     durationField.setEditable(false)
     durationField.setTooltip(
-      new Tooltip("Total tone duration in samples (read-only)")
+      new Tooltip("Total voice duration in samples (read-only)")
     )
     durationField.valueProperty.bindBidirectional(
       viewModel.totalDurationProperty

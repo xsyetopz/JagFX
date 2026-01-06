@@ -68,8 +68,8 @@ class RackEditor(viewModel: SynthViewModel):
         val cellDef = RackDefs.cellDefs(cellIdx)
         cellDef.cellType match
           case CellType.Envelope(getter, _) =>
-            val tone = viewModel.getActiveTone
-            val env = getter(tone)
+            val voice = viewModel.getActiveVoice
+            val env = getter(voice)
             canvas.setViewModel(env)
             title.setText(s"${cellDef.title} EDITOR")
             editorModeCell = Some(cellIdx)

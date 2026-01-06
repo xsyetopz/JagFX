@@ -16,17 +16,17 @@ enum RackMode:
 class SynthViewModel:
   // Fields
   private val totalDuration = new SimpleIntegerProperty(0)
-  private var toneClipboard: Option[Option[Tone]] = None
+  private var voiceClipboard: Option[Option[Voice]] = None
 
-  private val activeToneIndex = new SimpleIntegerProperty(0)
-  private val tones = FXCollections.observableArrayList[ToneViewModel]()
+  private val activeVoiceIndex = new SimpleIntegerProperty(0)
+  private val voices = FXCollections.observableArrayList[VoiceViewModel]()
   private val loopStart = new SimpleIntegerProperty(0)
   private val loopEnd = new SimpleIntegerProperty(0)
   private val loopCount = new SimpleIntegerProperty(0)
   private val loopEnabled = new SimpleBooleanProperty(false)
   private val fileLoaded = new SimpleObjectProperty[java.lang.Long](0L)
 
-  // TGT: false = TONE, true = ALL
+  // TGT: false = ONE, true = ALL
   private val targetMode = new SimpleBooleanProperty(false)
 
   private val currentFilePath = new SimpleStringProperty("Untitled.synth")
@@ -37,7 +37,7 @@ class SynthViewModel:
   /** Currently selected cell index (`-1` if none). */
   val selectedCellIndex = new SimpleIntegerProperty(-1)
 
-  for _ <- 0 until Constants.MaxTones do tones.add(new ToneViewModel())
+  for _ <- 0 until Constants.MaxVoices do voices.add(new VoiceViewModel())
 
   initDefault()
 
@@ -47,16 +47,16 @@ class SynthViewModel:
   /** Sets current file path. */
   def setCurrentFilePath(path: String): Unit = currentFilePath.set(path)
 
-  /** Initializes default tone state. */
+  /** Initializes default voice state. */
   def initDefault(): Unit =
-    tones.asScala.foreach(_.clear())
+    voices.asScala.foreach(_.clear())
 
-    val tone1 = tones.get(0)
-    tone1.enabled.set(true)
-    tone1.duration.set(1000)
-    tone1.volume.waveform.set(Waveform.Square)
+    val voice1 = voices.get(0)
+    voice1.enabled.set(true)
+    voice1.duration.set(1000)
+    voice1.volume.waveform.set(Waveform.Square)
 
-    val partial1 = tone1.partials(0)
+    val partial1 = voice1.partials(0)
     partial1.active.set(true)
     partial1.volume.set(100)
 
@@ -67,20 +67,20 @@ class SynthViewModel:
   /** Resets to default state. */
   def reset(): Unit = initDefault()
 
-  /** Active tone index property. */
-  def activeToneIndexProperty: IntegerProperty = activeToneIndex
+  /** Active voice index property. */
+  def activeVoiceIndexProperty: IntegerProperty = activeVoiceIndex
 
-  /** Returns currently active tone index. */
-  def getActiveToneIndex: Int = activeToneIndex.get
+  /** Returns currently active voice index. */
+  def getActiveVoiceIndex: Int = activeVoiceIndex.get
 
-  /** Sets active tone index. */
-  def setActiveToneIndex(idx: Int): Unit = activeToneIndex.set(idx)
+  /** Sets active voice index. */
+  def setActiveVoiceIndex(idx: Int): Unit = activeVoiceIndex.set(idx)
 
-  /** Observable list of all tone view models. */
-  def getTones: ObservableList[ToneViewModel] = tones
+  /** Observable list of all voice view models. */
+  def getVoices: ObservableList[VoiceViewModel] = voices
 
-  /** Returns currently active tone view model. */
-  def getActiveTone: ToneViewModel = tones.get(activeToneIndex.get)
+  /** Returns currently active voice view model. */
+  def getActiveVoice: VoiceViewModel = voices.get(activeVoiceIndex.get)
 
   /** Loop start position property. */
   def loopStartProperty: IntegerProperty = loopStart
@@ -100,49 +100,49 @@ class SynthViewModel:
   /** Target mode property (`false` = ONE, `true` = ALL). */
   def targetModeProperty: BooleanProperty = targetMode
 
-  /** Returns `true` if edits affect all tones. */
+  /** Returns `true` if edits affect all voices. */
   def isTargetAll: Boolean = targetMode.get
 
-  /** Total duration property (max of all tone durations). */
+  /** Total duration property (max of all voice durations). */
   def totalDurationProperty: IntegerProperty = totalDuration
 
   /** File loaded timestamp property for change detection. */
   def fileLoadedProperty: ObjectProperty[java.lang.Long] = fileLoaded
 
-  /** Loads `.synth` file data into all tone view models. */
+  /** Loads `.synth` file data into all voice view models. */
   def load(file: SynthFile): Unit =
     import Constants._
     SynthesisExecutor.cancelPending()
 
     loopStart.set(file.loop.begin)
     loopEnd.set(file.loop.end)
-    for i <- 0 until MaxTones do
-      val tone = file.tones.lift(i).flatten
-      tones.get(i).load(tone)
+    for i <- 0 until MaxVoices do
+      val voice = file.voices.lift(i).flatten
+      voices.get(i).load(voice)
 
-    val maxDur = (0 until MaxTones)
-      .flatMap(i => file.tones.lift(i).flatten)
+    val maxDur = (0 until MaxVoices)
+      .flatMap(i => file.voices.lift(i).flatten)
       .map(t => t.duration + t.start)
       .maxOption
       .getOrElse(0)
     totalDuration.set(maxDur)
-    activeToneIndex.set(0) // go TONE_0 whenever file loaded
+    activeVoiceIndex.set(0) // go TONE_0 whenever file loaded
     fileLoaded.set(System.currentTimeMillis())
 
-  /** Converts all tone view models to model `SynthFile`. */
+  /** Converts all voice view models to model `SynthFile`. */
   def toModel(): SynthFile =
-    val toneModels = tones
+    val voiceModels = voices
       .stream()
       .map(_.toModel())
-      .toArray(size => new Array[Option[Tone]](size))
+      .toArray(size => new Array[Option[Voice]](size))
       .toVector
     val loop = LoopParams(loopStart.get, loopEnd.get)
-    SynthFile(toneModels, loop)
+    SynthFile(voiceModels, loop)
 
-  /** Copies active tone to clipboard. */
-  def copyActiveTone(): Unit =
-    toneClipboard = Some(getActiveTone.toModel())
+  /** Copies active voice to clipboard. */
+  def copyActiveVoice(): Unit =
+    voiceClipboard = Some(getActiveVoice.toModel())
 
-  /** Pastes clipboard to active tone. */
-  def pasteToActiveTone(): Unit =
-    toneClipboard.foreach(getActiveTone.load)
+  /** Pastes clipboard to active voice. */
+  def pasteToActiveVoice(): Unit =
+    voiceClipboard.foreach(getActiveVoice.load)

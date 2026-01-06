@@ -5,11 +5,11 @@ import jagfx.model.*
 import jagfx.utils.ArrayUtils
 import javafx.beans.property.*
 
-/** View model for single `Tone`. */
-class ToneViewModel extends ViewModelLike:
+/** View model for single `Voice`. */
+class VoiceViewModel extends ViewModelLike:
   // Fields
 
-  /** Whether this tone is enabled for synthesis. */
+  /** Whether this voice is enabled for synthesis. */
   val enabled = new SimpleBooleanProperty(false)
 
   /** Pitch envelope view model. */
@@ -42,7 +42,7 @@ class ToneViewModel extends ViewModelLike:
   /** Filter poles/zeros view model. */
   val filterViewMode = new FilterViewModel()
 
-  /** Tone duration in samples. */
+  /** Voice duration in samples. */
   val duration = new SimpleIntegerProperty(1000)
 
   /** Start offset in samples. */
@@ -78,9 +78,9 @@ class ToneViewModel extends ViewModelLike:
     echoDelay.addListener((_, _, _) => cb())
     echoMix.addListener((_, _, _) => cb())
 
-  /** Loads tone data from model `Tone`. */
-  def load(toneOpt: Option[Tone]): Unit =
-    toneOpt match
+  /** Loads voice data from model `Voice`. */
+  def load(voiceOpt: Option[Voice]): Unit =
+    voiceOpt match
       case Some(t) =>
         enabled.set(true)
         pitch.load(t.pitchEnvelope)
@@ -109,7 +109,7 @@ class ToneViewModel extends ViewModelLike:
         echoDelay.set(t.echoDelay)
         echoMix.set(t.echoMix)
 
-        for i <- 0 until Constants.MaxTones do
+        for i <- 0 until Constants.MaxVoices do
           if i < t.partials.length then partials(i).load(t.partials(i))
           else partials(i).clear()
 
@@ -136,8 +136,8 @@ class ToneViewModel extends ViewModelLike:
     echoMix.set(0)
     partials.foreach(_.clear())
 
-  /** Converts view model state to model `Tone`. */
-  def toModel(): Option[Tone] =
+  /** Converts view model state to model `Voice`. */
+  def toModel(): Option[Voice] =
     if !enabled.get then None
     else
       val activePartials =
@@ -165,7 +165,7 @@ class ToneViewModel extends ViewModelLike:
         case None => None
 
       Some(
-        Tone(
+        Voice(
           pitch.toModel(),
           volume.toModel(),
           optModel(vibratoRate),

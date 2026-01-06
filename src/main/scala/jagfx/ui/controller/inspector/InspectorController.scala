@@ -58,7 +58,7 @@ class InspectorController(viewModel: SynthViewModel)
     fltInspector.setVisible(false); fltInspector.setManaged(false)
     envInspector.bind(envelope)
     timingInspector.setVisible(true); timingInspector.setManaged(true)
-    timingInspector.bind(viewModel.getActiveTone)
+    timingInspector.bind(viewModel.getActiveVoice)
     infoLabel.setText(s"$desc")
 
   /** Binds filter view model to inspector. */
@@ -68,7 +68,7 @@ class InspectorController(viewModel: SynthViewModel)
     fltInspector.setVisible(true); fltInspector.setManaged(true)
     fltInspector.bind(filter)
     timingInspector.setVisible(true); timingInspector.setManaged(true)
-    timingInspector.bind(viewModel.getActiveTone)
+    timingInspector.bind(viewModel.getActiveVoice)
     infoLabel.setText(s"$desc")
 
   /** Hides inspector panel. */
