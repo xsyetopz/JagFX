@@ -18,7 +18,7 @@ Cross-platform editor for Jagex Audio Synthesis (`.synth`) files. Create, edit, 
 | **Partials** | 10 additive partials with volume, decicent offset, and time delay |
 | **Filter** | IIR filter with pole/zero editor, frequency response visualisation |
 | **Modulation** | FM (vibrato) and AM (tremolo) with envelope-controlled rate/depth |
-| **Echo** | Configurable echo delay and mix level per tone |
+| **Echo** | Configurable echo delay and mix level per voice |
 | **Export** | Save as `.synth` or export to `.wav` (8-bit or 16-bit) |
 
 ## Quick Start
@@ -68,7 +68,7 @@ Creates `target/universal/jagfx-<version>.zip` with platform launchers for macOS
 ```text
 src/main/scala/jagfx/
 ├── io/              # Binary .synth reader/writer
-├── model/           # Data models (Tone, Envelope, Filter)
+├── model/           # Data models (Voice, Envelope, Filter)
 ├── synth/           # DSP engine (oscillators, filters, synthesis)
 ├── tools/           # Utility classes for various tasks
 ├── ui/              # JavaFX controllers and components
