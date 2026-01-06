@@ -25,32 +25,32 @@ Binary format for synthesized sound effects. Contains up to **`10` instrument vo
 
 ## File Structure
 
-```
+```text
 ┌──────────────────────────┐
-│  Tone Slot [0..9]        │
+│  Voice Slot [0..9]       │
 ├──────────────────────────┤
 │  Loop Begin (u16)        │  (Optional: if bytes remain)
 │  Loop End (u16)          │
 └──────────────────────────┘
 ```
 
-### Tone Slot Detection
+### Voicee Slot Detection
 
 Maximum `10` slots. Each detected via **Header Marker**:
 
 - `0x00`: **Empty Slot**. (Consumes `1` byte. Parser advances to next slot).
-- `!= 0x00`: **Tone Present**. (Byte NOT consumed during detection).
+- `!= 0x00`: **Voice Present**. (Byte NOT consumed during detection).
   - Marker equals **FormID** of Pitch Envelope.
 
 ### Truncation Handling
 
-- **Tones**: If EOF reached, remaining slots assumed empty.
+- **Voice**: If EOF reached, remaining slots assumed empty.
 - **Filter**: If EOF reached during Filter read, Filter discarded (fallback to raw synth).
 - **Loop**: If EOF reached before Loop Params, loop disabled (`0,0`).
 
 ---
 
-## Tone Definition
+## Voice Definition
 
 | Field | Type | Notes |
 |-------|------|-------|
@@ -72,7 +72,7 @@ Maximum `10` slots. Each detected via **Header Marker**:
 
 ## Envelope Structures
 
-### 1. Full Envelope (Tone Params)
+### 1. Full Envelope (Voice Params)
 
 | Field | Type | Description |
 |-------|------|-------------|
