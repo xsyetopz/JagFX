@@ -4,6 +4,8 @@ import jagfx.Constants.Int16
 import jagfx.ui.viewmodel.EnvelopeViewModel
 import jagfx.utils.ColorUtils.*
 import jagfx.utils.DrawingUtils.*
+import jagfx.model.EnvelopeSegment
+import javafx.application.Platform
 
 /** Canvas rendering envelope segments with grid. */
 class JagEnvelopeCanvas extends JagBaseCanvas:
@@ -22,9 +24,7 @@ class JagEnvelopeCanvas extends JagBaseCanvas:
   /** Binds envelope view model. */
   def setViewModel(vm: EnvelopeViewModel): Unit =
     viewModel = Some(vm)
-    vm.addChangeListener(() =>
-      javafx.application.Platform.runLater(() => requestRedraw())
-    )
+    vm.addChangeListener(() => Platform.runLater(() => requestRedraw()))
     requestRedraw()
 
   override protected def drawContent(
@@ -34,7 +34,10 @@ class JagEnvelopeCanvas extends JagBaseCanvas:
   ): Unit =
     drawGrid(buffer, width, height)
     drawCenterLine(buffer, width, height)
-    viewModel.foreach(vm => drawEnvelope(buffer, width, height, vm))
+    viewModel.foreach(vm =>
+      drawStartEndMarkers(buffer, width, height, vm)
+      drawEnvelope(buffer, width, height, vm)
+    )
 
   private def drawGrid(buffer: Array[Int], width: Int, height: Int): Unit =
     drawVerticalGrid(buffer, width, height)
@@ -73,25 +76,43 @@ class JagEnvelopeCanvas extends JagBaseCanvas:
       val y = i * height / rows
       line(buffer, width, height, 0, y, width, y, GridLineFaint)
 
+  private def drawStartEndMarkers(
+      buffer: Array[Int],
+      width: Int,
+      height: Int,
+      vm: EnvelopeViewModel
+  ): Unit =
+    val range = Int16.Range.toDouble
+    val startY = ((1.0 - vm.start.get / range) * height).toInt
+    val endY = ((1.0 - vm.end.get / range) * height).toInt
+
+    val lineSpace = 4
+    for x <- 0 until width by lineSpace * 2 do
+      val x2 = math.min(width, x + lineSpace)
+      line(buffer, width, height, x, startY, x2, startY, GridLineFaint)
+      line(buffer, width, height, x, endY, x2, endY, GridLineFaint)
+
   private def drawEnvelope(
       buffer: Array[Int],
       width: Int,
       height: Int,
       vm: EnvelopeViewModel
   ): Unit =
-    val segments = vm.getSegments
+    val segments = vm.getFullSegments
     if segments.nonEmpty then
       val zoomedWidth = width * zoomLevel
-      val step = zoomedWidth.toDouble / math.max(1, segments.length - 1)
-      var prevX = 0 - panOffset
+      val xs = computePointXs(zoomedWidth, segments)
       val range = Int16.Range.toDouble
-      var prevY = ((1.0 - segments(0) / range) * height).toInt
+      var prevX = xs(0) - panOffset
+      var prevY = ((1.0 - segments(0).peak / range) * height).toInt
+
       if prevX >= 0 && prevX < width then
         fillRect(buffer, width, height, prevX - 1, prevY - 1, 3, 3, graphColor)
 
       for i <- 1 until segments.length do
-        val x = (i * step).toInt - panOffset
-        val y = ((1.0 - segments(i) / range) * height).toInt
+        val x = xs(i) - panOffset
+        val y = ((1.0 - segments(i).peak / range) * height).toInt
+
         if x >= -width && x < width * 2 && prevX >= -width && prevX < width * 2
         then
           line(buffer, width, height, prevX, prevY, x, y, graphColor)
@@ -99,6 +120,28 @@ class JagEnvelopeCanvas extends JagBaseCanvas:
             fillRect(buffer, width, height, x - 1, y - 1, 3, 3, graphColor)
         prevX = x
         prevY = y
+
+  private def computePointXs(
+      width: Int,
+      segments: Vector[EnvelopeSegment]
+  ): Vector[Int] =
+    if segments.isEmpty then Vector.empty
+    else
+      var t = 0
+      val pointTimes = segments.indices.map { i =>
+        if i == 0 then 0
+        else
+          t += segments(i).duration
+          t
+      }.toVector
+
+      val totalTime = pointTimes.lastOption.getOrElse(0).toDouble
+      if totalTime <= 1e-3 then
+        val step = width.toDouble / math.max(1, segments.length - 1)
+        segments.indices.map(i => (i * step).toInt).toVector
+      else
+        val scale = width / totalTime
+        pointTimes.map(t => (t * scale).toInt)
 
 object JagEnvelopeCanvas:
   /** Creates envelope canvas. */
