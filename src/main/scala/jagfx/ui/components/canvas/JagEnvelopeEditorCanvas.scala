@@ -76,9 +76,15 @@ class JagEnvelopeEditorCanvas extends JagBaseCanvas:
   private var viewModel: Option[EnvelopeViewModel] = None
   private var hoverTarget: HoverTarget = HoverTarget.None
   private var selection: Set[Int] = Set.empty
+  private var graphColor: Int = Graph
 
   // Init: styling
   getStyleClass.add("jag-envelope-editor-canvas")
+
+  /** Sets graph line color. */
+  def setGraphColor(color: Int): Unit =
+    graphColor = color
+    requestRedraw()
 
   // Init: event handlers
   setOnMouseMoved((e: MouseEvent) =>
@@ -253,7 +259,7 @@ class JagEnvelopeEditorCanvas extends JagBaseCanvas:
 
         val color = hoverTarget match
           case HoverTarget.Segment(idx) if idx == i => White
-          case _                                    => Graph
+          case _                                    => graphColor
         if color == White then
           line(buffer, width, height, prevX, prevY - 1, x, y - 1, color)
           line(buffer, width, height, prevX, prevY + 1, x, y + 1, color)
@@ -280,7 +286,7 @@ class JagEnvelopeEditorCanvas extends JagBaseCanvas:
           else
             hoverTarget match
               case HoverTarget.Point(idx) if idx == i => PointHover
-              case _                                  => PointNormal
+              case _                                  => graphColor
 
         fillCircle(buffer, width, height, x, y, PointRadius, color)
         drawCircle(buffer, width, height, x, y, PointRadius, White)
