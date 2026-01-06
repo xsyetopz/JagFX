@@ -26,7 +26,7 @@ object VoicesPanel:
     panel.setMaxWidth(VoicesPanelSize)
     HBox.setHgrow(panel, Priority.NEVER)
 
-    val head = Label("TONES")
+    val head = Label("VOICES")
     head.getStyleClass.add("panel-head")
     head.setMaxWidth(Double.MaxValue)
     head.setAlignment(Pos.CENTER)
