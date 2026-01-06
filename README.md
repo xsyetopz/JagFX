@@ -89,7 +89,6 @@ src/main/scala/jagfx/
 
 <https://github.com/user-attachments/assets/b0564501-5d82-4239-8883-b32ab746e7dc>
 
-
 ## License
 
 This project is licensed under MIT License. See [LICENSE](LICENSE) file for more details.
