@@ -7,10 +7,10 @@ import jagfx.ui.viewmodel.SynthViewModel
 import javafx.beans.binding.Bindings
 import javafx.beans.property.IntegerProperty
 import javafx.beans.value.ChangeListener
+import javafx.geometry.Insets
 import javafx.geometry.Pos
 import javafx.scene.control.*
 import javafx.scene.layout.*
-import javafx.geometry.Insets
 
 // Constants
 private final val HalfMaxPartials = Constants.MaxPartials - 5
