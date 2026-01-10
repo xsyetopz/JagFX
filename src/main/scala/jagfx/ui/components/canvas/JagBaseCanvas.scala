@@ -5,11 +5,11 @@ import java.nio.IntBuffer
 import jagfx.Constants.MinFrameNanos
 import jagfx.utils.ColorUtils.*
 import jagfx.utils.DrawingUtils.*
+import jagfx.utils.MathUtils
 import javafx.animation.AnimationTimer
 import javafx.scene.canvas.*
 import javafx.scene.image.*
 import javafx.scene.input.*
-import jagfx.utils.MathUtils
 
 /** Base canvas with throttled rendering and buffer management. */
 abstract class JagBaseCanvas extends Canvas:
