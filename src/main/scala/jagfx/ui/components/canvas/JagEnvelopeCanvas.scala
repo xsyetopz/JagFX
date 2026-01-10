@@ -1,17 +1,18 @@
 package jagfx.ui.components.canvas
 
 import jagfx.Constants.Int16
+import jagfx.model.EnvelopeSegment
 import jagfx.ui.viewmodel.EnvelopeViewModel
 import jagfx.utils.ColorUtils.*
 import jagfx.utils.DrawingUtils.*
-import jagfx.model.EnvelopeSegment
-import javafx.application.Platform
 
 /** Canvas rendering envelope segments with grid. */
 class JagEnvelopeCanvas extends JagBaseCanvas:
   // Fields
   private var viewModel: Option[EnvelopeViewModel] = None
   private var graphColor: Int = Graph
+  private var cachedPointXs: Vector[Int] = Vector.empty
+  private var cachedZoomedWidth: Int = -1
 
   // Init: styling
   getStyleClass.add("jag-envelope-canvas")
@@ -23,8 +24,13 @@ class JagEnvelopeCanvas extends JagBaseCanvas:
 
   /** Binds envelope view model. */
   def setViewModel(vm: EnvelopeViewModel): Unit =
+    viewModel.foreach(_.removeChangeListener(() => invalidateCache()))
     viewModel = Some(vm)
-    vm.addChangeListener(() => Platform.runLater(() => requestRedraw()))
+    vm.addChangeListener(() =>
+      invalidateCache()
+      requestRedraw()
+    )
+    invalidateCache()
     requestRedraw()
 
   override protected def drawContent(
@@ -38,6 +44,10 @@ class JagEnvelopeCanvas extends JagBaseCanvas:
       drawStartEndMarkers(buffer, width, height, vm)
       drawEnvelope(buffer, width, height, vm)
     )
+
+  private def invalidateCache(): Unit =
+    cachedPointXs = Vector.empty
+    cachedZoomedWidth = -1
 
   private def drawGrid(buffer: Array[Int], width: Int, height: Int): Unit =
     drawVerticalGrid(buffer, width, height)
@@ -101,7 +111,16 @@ class JagEnvelopeCanvas extends JagBaseCanvas:
     val segments = vm.getFullSegments
     if segments.nonEmpty then
       val zoomedWidth = width * zoomLevel
-      val xs = computePointXs(zoomedWidth, segments)
+
+      val xs =
+        if cachedPointXs.length == segments.length && cachedZoomedWidth == zoomedWidth
+        then cachedPointXs
+        else
+          val computed = computePointXs(zoomedWidth, segments)
+          cachedPointXs = computed
+          cachedZoomedWidth = zoomedWidth
+          computed
+
       val range = Int16.Range.toDouble
       var prevX = xs(0) - panOffset
       var prevY = ((1.0 - segments(0).peak / range) * height).toInt
