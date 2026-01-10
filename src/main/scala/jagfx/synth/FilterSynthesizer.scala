@@ -16,7 +16,8 @@ object FilterSynthesizer:
     envelopeEval.foreach(_.reset())
 
     val state = FilterState(filter)
-    val input = buffer.clone()
+    val tempInput = BufferPool.acquire(sampleCount)
+    System.arraycopy(buffer, 0, tempInput, 0, sampleCount)
 
     var envelopeValue =
       envelopeEval.map(_.evaluate(sampleCount)).getOrElse(Int16.Range)
@@ -29,7 +30,7 @@ object FilterSynthesizer:
 
       while sampleIndex < chunkEnd do
         buffer(sampleIndex) = processSample(
-          input,
+          tempInput,
           buffer,
           sampleIndex,
           count0,
@@ -52,7 +53,9 @@ object FilterSynthesizer:
         count1 = coefs.count1
         inverseA0 = coefs.inverseA0
 
-  private def computeChunkEnd(i: Int, sampleCount: Int, count0: Int): Int =
+    BufferPool.release(tempInput)
+
+  private inline def computeChunkEnd(i: Int, sampleCount: Int, count0: Int): Int =
     val nextChunk = math.min(i + FilterUpdateRate, sampleCount)
     if nextChunk < sampleCount - count0 then nextChunk else sampleCount
 
