@@ -47,8 +47,10 @@ object SynthReader:
         val loopParams =
           if buf.remaining >= 4 then
             LoopParams(buf.readUInt16BE(), buf.readUInt16BE())
-          else
+          else if buf.isTruncated then
             warnings += s"File truncated at 0x${buf.position.toHexString.toUpperCase}; defaulting loop parameters..."
+            LoopParams(0, 0)
+          else
             LoopParams(0, 0)
         Right(SynthFile(voices, loopParams, warnings.toList))
       catch
@@ -61,7 +63,7 @@ object SynthReader:
 
     private def readVoices(): Vector[Option[Voice]] =
       (0 until MaxVoices).map { _ =>
-        if buf.remaining > 4 then
+        if buf.remaining > 0 then
           val marker = buf.peek()
           if marker != 0 then
             val voice = readVoice()
