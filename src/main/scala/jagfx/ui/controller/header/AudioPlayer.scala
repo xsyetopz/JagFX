@@ -128,7 +128,7 @@ class AudioPlayer(viewModel: SynthViewModel):
 
     playheadTimer.foreach(_.stop())
     playheadTimer = None
-    onPlayheadUpdate(-1)
+    onPlayheadUpdate(0.0)
 
     currentClip.foreach { clip =>
       if clip.isRunning then clip.stop()
