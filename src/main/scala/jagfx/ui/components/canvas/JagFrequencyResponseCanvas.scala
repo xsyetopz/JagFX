@@ -12,6 +12,11 @@ class JagFrequencyResponseCanvas extends JagBaseCanvas:
 
   // Fields
   private var viewModel: Option[FilterViewModel] = None
+  private var cachedPoints: Array[Int] = Array.empty
+  private var cachedWidth: Int = -1
+  private var cachedHeight: Int = -1
+  private var cachedPoint: Int = -1
+  private var cachedVmHash: Int = 0
 
   // Init: styling
   getStyleClass.add("jag-freq-response-canvas")
@@ -19,9 +24,7 @@ class JagFrequencyResponseCanvas extends JagBaseCanvas:
   /** Binds filter view model. */
   def setViewModel(vm: FilterViewModel): Unit =
     viewModel = Some(vm)
-    vm.addChangeListener(() =>
-      javafx.application.Platform.runLater(() => requestRedraw())
-    )
+    vm.addChangeListener(() => requestRedraw())
     requestRedraw()
 
   override protected def drawContent(
@@ -88,14 +91,25 @@ class JagFrequencyResponseCanvas extends JagBaseCanvas:
       vm: FilterViewModel,
       point: Int
   ): Array[Int] =
-    val points = new Array[Int](width)
-    for x <- 0 until width do
-      val freq = x.toDouble / width
-      val response = computeFrequencyResponse(vm, freq, point)
-      val dB = MathUtils.clamp(MathUtils.linearToDb(response), MinDb, MaxDb)
-      val y = decibelsToY(dB, height)
-      points(x) = MathUtils.clamp(y, 0, height - 1)
-    points
+    val vmHash = vm.hashCode()
+    val isFrequencyResponseValid =
+      cachedPoints.length == width && cachedWidth == width && cachedHeight == height && cachedPoint == point && cachedVmHash == vmHash
+    if isFrequencyResponseValid then cachedPoints
+    else
+      val points = new Array[Int](width)
+      for x <- 0 until width do
+        val freq = x.toDouble / width
+        val response = computeFrequencyResponse(vm, freq, point)
+        val dB = MathUtils.clamp(MathUtils.linearToDb(response), MinDb, MaxDb)
+        val y = decibelsToY(dB, height)
+        points(x) = MathUtils.clamp(y, 0, height - 1)
+
+      cachedPoints = points
+      cachedWidth = width
+      cachedHeight = height
+      cachedPoint = point
+      cachedVmHash = vmHash
+      points
 
   private def computeFrequencyResponse(
       vm: FilterViewModel,
