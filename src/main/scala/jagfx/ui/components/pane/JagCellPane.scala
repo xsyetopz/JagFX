@@ -23,6 +23,9 @@ class JagCellPane(title: String) extends StackPane:
   private val btnMenu = createToolButton()
   private val zooms = Seq((btnX1, 1), (btnX2, 2), (btnX4, 4))
   private val contextMenu = new ContextMenu()
+  private val iX1 = new MenuItem("x1"); iX1.setOnAction(_ => btnX1.fire())
+  private val iX2 = new MenuItem("x2"); iX2.setOnAction(_ => btnX2.fire())
+  private val iX4 = new MenuItem("x4"); iX4.setOnAction(_ => btnX4.fire())
   private val canvasWrapper = new Pane()
   private val canvas = JagEnvelopeCanvas()
   private val dimmingListener: () => Unit = () =>
@@ -83,7 +86,6 @@ class JagCellPane(title: String) extends StackPane:
   }
 
   btnMenu.setOnAction(_ =>
-    updateMenu()
     contextMenu.show(btnMenu, Side.BOTTOM, 0, 0)
   )
 
@@ -112,14 +114,6 @@ class JagCellPane(title: String) extends StackPane:
   def setAlternateCanvas(alt: JagBaseCanvas): Unit =
     alternateCanvas = Some(alt)
     btnX1.fire()
-
-  /** Updates context menu items. */
-  def updateMenu(): Unit =
-    contextMenu.getItems.clear()
-    val iX1 = new MenuItem("x1"); iX1.setOnAction(_ => btnX1.fire())
-    val iX2 = new MenuItem("x2"); iX2.setOnAction(_ => btnX2.fire())
-    val iX4 = new MenuItem("x4"); iX4.setOnAction(_ => btnX4.fire())
-    contextMenu.getItems.addAll(iX1, iX2, iX4)
 
   /** Configures whether collapse button is shown. */
   def setFeatures(showCollapse: Boolean): Unit =
@@ -160,8 +154,13 @@ class JagCellPane(title: String) extends StackPane:
     val padding = 5
 
     val isNarrow = width > 0 && width < (titleWidth + toolsWidth + padding)
-    if isNarrow then toolbar.getChildren.add(btnMenu)
-    else toolbar.getChildren.addAll(btnX1, btnX2, btnX4)
+
+    toolbar.getChildren.addAll(btnMenu, btnX1, btnX2, btnX4)
+
+    btnMenu.setVisible(isNarrow)
+    btnX1.setVisible(!isNarrow)
+    btnX2.setVisible(!isNarrow)
+    btnX4.setVisible(!isNarrow)
 
   private def updateDimming(vm: EnvelopeViewModel): Unit =
     container.setOpacity(if vm.isZero then 0.5 else 1.0)
