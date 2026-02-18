@@ -1,0 +1,67 @@
+How was original JagFX laid out in GUI side?
+
+In the following grid:
+
+### TOP..MIDDLE ---
+
+[Freq Base]     [Freq Mod rate]     [Freq Mod range]    [Graph of poles/zeros]
+[Amp Base]      [Amp Mod rate]      [Amp Mod range]     [Transition Curve]
+[Final Output]  [Gap off]           [Gap on]            [Frequency Response]
+
+### BOTTOM ---
+
+# Editing Tone section                                                                          # Mode (used to display the last 3 filter-related panels at the far right only, or all at once)
+[1][2][3][4][5][6][7][8][9][10]     [Harmonic1][Harmonic2][Harmonic3][Harmonic4][Harmonic5]     [Main][Filter][Both]
+      [Copy][Reset Active]          |Semi: ...||Semi: ...||Semi: ...||Semi: ...||Semi: ...|
+                                    |Vol : ...||Vol : ...||Vol : ...||Vol : ...||Vol : ...|
+
+---
+
+# To left were settings and various buttons for some elements:
+0 - [Off]
+1 - [Sqr]
+2 - [Sin]
+3 - [Saw]
+4 - [Noise]
+5 - [Triangle] # <-- this doesn't exist, but some files actually contained a "5th" waveform called Triangle. For full support, we could add this!
+Min Hz: ...
+Max Hz: ...
+Avg Hz: *immutable calculated value*
+
+# these were seen on Gap Off/On panel controls.
+[Off]
+[On]
+Min Gap: ...
+Max Gap: ...
+Avg Gap: *immutable calculated value*
+
+---
+
+Len ms: ^... # these were up-down text fields
+Pos ms: ^...
+L1 ms : ^...
+L2 ms : ^...
+
+[Play]
+[Play All] # meant to play all "tones" at once
+[Loop]
+[Loop All] # meant to loop all tones maybe?
+
+===
+Loops
+^...
+=== # this is a groupbox in original, same with harmonics
+
+[Stop]
+[Load]
+[Save]
+
+[True Wave] # this always showed up as toggled on, so what even does this do?
+
+---
+
+At the end of day, we never had hand or code into the original, so we don't know what more there could be.
+
+Best to just design properly around the file format, and the idea behind a wavetable synthesizer with additive synthesis.
+
+Image reference: /Users/krystian/CodeProjects/jagfx-scala/references/images/370_cow_death.jpeg (Kimi K2.5 can read this via MCP)
