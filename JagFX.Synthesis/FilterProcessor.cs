@@ -21,14 +21,16 @@ public static class FilterProcessor
         var tempInput = SampleBufferPool.Acquire(sampleCount);
         var inputSpan = tempInput.AsSpan();
         var bufferSpan = buffer.AsSpan();
-        inputSpan.CopyTo(bufferSpan);
+        bufferSpan.CopyTo(inputSpan);
 
         var state = new FilterState(filter);
         var envelopeValue = envelopeEval?.Evaluate(sampleCount) ?? Constants.FixedPoint.Scale;
         var envelopeFactor = envelopeValue / (float)Constants.FixedPoint.Scale;
 
         var count0 = state.ComputeCoefs(0, envelopeFactor);
+        var inverseA0 = state.InverseA0;
         var count1 = state.ComputeCoefs(1, envelopeFactor);
+        state.InverseA0 = inverseA0;
 
         if (sampleCount < count0 + count1)
         {
@@ -56,15 +58,10 @@ public static class FilterProcessor
         while (sampleIndex < sampleCount - count0)
         {
             chunkEnd = Math.Min(chunkEnd, sampleCount - count0);
-            ProcessSampleRange(inputSpan, bufferSpan, state, envelopeEval, sampleIndex, chunkEnd, count0, count1, sampleCount);
             sampleIndex = chunkEnd;
 
             if (sampleIndex < sampleCount - count0)
             {
-                var envelopeValue = envelopeEval?.Evaluate(sampleCount) ?? Constants.FixedPoint.Scale;
-                var envelopeFactor = envelopeValue / (float)Constants.FixedPoint.Scale;
-                count0 = state.ComputeCoefs(0, envelopeFactor);
-                count1 = state.ComputeCoefs(1, envelopeFactor);
                 chunkEnd += ChunkSize;
             }
         }
@@ -75,35 +72,46 @@ public static class FilterProcessor
         ProcessSampleRange(inputSpan, bufferSpan, state, envelopeEval, sampleCount - count0, sampleCount, count0, count1, sampleCount, isFinal: true);
     }
 
-    private static void ProcessSampleRange(Span<int> inputSpan, Span<int> bufferSpan, FilterState state,
+    private static int ProcessSampleRange(Span<int> inputSpan, Span<int> bufferSpan, FilterState state,
         EnvelopeEvaluator? envelopeEval, int start, int end, int count0, int count1, int sampleCount, bool isFinal = false)
     {
+        var lastEnvelopeValue = Constants.FixedPoint.Scale;
         for (var i = start; i < end; i++)
         {
             if (isFinal)
             {
-                ApplyFilterToFinalSample(inputSpan, bufferSpan, state, i, count0, count1);
+                ApplyFilterToFinalSample(inputSpan, bufferSpan, state, i, count0, count1, sampleCount);
             }
             else
             {
                 ApplyFilterToSample(inputSpan, bufferSpan, state, i, count0, count1);
             }
-            envelopeEval?.Evaluate(sampleCount);
+            lastEnvelopeValue = envelopeEval?.Evaluate(sampleCount) ?? Constants.FixedPoint.Scale;
+
+            if (i + 1 < sampleCount)
+            {
+                var envelopeFactor = lastEnvelopeValue / (float)Constants.FixedPoint.Scale;
+                count0 = state.ComputeCoefs(0, envelopeFactor);
+                count1 = state.ComputeCoefs(1, envelopeFactor);
+            }
         }
+        return lastEnvelopeValue;
     }
 
     private static void ApplyFilterToSample(Span<int> inputSpan, Span<int> bufferSpan, FilterState state, int sampleIndex, int count0, int feedbackCount)
     {
-        long output = (inputSpan[sampleIndex + count0] * state.ForwardMultiplier) >> 16;
+        var inputIdx = sampleIndex + count0;
+        var xCurr = inputIdx < inputSpan.Length ? inputSpan[inputIdx] : 0;
+        long output = (xCurr * state.InverseA0) >> 16;
         AddFeedforwardTerms(inputSpan, state, sampleIndex, count0, ref output);
         AddFeedbackTerms(bufferSpan, state, sampleIndex, feedbackCount, ref output, subtract: true);
         bufferSpan[sampleIndex] = (int)output;
     }
 
-    private static void ApplyFilterToFinalSample(Span<int> inputSpan, Span<int> bufferSpan, FilterState state, int sampleIndex, int count0, int feedbackCount)
+    private static void ApplyFilterToFinalSample(Span<int> inputSpan, Span<int> bufferSpan, FilterState state, int sampleIndex, int count0, int feedbackCount, int sampleCount)
     {
         var output = 0L;
-        AddFeedforwardTermsForFinal(inputSpan, state, sampleIndex, count0, ref output);
+        AddFeedforwardTermsForFinal(inputSpan, state, sampleIndex, count0, sampleCount, ref output);
         AddFeedbackTerms(bufferSpan, state, sampleIndex, feedbackCount, ref output, subtract: true);
         bufferSpan[sampleIndex] = (int)output;
     }
@@ -112,28 +120,30 @@ public static class FilterProcessor
     {
         for (var j = 0; j < count0; j++)
         {
-            output += ((long)inputSpan[sampleIndex + count0 - 1 - j] * state.Feedforward[j]) >> 16;
+            var ffIdx = sampleIndex + count0 - 1 - j;
+            if (ffIdx < inputSpan.Length)
+                output += ((long)inputSpan[ffIdx] * state.Feedforward[j]) >> 16;
         }
     }
 
-    private static void AddFeedforwardTermsForFinal(Span<int> inputSpan, FilterState state, int sampleIndex, int count0, ref long output)
+    private static void AddFeedforwardTermsForFinal(Span<int> inputSpan, FilterState state, int sampleIndex, int count0, int sampleCount, ref long output)
     {
-        for (var j = sampleIndex + count0 - (sampleIndex + count0); j < count0; j++)
+        var startJ = sampleIndex + count0 - sampleCount;
+        for (var j = startJ; j < count0; j++)
         {
             var inputIndex = sampleIndex + count0 - 1 - j;
-            if (inputIndex < 0 || inputIndex >= inputSpan.Length) continue;
             output += ((long)inputSpan[inputIndex] * state.Feedforward[j]) >> 16;
         }
     }
 
     private static void AddFeedbackTerms(Span<int> bufferSpan, FilterState state, int sampleIndex, int feedbackCount, ref long output, bool subtract = false)
     {
-        for (var j = 0; j < feedbackCount; j++)
+        var actualFeedbackCount = Math.Min(sampleIndex, feedbackCount);
+        for (var j = 0; j < actualFeedbackCount; j++)
         {
             var bufferIndex = sampleIndex - 1 - j;
-            if (bufferIndex < 0) continue;
             var term = ((long)bufferSpan[bufferIndex] * state.Feedback[j]) >> 16;
-            output -= subtract ? term : -term;
+            output -= term;
         }
     }
 
@@ -173,13 +183,14 @@ public static class FilterProcessor
 
         public int[] Feedforward { get; } = new int[MaxCoefs];
         public int[] Feedback { get; } = new int[MaxCoefs];
-        public int ForwardMultiplier { get; } = 0x10000;
+        public int InverseA0 { get; set; }
 
         public int ComputeCoefs(int dir, float envelopeFactor)
         {
             Array.Clear(_floatCoefs, 0, _floatCoefs.Length);
 
             var inverseA0 = ComputeInverseA0(envelopeFactor);
+            InverseA0 = inverseA0;
             var floatInvA0 = inverseA0 / (float)Constants.FixedPoint.Scale;
             var pairCount = _filter.PairCounts[dir];
 
