@@ -128,7 +128,9 @@ public static class FilterProcessor
     {
         for (int j = 0; j < feedbackCount; j++)
         {
-            var term = ((long)bufferSpan[sampleIndex - 1 - j] * state.Feedback[j]) >> 16;
+            var bufferIndex = sampleIndex - 1 - j;
+            if (bufferIndex < 0) continue;
+            var term = ((long)bufferSpan[bufferIndex] * state.Feedback[j]) >> 16;
             output -= subtract ? term : -term;
         }
     }
