@@ -144,6 +144,8 @@ public static class SynthFileReader
 
             while (oscillators.Count < Constants.MaxOscillators)
             {
+                if (_buf.Remaining == 0) break;
+
                 var volume = _buf.ReadUSmart();
                 if (volume == 0) break;
 
@@ -197,7 +199,9 @@ public static class SynthFileReader
         private (int pairCount0, int pairCount1) ReadFilterHeader()
         {
             var packedPairs = _buf.ReadUInt8();
-            return (packedPairs >> 4, packedPairs & 0xF);
+            var pairCount0 = packedPairs >> 4;
+            var pairCount1 = packedPairs & 0xF;
+            return (pairCount0, pairCount1);
         }
 
         private (int[,,] frequencies, int[,,] magnitudes) ReadFilterCoefficients(
@@ -218,9 +222,12 @@ public static class SynthFileReader
             for (var channel = 0; channel < 2; channel++)
             {
                 var pairs = channel == 0 ? pairCount0 : pairCount1;
-                for (var p = 0; p < pairs; p++)
+                var maxPairs = Math.Min(pairs, Constants.MaxFilterPairs);
+                for (var p = 0; p < maxPairs; p++)
                 {
+                    if (_buf.Remaining < 2) return;
                     frequencies[channel, 0, p] = _buf.ReadUInt16BE();
+                    if (_buf.Remaining < 2) return;
                     magnitudes[channel, 0, p] = _buf.ReadUInt16BE();
                 }
             }
@@ -232,11 +239,14 @@ public static class SynthFileReader
             for (var channel = 0; channel < 2; channel++)
             {
                 var pairs = channel == 0 ? pairCount0 : pairCount1;
-                for (var p = 0; p < pairs; p++)
+                var maxPairs = Math.Min(pairs, Constants.MaxFilterPairs);
+                for (var p = 0; p < maxPairs; p++)
                 {
                     if ((modulationMask & (1 << (channel * 4 + p))) != 0)
                     {
+                        if (_buf.Remaining < 2) return;
                         frequencies[channel, 1, p] = _buf.ReadUInt16BE();
+                        if (_buf.Remaining < 2) return;
                         magnitudes[channel, 1, p] = _buf.ReadUInt16BE();
                     }
                     else
@@ -335,13 +345,14 @@ public static class SynthFileReader
             for (var channel = 0; channel < 2; channel++)
             {
                 var pairs = channel == 0 ? pairCount0 : pairCount1;
+                var maxPairs = Math.Min(pairs, Constants.MaxFilterPairs);
                 freqArray[channel] = new ImmutableArray<int>[2];
                 magArray[channel] = new ImmutableArray<int>[2];
 
                 for (var phase = 0; phase < 2; phase++)
                 {
-                    freqArray[channel][phase] = BuildCoeffientArray(frequencies, channel, phase, pairs);
-                    magArray[channel][phase] = BuildCoeffientArray(magnitudes, channel, phase, pairs);
+                    freqArray[channel][phase] = BuildCoeffientArray(frequencies, channel, phase, maxPairs);
+                    magArray[channel][phase] = BuildCoeffientArray(magnitudes, channel, phase, maxPairs);
                 }
             }
 
