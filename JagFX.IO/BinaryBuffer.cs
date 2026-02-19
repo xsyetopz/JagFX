@@ -78,16 +78,18 @@ namespace JagFX.IO
 
         public short ReadSmart()
         {
-            var smart = Smart16.FromEncoded(Data.AsSpan(_position), out int bytes);
-            _position += bytes;
-            return smart.Value;
+            if (_position >= Data.Length) return 0;
+
+            var b = Data[_position] & 0xFF;
+            return b < 128 ? ReadSmartOneByte() : ReadSmartTwoBytes();
         }
 
         public ushort ReadUSmart()
         {
-            var smart = USmart16.FromEncoded(Data.AsSpan(_position), out int bytes);
-            _position += bytes;
-            return smart.Value;
+            if (_position >= Data.Length) return 0;
+
+            var value = Data[_position] & 0xFF;
+            return value < 128 ? ReadUSmartOneByte() : ReadUSmartTwoBytes();
         }
 
         public void WriteInt32BE(int value)
@@ -138,6 +140,45 @@ namespace JagFX.IO
         {
             var smart = new USmart16(value);
             _position += smart.Encode(Data.AsSpan(_position));
+        }
+
+        private short ReadSmartOneByte()
+        {
+            var b = Data[_position] & 0xFF;
+            _position++;
+            return (short)(b - 128);
+        }
+
+        private short ReadSmartTwoBytes()
+        {
+            if (_position + 2 > Data.Length)
+            {
+                _truncated = true;
+                _position += 2;
+                return 0;
+            }
+            var b = Data[_position] & 0xFF;
+            _position += 2;
+            var value = ((b & 0x7F) << 8) | (Data[_position - 1] & 0xFF);
+            return (short)(value > short.MaxValue ? value - ushort.MaxValue - 1 : value);
+        }
+
+        private ushort ReadUSmartOneByte()
+        {
+            _position++;
+            return (ushort)(Data[_position - 1] & 0xFF);
+        }
+
+        private ushort ReadUSmartTwoBytes()
+        {
+            if (_position + 2 > Data.Length)
+            {
+                _truncated = true;
+                _position = Data.Length;
+                return 0;
+            }
+            _position += 2;
+            return (ushort)(((Data[_position - 2] & 0xFF) << 8) + (Data[_position - 1] & 0xFF) - Constants.FixedPoint.Offset);
         }
 
         private bool CheckTruncation(int bytes)
