@@ -19,6 +19,16 @@ namespace JagFX.IO
 
         public void Skip(int n) => _position += n;
 
+        public void SetPosition(int position)
+        {
+            if (position < 0)
+                _position = 0;
+            else if (position > Data.Length)
+                _position = Data.Length;
+            else
+                _position = position;
+        }
+
         public int Peek() => _position >= Data.Length ? 0 : Data[_position] & 0xFF;
 
         public int PeekAt(int offset)
@@ -61,9 +71,7 @@ namespace JagFX.IO
         {
             if (CheckTruncation(2)) return 0;
             _position += 2;
-            var value = ((Data[_position - 2] & 0xFF) << 8) + (Data[_position - 1] & 0xFF);
-            if (value > short.MaxValue) value -= Constants.FixedPoint.Scale;
-            return value;
+            return ((Data[_position - 2] & 0xFF) << 8) + (Data[_position - 1] & 0xFF);
         }
 
         public int ReadInt32BE()
@@ -146,21 +154,15 @@ namespace JagFX.IO
         {
             var b = Data[_position] & 0xFF;
             _position++;
-            return (short)(b - 128);
+            return (short)(b - 64);
         }
 
         private short ReadSmartTwoBytes()
         {
-            if (_position + 2 > Data.Length)
-            {
-                _truncated = true;
-                _position += 2;
-                return 0;
-            }
-            var b = Data[_position] & 0xFF;
+            if (CheckTruncation(2)) return 0;
             _position += 2;
-            var value = ((b & 0x7F) << 8) | (Data[_position - 1] & 0xFF);
-            return (short)(value > short.MaxValue ? value - ushort.MaxValue - 1 : value);
+            var value = ((Data[_position - 2] & 0xFF) << 8) | (Data[_position - 1] & 0xFF);
+            return (short)(value - 49152);
         }
 
         private ushort ReadUSmartOneByte()
@@ -171,12 +173,7 @@ namespace JagFX.IO
 
         private ushort ReadUSmartTwoBytes()
         {
-            if (_position + 2 > Data.Length)
-            {
-                _truncated = true;
-                _position = Data.Length;
-                return 0;
-            }
+            if (CheckTruncation(2)) return 0;
             _position += 2;
             return (ushort)(((Data[_position - 2] & 0xFF) << 8) + (Data[_position - 1] & 0xFF) - Constants.FixedPoint.Offset);
         }
