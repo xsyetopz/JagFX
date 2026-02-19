@@ -1,5 +1,6 @@
 using JagFX.Domain;
 using SmartInt;
+using System.Buffers.Binary;
 
 namespace JagFX.IO
 {
@@ -56,32 +57,33 @@ namespace JagFX.IO
         public int ReadUInt16BE()
         {
             if (CheckTruncation(2)) return 0;
+            var value = BinaryPrimitives.ReadUInt16BigEndian(Data.AsSpan(_position, 2));
             _position += 2;
-            return ((Data[_position - 2] & 0xFF) << 8) + (Data[_position - 1] & 0xFF);
+            return value;
         }
 
         public int ReadUInt16LE()
         {
             if (CheckTruncation(2)) return 0;
+            var value = BinaryPrimitives.ReadUInt16LittleEndian(Data.AsSpan(_position, 2));
             _position += 2;
-            return (Data[_position - 2] & 0xFF) + ((Data[_position - 1] & 0xFF) << 8);
+            return value;
         }
 
         public int ReadInt16BE()
         {
             if (CheckTruncation(2)) return 0;
+            var value = BinaryPrimitives.ReadInt16BigEndian(Data.AsSpan(_position, 2));
             _position += 2;
-            return ((Data[_position - 2] & 0xFF) << 8) + (Data[_position - 1] & 0xFF);
+            return value;
         }
 
         public int ReadInt32BE()
         {
             if (CheckTruncation(4)) return 0;
+            var value = BinaryPrimitives.ReadInt32BigEndian(Data.AsSpan(_position, 4));
             _position += 4;
-            return ((Data[_position - 4] & 0xFF) << 24) +
-                   ((Data[_position - 3] & 0xFF) << 16) +
-                   ((Data[_position - 2] & 0xFF) << 8) +
-                   (Data[_position - 1] & 0xFF);
+            return value;
         }
 
         public short ReadSmart()
@@ -102,26 +104,19 @@ namespace JagFX.IO
 
         public void WriteInt32BE(int value)
         {
-            Data[_position] = (byte)(value >> 24);
-            Data[_position + 1] = (byte)(value >> 16);
-            Data[_position + 2] = (byte)(value >> 8);
-            Data[_position + 3] = (byte)value;
+            BinaryPrimitives.WriteInt32BigEndian(Data.AsSpan(_position, 4), value);
             _position += 4;
         }
 
         public void WriteInt32LE(int value)
         {
-            Data[_position] = (byte)value;
-            Data[_position + 1] = (byte)(value >> 8);
-            Data[_position + 2] = (byte)(value >> 16);
-            Data[_position + 3] = (byte)(value >> 24);
+            BinaryPrimitives.WriteInt32LittleEndian(Data.AsSpan(_position, 4), value);
             _position += 4;
         }
 
         public void WriteInt16LE(int value)
         {
-            Data[_position] = (byte)value;
-            Data[_position + 1] = (byte)(value >> 8);
+            BinaryPrimitives.WriteInt16LittleEndian(Data.AsSpan(_position, 2), (short)value);
             _position += 2;
         }
 
@@ -133,8 +128,7 @@ namespace JagFX.IO
 
         public void WriteUInt16BE(int value)
         {
-            Data[_position] = (byte)(value >> 8);
-            Data[_position + 1] = (byte)value;
+            BinaryPrimitives.WriteUInt16BigEndian(Data.AsSpan(_position, 2), (ushort)value);
             _position += 2;
         }
 
@@ -160,8 +154,8 @@ namespace JagFX.IO
         private short ReadSmartTwoBytes()
         {
             if (CheckTruncation(2)) return 0;
+            var value = BinaryPrimitives.ReadUInt16BigEndian(Data.AsSpan(_position, 2));
             _position += 2;
-            var value = ((Data[_position - 2] & 0xFF) << 8) | (Data[_position - 1] & 0xFF);
             return (short)(value - 49152);
         }
 
@@ -174,8 +168,9 @@ namespace JagFX.IO
         private ushort ReadUSmartTwoBytes()
         {
             if (CheckTruncation(2)) return 0;
+            var value = BinaryPrimitives.ReadUInt16BigEndian(Data.AsSpan(_position, 2));
             _position += 2;
-            return (ushort)(((Data[_position - 2] & 0xFF) << 8) + (Data[_position - 1] & 0xFF) - Constants.FixedPoint.Offset);
+            return (ushort)(value - Constants.FixedPoint.Offset);
         }
 
         private bool CheckTruncation(int bytes)
