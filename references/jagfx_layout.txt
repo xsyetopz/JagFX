@@ -8,12 +8,33 @@ In the following grid:
 [Amp Base]      [Amp Mod rate]      [Amp Mod range]     [Transition Curve]
 [Final Output]  [Gap off]           [Gap on]            [Frequency Response]
 
+---
+
+these grid cells:
+[Freq Base]     [Freq Mod rate]     [Freq Mod range]
+[Amp Base]      [Amp Mod rate]      [Amp Mod range]     [Transition Curve]
+[Final Output]  [Gap off]           [Gap on]
+
+had the following title buttons:
+{1x}{2x}{4x}{..}{M...}{*down_arrow*}
+
+what exactly was '..' 'M...' and down_arrow are unknown as we've never seen their full names,
+nor have we seen them clicked/used in any developer video we've gotten.
+
+however, these two: [Graph of poles/zeros] and [Frequency Response]:
+only contain these:
+{1x}{2x}{4x}{..}
+
+---
+
 ### BOTTOM ---
 
 # Editing Tone section                                                                          # Mode (used to display the last 3 filter-related panels at the far right only, or all at once)
 [1][2][3][4][5][6][7][8][9][10]     [Harmonic1][Harmonic2][Harmonic3][Harmonic4][Harmonic5]     [Main][Filter][Both]
       [Copy][Reset Active]          |Semi: ...||Semi: ...||Semi: ...||Semi: ...||Semi: ...|
                                     |Vol : ...||Vol : ...||Vol : ...||Vol : ...||Vol : ...|
+
+There was also Reverb with values 'Reverb vol' and 'Reverb del' next to Harmonic5
 
 ---
 
