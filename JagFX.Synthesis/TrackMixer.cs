@@ -7,7 +7,7 @@ namespace JagFX.Synthesis;
 
 public static class TrackMixer
 {
-    public static SampleBuffer Synthesize(Patch patch, int voiceFilter = -1)
+    public static SampleBuffer Synthesize(Patch patch, int loopCount, int voiceFilter = -1)
     {
         var voicesToMix = voiceFilter < 0
             ? patch.ActiveVoices
@@ -23,7 +23,7 @@ public static class TrackMixer
         var loopStart = (int)(patch.Loop.Begin * Constants.SampleRatePerMillisecond);
         var loopStop = (int)(patch.Loop.End * Constants.SampleRatePerMillisecond);
 
-        var effectiveLoopCount = ValidateLoopRegion(loopStart, loopStop, sampleCount);
+        var effectiveLoopCount = ValidateLoopRegion(loopStart, loopStop, sampleCount, loopCount);
         var totalSampleCount = sampleCount + (loopStop - loopStart) * Math.Max(0, effectiveLoopCount - 1);
 
         var buffer = MixVoices(voicesToMix, sampleCount, totalSampleCount);
@@ -56,14 +56,14 @@ public static class TrackMixer
         return maxDuration;
     }
 
-    private static int ValidateLoopRegion(int start, int end, int length)
+    private static int ValidateLoopRegion(int start, int end, int length, int loopCount)
     {
         if (start < 0 || end > length || start >= end)
         {
             return 0;
         }
 
-        return length;
+        return loopCount;
     }
 
     private static int[] MixVoices(
