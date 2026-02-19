@@ -8,7 +8,7 @@ public readonly record struct Millis
 
     public Millis ToMillis() => new(Value * Constants.MillisecondsPerSample);
 
-    public Samples ToSamples() => new(Value * Constants.SampleRatePerMillisecond);
+    public Samples ToSamples() => new((int)(Value * Constants.SampleRatePerMillisecond));
 }
 
 public readonly record struct Percent
@@ -24,5 +24,5 @@ public readonly record struct Samples
 
     public Samples(int value) => Value = value;
 
-    public Samples ToSamples() => new(Value * Constants.SampleRatePerMillisecond);
+    public Samples ToSamples() => new((int)(Value * Constants.SampleRatePerMillisecond));
 }

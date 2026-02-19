@@ -19,9 +19,9 @@ public static class TrackMixer
             return SampleBuffer.Empty(0);
         }
 
-        var sampleCount = maxDuration * Constants.SampleRatePerMillisecond;
-        var loopStart = patch.Loop.Begin * Constants.SampleRatePerMillisecond;
-        var loopStop = patch.Loop.End * Constants.SampleRatePerMillisecond;
+        var sampleCount = (int)(maxDuration * Constants.SampleRatePerMillisecond);
+        var loopStart = (int)(patch.Loop.Begin * Constants.SampleRatePerMillisecond);
+        var loopStop = (int)(patch.Loop.End * Constants.SampleRatePerMillisecond);
 
         var effectiveLoopCount = ValidateLoopRegion(loopStart, loopStop, sampleCount);
         var totalSampleCount = sampleCount + (loopStop - loopStart) * Math.Max(0, effectiveLoopCount - 1);
@@ -76,7 +76,7 @@ public static class TrackMixer
         foreach (var (_, voice) in voices)
         {
             var voiceBuffer = ToneSynthesizer.Synthesize(voice);
-            var startOffset = voice.StartTime * Constants.SampleRatePerMillisecond;
+            var startOffset = (int)(voice.StartTime * Constants.SampleRatePerMillisecond);
 
             for (var i = 0; i < voiceBuffer.Length; i++)
             {

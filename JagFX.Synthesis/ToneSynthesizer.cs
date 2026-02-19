@@ -8,7 +8,7 @@ public static class ToneSynthesizer
 {
     public static SampleBuffer Synthesize(Voice voice)
     {
-        var sampleCount = voice.Duration * Constants.SampleRatePerMillisecond;
+        var sampleCount = (int)(voice.Duration * Constants.SampleRatePerMillisecond);
         if (sampleCount <= 0 || voice.Duration < 10)
         {
             return SampleBuffer.Empty(0);
