@@ -109,8 +109,6 @@ public static class SynthFileWriter
             buf.WriteSmart((short)osc.PitchOffset);
             buf.WriteUSmart((ushort)osc.Delay.Value);
         }
-
-        // Terminator
         buf.WriteUSmart(0);
     }
 
