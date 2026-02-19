@@ -6,7 +6,7 @@ public static class Constants
     public const int BitsPerSample = 8;
     public const int NumChannels = 1;
     public const int MillisecondsPerSample = 1000 / SampleRate;
-    public const int SampleRatePerMillisecond = SampleRate / 1000;
+    public const double SampleRatePerMillisecond = SampleRate / 1000.0;
 
     public const int MaxVoices = 10;
     public const int MaxOscillators = 10;
