@@ -85,10 +85,13 @@ public static class SynthFileReader
             var (gateSilence, gateDuration) = ReadOptionalEnvelopePair();
 
             var oscillators = ReadOscillators();
+
             var feedbackDelay = _buf.ReadUSmart();
             var feedbackMix = _buf.ReadUSmart();
+
             var duration = _buf.ReadUInt16BE();
             var startTime = _buf.ReadUInt16BE();
+
             var filter = ReadFilter();
 
             return new Voice(
