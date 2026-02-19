@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="JagFX.Domain/JagFX.Domain.csproj" />
+  <Project Path="JagFX.IO/JagFX.IO.csproj" />
+  <Project Path="JagFX.Synthesis/JagFX.Synthesis.csproj" />
+  <Project Path="JagFX.CLI/JagFX.CLI.csproj" />
+</Solution>

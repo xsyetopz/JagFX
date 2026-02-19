@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>JagFX.Synthesis</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\JagFX.Domain\JagFX.Domain.csproj" />
+    <ProjectReference Include="..\JagFX.IO\JagFX.IO.csproj" />
+  </ItemGroup>
+
+</Project>
