@@ -17,7 +17,7 @@ public class EnvelopeEvaluator(Envelope envelope)
 
     public void Reset()
     {
-        _threshold = 0;
+        _threshold = 1;
         _position = 0;
         _delta = 0;
         _amplitude = Envelope.Start << EnvelopeScaleFactor;
