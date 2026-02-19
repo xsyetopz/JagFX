@@ -30,7 +30,11 @@ public static class ToneSynthesizer
 
         MathUtils.ClipInt16(buffer, sampleCount);
 
-        return new SampleBuffer(buffer, Constants.SampleRate);
+        var output = new int[sampleCount];
+        Array.Copy(buffer, 0, output, 0, sampleCount);
+
+        SampleBufferPool.Release(buffer);
+        return new SampleBuffer(output, Constants.SampleRate);
     }
 
     private static SynthesisState InitSynthState(Voice voice, double samplesPerStep)
@@ -86,7 +90,7 @@ public static class ToneSynthesizer
             rateEval.Reset();
             rangeEval.Reset();
 
-            var start = (int)((voice.PitchLfo.Rate.End - voice.PitchLfo.Rate.Start) * Constants.PhaseScale / samplesPerStep);
+            var start = (int)((double)(voice.PitchLfo.Rate.End - voice.PitchLfo.Rate.Start) * Constants.PhaseScale / samplesPerStep);
             var duration = (int)(voice.PitchLfo.Rate.Start * Constants.PhaseScale / samplesPerStep);
 
             return (rateEval, rangeEval, start, duration);
@@ -105,7 +109,7 @@ public static class ToneSynthesizer
             rateEval.Reset();
             rangeEval.Reset();
 
-            var start = (int)((voice.AmplitudeLfo.Rate.End - voice.AmplitudeLfo.Rate.Start) * Constants.PhaseScale / samplesPerStep);
+            var start = (int)((double)(voice.AmplitudeLfo.Rate.End - voice.AmplitudeLfo.Rate.Start) * Constants.PhaseScale / samplesPerStep);
             var duration = (int)(voice.AmplitudeLfo.Rate.Start * Constants.PhaseScale / samplesPerStep);
 
             return (rateEval, rangeEval, start, duration);
@@ -135,6 +139,15 @@ public static class ToneSynthesizer
                     (voice.FrequencyEnvelope.End - voice.FrequencyEnvelope.Start) * Constants.PhaseScale *
                     LookupTables.GetPitchMultiplier(height.PitchOffset) / samplesPerStep);
                 starts[oscillator] = (int)(voice.FrequencyEnvelope.Start * Constants.PhaseScale / samplesPerStep);
+
+                if (oscillator == 0)
+                {
+                    _ = LookupTables.GetPitchMultiplier(height.PitchOffset);
+                }
+                else if (oscillator == 1)
+                {
+                    _ = LookupTables.GetPitchMultiplier(height.PitchOffset);
+                }
             }
         }
 
@@ -273,8 +286,8 @@ public static class ToneSynthesizer
                 var stepOn = silenceEval.Evaluate(sampleCount);
                 var stepOff = durationEval.Evaluate(sampleCount);
                 var threshold = muted
-                    ? voice.GateSilence.Start + ((voice.GateDuration.Start - voice.GateSilence.Start) * stepOn >> 8)
-                    : voice.GateSilence.Start + ((voice.GateDuration.Start - voice.GateSilence.Start) * stepOff >> 8);
+                    ? voice.GateSilence.Start + ((voice.GateSilence.End - voice.GateSilence.Start) * stepOn >> 8)
+                    : voice.GateSilence.Start + ((voice.GateSilence.End - voice.GateSilence.Start) * stepOff >> 8);
 
                 counter += 256;
                 if (counter >= threshold)
