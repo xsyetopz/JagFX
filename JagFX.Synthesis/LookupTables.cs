@@ -72,11 +72,9 @@ public static class LookupTables
     {
         const int cacheSize = SemitoneRange * 2 + 1;
         var table = new double[cacheSize];
-        var ratio = Math.Pow(DecicentRatio, -SemitoneRange);
         for (var i = 0; i < cacheSize; i++)
         {
-            table[i] = ratio;
-            ratio *= DecicentRatio;
+            table[i] = Math.Pow(DecicentRatio, i - SemitoneRange);
         }
         return table;
     }
