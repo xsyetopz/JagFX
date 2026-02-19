@@ -6,6 +6,9 @@ namespace JagFX.IO
 {
     public class BinaryBuffer
     {
+        private const int SmartOneByteOffset = 64;
+        private const int SmartTwoByteOffset = 49152;
+
         private int _position;
         private bool _truncated;
 
@@ -148,7 +151,7 @@ namespace JagFX.IO
         {
             var b = Data[_position] & 0xFF;
             _position++;
-            return (short)(b - 64);
+            return (short)(b - SmartOneByteOffset);
         }
 
         private short ReadSmartTwoBytes()
@@ -156,7 +159,7 @@ namespace JagFX.IO
             if (CheckTruncation(2)) return 0;
             var value = BinaryPrimitives.ReadUInt16BigEndian(Data.AsSpan(_position, 2));
             _position += 2;
-            return (short)(value - 49152);
+            return (short)(value - SmartTwoByteOffset);
         }
 
         private ushort ReadUSmartOneByte()
