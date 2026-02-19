@@ -23,9 +23,9 @@ namespace JagFX.IO
                 InspectWavetable(buf);
                 PrintParseResult(buf);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                PrintParseError(buf, e);
+                PrintParseError(buf, ex);
             }
         }
 
@@ -34,7 +34,7 @@ namespace JagFX.IO
             if (buf.Remaining > 0)
             {
                 Console.WriteLine($"\n[WARNING] {buf.Remaining} BYTES REMAINING:");
-                Console.WriteLine(DumpRemaining(buf, 0, 64));
+                Console.WriteLine(DumpRemaining(buf));
             }
             else
             {
@@ -46,7 +46,7 @@ namespace JagFX.IO
         {
             Console.WriteLine($"\n[ERROR] PARSING FAILED AT OFFSET {buf.Position}: {e.Message}");
             Console.WriteLine("REMAINING CONTEXT:");
-            Console.WriteLine(DumpRemaining(buf, 0, 64));
+            Console.WriteLine(DumpRemaining(buf));
         }
 
         private static void InspectWavetable(BinaryBuffer buf)
@@ -58,7 +58,6 @@ namespace JagFX.IO
                     var marker = buf.Peek();
                     Console.WriteLine($"\n└─ OSCILLATOR {oscillatorIndex} (OFFSET: {buf.Position:X4})");
                     Console.WriteLine($"   │ HEADER: {marker} (ACTIVE: {marker != 0})");
-
                     if (marker != 0)
                     {
                         InspectOscillator(buf);
