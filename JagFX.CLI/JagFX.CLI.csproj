@@ -14,4 +14,8 @@
     <ProjectReference Include="..\JagFX.Synthesis\JagFX.Synthesis.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.3" />
+  </ItemGroup>
+
 </Project>

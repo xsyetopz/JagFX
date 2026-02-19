@@ -1,67 +1,132 @@
 using JagFX.IO;
 using JagFX.Synthesis;
+using System.CommandLine;
 
 namespace JagFX.CLI;
 
 public static class JagFXCli
 {
+    public static Task<int> RunAsync(string[] args)
+    {
+        var rootCommand = CommandHandler.BuildRootCommand();
+        var parseResult = rootCommand.Parse(args);
+        return parseResult.InvokeAsync(new InvocationConfiguration());
+    }
+}
+
+internal static class CommandHandler
+{
     private static readonly string[] SupportedInputFormats = [".synth"];
     private static readonly string[] SupportedOutputFormats = [".wav"];
 
-    public static void Run(string[] args)
-    {
-        if (args.Length == 0 || IsHelpRequested(args[0]))
-        {
-            PrintHelp();
-            return;
-        }
+    private static readonly string[] InputFlags = ["-i", "--input"];
+    private static readonly string[] OutputFlags = ["-o", "--output"];
+    private static readonly string[] LoopsFlags = ["-l", "--loops"];
 
-        if (args[0] == "inspect")
+    public static RootCommand BuildRootCommand()
+    {
+        var inputArgument = new Argument<string?>("input")
         {
-            HandleInspect(args);
-            return;
-        }
-        HandleConversion(args);
+            Description = "Input .synth file path (positional mode).",
+            Arity = ArgumentArity.ZeroOrOne
+        };
+        var outputArgument = new Argument<string?>("output")
+        {
+            Description = "Output .wav file path (positional mode).",
+            Arity = ArgumentArity.ZeroOrOne
+        };
+        var loopsArgument = new Argument<int?>("loopCount")
+        {
+            Description = "Loop count (positional mode).",
+            Arity = ArgumentArity.ZeroOrOne
+        };
+
+        var inputOption = new Option<string?>("input", InputFlags)
+        {
+            Description = "Input .synth file path (flag mode)."
+        };
+        var outputOption = new Option<string?>("output", OutputFlags)
+        {
+            Description = "Output .wav file path (flag mode)."
+        };
+        var loopsOption = new Option<int?>("loops", LoopsFlags)
+        {
+            Description = "Loop count (flag mode)."
+        };
+
+        var rootCommand = new RootCommand("JagFX CLI");
+        rootCommand.Aliases.Clear();
+        rootCommand.Add(inputArgument);
+        rootCommand.Add(outputArgument);
+        rootCommand.Add(loopsArgument);
+        rootCommand.Add(inputOption);
+        rootCommand.Add(outputOption);
+        rootCommand.Add(loopsOption);
+
+        rootCommand.SetAction(parseResult =>
+            HandleConvertCommand(parseResult, inputArgument, outputArgument, loopsArgument, inputOption, outputOption, loopsOption));
+
+        rootCommand.Add(BuildInspectCommand());
+
+        return rootCommand;
     }
 
-    private static void HandleInspect(string[] args)
+    private static int HandleConvertCommand(ParseResult parseResult, Argument<string?> inputArg, Argument<string?> outputArg, Argument<int?> loopsArg,
+        Option<string?> inputOpt, Option<string?> outputOpt, Option<int?> loopsOpt)
     {
-        if (args.Length < 2)
+        var usesFlags = parseResult.GetResult(inputOpt) != null || parseResult.GetResult(outputOpt) != null || parseResult.GetResult(loopsOpt) != null;
+        var (inputPath, outputPath, loopCount, hasPositional) = ResolveArguments(parseResult, inputArg, outputArg, loopsArg, inputOpt, outputOpt, loopsOpt, usesFlags);
+
+        if (usesFlags && hasPositional)
         {
-            Console.Error.WriteLine("Error: Missing file path for inspect command");
-            PrintInspectHelp();
-            Exit(1);
-            return;
+            Console.Error.WriteLine("Error: Positional arguments cannot be mixed with flags.");
+            Console.Error.WriteLine("Use either positional form or flags, but not both.");
+            return 1;
         }
 
-        SynthInspector.Inspect(args[1]);
-        Exit(0);
+        if (string.IsNullOrWhiteSpace(inputPath) || string.IsNullOrWhiteSpace(outputPath))
+        {
+            Console.Error.WriteLine("Error: Missing required input or output argument.");
+            return 1;
+        }
+
+        if (!ValidateInputFile(inputPath) || !ValidateFormats(GetExtension(inputPath), GetExtension(outputPath)))
+            return 1;
+
+        return ProcessConversion(inputPath, outputPath, GetExtension(inputPath), GetExtension(outputPath), loopCount);
     }
 
-    private static void HandleConversion(string[] args)
+    private static (string?, string?, int, bool) ResolveArguments(ParseResult parseResult, Argument<string?> inputArg, Argument<string?> outputArg, Argument<int?> loopsArg,
+        Option<string?> inputOpt, Option<string?> outputOpt, Option<int?> loopsOpt, bool usesFlags)
     {
-        if (args.Length < 2)
-        {
-            Console.Error.WriteLine("Error: Insufficient arguments");
-            Console.Error.WriteLine("Usage: jagfx-cli <input> <output> [loopCount]");
-            Exit(1);
-            return;
-        }
+        var positionalInput = parseResult.GetValue(inputArg);
+        var positionalOutput = parseResult.GetValue(outputArg);
+        var positionalLoops = parseResult.GetValue(loopsArg);
 
-        var inputPath = args[0];
-        var outputPath = args[1];
-        var loopCount = args.Length > 2 ? int.Parse(args[2]) : 1;
+        var hasPositional = positionalInput != null || positionalOutput != null || positionalLoops != null;
+        var inputPath = usesFlags ? parseResult.GetValue(inputOpt) : positionalInput;
+        var outputPath = usesFlags ? parseResult.GetValue(outputOpt) : positionalOutput;
+        var loopCount = usesFlags ? (parseResult.GetValue(loopsOpt) ?? 1) : (positionalLoops ?? 1);
 
-        if (!ValidateInputFile(inputPath))
-            return;
+        return (inputPath, outputPath, loopCount, hasPositional);
+    }
 
-        var inputExt = GetExtension(inputPath);
-        var outputExt = GetExtension(outputPath);
+    private static Command BuildInspectCommand()
+    {
+        var inspectFileArgument = new Argument<string>("file") { Description = "Path to .synth file." };
+        var inspectCommand = new Command("inspect", "Inspect synth file structure") { inspectFileArgument };
+        inspectCommand.SetAction(parseResult => HandleInspectCommand(parseResult, inspectFileArgument));
+        return inspectCommand;
+    }
 
-        if (!ValidateFormats(inputExt, outputExt))
-            return;
+    private static int HandleInspectCommand(ParseResult parseResult, Argument<string> fileArg)
+    {
+        var file = parseResult.GetValue(fileArg);
+        if (string.IsNullOrWhiteSpace(file) || !ValidateInputFile(file))
+            return 1;
 
-        ProcessConversion(inputPath, outputPath, inputExt, outputExt, loopCount);
+        SynthInspector.Inspect(file);
+        return 0;
     }
 
     private static bool ValidateInputFile(string path)
@@ -102,7 +167,7 @@ public static class JagFXCli
         return true;
     }
 
-    private static void ProcessConversion(string inputPath, string outputPath, string inputExt, string outputExt, int loopCount)
+    private static int ProcessConversion(string inputPath, string outputPath, string inputExt, string outputExt, int loopCount)
     {
         try
         {
@@ -113,47 +178,20 @@ public static class JagFXCli
                     var audio = TrackMixer.Synthesize(patch, loopCount);
                     WaveFileWriter.WriteToPath(audio.ToUBytes(), outputPath);
                     Console.WriteLine($"Successfully wrote {outputPath}");
-                    Exit(0);
-                    break;
+                    return 0;
                 default:
                     Console.Error.WriteLine("Error: Unexpected format combination");
-                    Exit(1);
-                    break;
+                    return 1;
             }
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error: Failed to process file: {ex.Message}");
-            Exit(1);
+            return 1;
         }
     }
 
     private static string GetExtension(string path) => Path.GetExtension(path).ToLowerInvariant();
-
-    private static bool IsHelpRequested(string arg) => arg == "--help" || arg == "-h";
-
-    private static void PrintHelp()
-    {
-        Console.WriteLine("JagFX CLI\n");
-        Console.WriteLine("Usage:");
-        Console.WriteLine("  jagfx-cli <input> <output> [loopCount]          Convert between formats");
-        Console.WriteLine("  jagfx-cli inspect <file.synth>                  Inspect synth file structure");
-        Console.WriteLine("  jagfx-cli --help                                Show this help message\n");
-        Console.WriteLine("Supported formats:");
-        Console.WriteLine("  .synth → .wav    Convert synth to WAV audio");
-        Console.WriteLine("  .tone            Show info about .tone files\n");
-        Console.WriteLine("Examples:");
-        Console.WriteLine("  jagfx-cli song.synth song.wav                  Convert with default 1 loop");
-        Console.WriteLine("  jagfx-cli song.synth song.wav 3                Convert with 3 loops");
-        Console.WriteLine("  jagfx-cli inspect song.synth                   Inspect binary structure");
-    }
-
-    private static void PrintInspectHelp()
-    {
-        Console.WriteLine("Usage: jagfx-cli inspect <file.synth>\n");
-        Console.WriteLine("Inspects the binary structure of a .synth file for debugging.");
-        Console.WriteLine("Use this to compare parsing between Scala and C# implementations.");
-    }
 
     private static void Exit(int code) => Environment.Exit(code);
 }
