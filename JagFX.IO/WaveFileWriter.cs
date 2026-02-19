@@ -1,3 +1,7 @@
+using System.Buffers.Binary;
+
+using JagFX.Domain;
+
 namespace JagFX.IO
 {
     public static class WaveFileWriter
@@ -49,49 +53,27 @@ namespace JagFX.IO
 
         private static void WriteRiffHeader(byte[] buffer, int fileSize)
         {
-            WriteInt32BE(buffer, RiffHeaderOffset, RiffMagic);
-            WriteInt32LE(buffer, FileSizeOffset, fileSize);
-            WriteInt32BE(buffer, WaveFormatOffset, WaveMagic);
+            BinaryPrimitives.WriteInt32BigEndian(buffer.AsSpan(RiffHeaderOffset), RiffMagic);
+            BinaryPrimitives.WriteInt32LittleEndian(buffer.AsSpan(FileSizeOffset), fileSize);
+            BinaryPrimitives.WriteInt32BigEndian(buffer.AsSpan(WaveFormatOffset), WaveMagic);
         }
 
         private static void WriteFmtChunk(byte[] buffer, int bitsPerSample)
         {
-            WriteInt32BE(buffer, FmtMagicOffset, FmtMagic);
-            WriteInt32LE(buffer, FmtSizeOffset, FmtChunkSize);
-            WriteInt16LE(buffer, PcmFormatOffset, PcmFormat);
-            WriteInt16LE(buffer, ChannelsOffset, Domain.Constants.NumChannels);
-            WriteInt32LE(buffer, SampleRateOffset, Domain.Constants.SampleRate);
-            WriteInt32LE(buffer, ByteRateOffset, Domain.Constants.SampleRate * Domain.Constants.NumChannels * bitsPerSample / 8);
-            WriteInt16LE(buffer, BlockAlignOffset, Domain.Constants.NumChannels * bitsPerSample / 8);
-            WriteInt16LE(buffer, BitsPerSampleOffset, bitsPerSample);
+            BinaryPrimitives.WriteInt32BigEndian(buffer.AsSpan(FmtMagicOffset), FmtMagic);
+            BinaryPrimitives.WriteInt32LittleEndian(buffer.AsSpan(FmtSizeOffset), FmtChunkSize);
+            BinaryPrimitives.WriteInt16LittleEndian(buffer.AsSpan(PcmFormatOffset), PcmFormat);
+            BinaryPrimitives.WriteInt16LittleEndian(buffer.AsSpan(ChannelsOffset), Constants.NumChannels);
+            BinaryPrimitives.WriteInt32LittleEndian(buffer.AsSpan(SampleRateOffset), Constants.SampleRate);
+            BinaryPrimitives.WriteInt32LittleEndian(buffer.AsSpan(ByteRateOffset), Constants.SampleRate * Constants.NumChannels * bitsPerSample / 8);
+            BinaryPrimitives.WriteInt16LittleEndian(buffer.AsSpan(BlockAlignOffset), (short)(Constants.NumChannels * bitsPerSample / 8));
+            BinaryPrimitives.WriteInt16LittleEndian(buffer.AsSpan(BitsPerSampleOffset), (short)bitsPerSample);
         }
 
         private static void WriteDataChunk(byte[] buffer, int dataSize)
         {
-            WriteInt32BE(buffer, DataMagicOffset, DataMagic);
-            WriteInt32LE(buffer, DataSizeOffset, dataSize);
-        }
-
-        private static void WriteInt16LE(byte[] buffer, int offset, int value)
-        {
-            buffer[offset] = (byte)value;
-            buffer[offset + 1] = (byte)(value >> 8);
-        }
-
-        private static void WriteInt32BE(byte[] buffer, int offset, int value)
-        {
-            buffer[offset] = (byte)(value >> 24);
-            buffer[offset + 1] = (byte)(value >> 16);
-            buffer[offset + 2] = (byte)(value >> 8);
-            buffer[offset + 3] = (byte)value;
-        }
-
-        private static void WriteInt32LE(byte[] buffer, int offset, int value)
-        {
-            buffer[offset] = (byte)value;
-            buffer[offset + 1] = (byte)(value >> 8);
-            buffer[offset + 2] = (byte)(value >> 16);
-            buffer[offset + 3] = (byte)(value >> 24);
+            BinaryPrimitives.WriteInt32BigEndian(buffer.AsSpan(DataMagicOffset), DataMagic);
+            BinaryPrimitives.WriteInt32LittleEndian(buffer.AsSpan(DataSizeOffset), dataSize);
         }
     }
 }
