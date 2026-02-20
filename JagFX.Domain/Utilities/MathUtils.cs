@@ -13,16 +13,11 @@ public static class MathUtils
     public const double TwoPi = /* 2.0 * Math.PI */ 6.283185307179586;
     public const double HalfPi = /* Math.PI / 2.0 */ 1.5707963267948966;
 
+    private const double DbDivisor = 20.0;
     private const double PercentScale = 100.0;
     private const double DecicentsScale = 1200.0;
 
     private static readonly double Log10 = Math.Log(10.0);
-
-    public static double Distance(double x1, double y1, double x2, double y2)
-    {
-        var (dx, dy) = (x2 - x1, y2 - y1);
-        return Math.Sqrt(dx * dx + dy * dy);
-    }
 
     public static double Clamp(double value, double min, double max)
     {
@@ -75,12 +70,12 @@ public static class MathUtils
 
     public static double DbToLinear(double dB)
     {
-        return Math.Exp(dB / 20.0 * Log10);
+        return Math.Exp(dB / DbDivisor * Log10);
     }
 
     public static double LinearToDb(double linear)
     {
-        return 20.0 * Math.Log10(linear);
+        return DbDivisor * Math.Log10(linear);
     }
 
     public static double Convert(double value, UnitType from, UnitType to)
@@ -118,19 +113,5 @@ public static class MathUtils
             UnitType.Decicents => $"{string.Format(fmt, value / 10.0)} st",
             _ => value.ToString()
         };
-    }
-
-    public static double DistanceToSegment(double px, double py, double x1, double y1, double x2, double y2)
-    {
-        var (dx, dy) = (x2 - x1, y2 - y1);
-        var lengthSquared = dx * dx + dy * dy;
-        if (lengthSquared == 0.0)
-            return Distance(px, py, x1, y1);
-
-        var t = Clamp(((px - x1) * dx + (py - y1) * dy) / lengthSquared, 0.0, 1.0);
-        var (projx, projy) = (x1 + t * dx, y1 + t * dy);
-
-        (dx, dy) = (px - projx, py - projy);
-        return Math.Sqrt(dx * dx + dy * dy);
     }
 }
