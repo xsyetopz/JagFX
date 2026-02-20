@@ -46,7 +46,6 @@ public static class ToneSynthesizer
 
         var (freqModRateEval, freqModRangeEval, vibratoStart, vibratoDuration) =
             InitFrequencyModulation(voice, samplesPerStep);
-
         var (ampModRateEval, ampModRangeEval, amplitudeStart, amplitudeDuration) =
             InitAmplitudeModulation(voice, samplesPerStep);
 
@@ -127,7 +126,6 @@ public static class ToneSynthesizer
         var starts = new int[Constants.MaxOscillators];
 
         var oscillatorCount = Math.Min(Constants.MaxOscillators, voice.Oscillators.Count);
-
         for (var oscillator = 0; oscillator < oscillatorCount; oscillator++)
         {
             var height = voice.Oscillators[oscillator];
