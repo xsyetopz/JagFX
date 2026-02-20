@@ -25,6 +25,8 @@ however, these two: [Graph of poles/zeros] and [Frequency Response]:
 only contain these:
 {1x}{2x}{4x}{..}
 
+What even were 1x 2x 4x for?
+
 ---
 
 ### BOTTOM ---
