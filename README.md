@@ -24,64 +24,107 @@ Cross-platform editor for Jagex Audio Synthesis (`.synth`) files. Create, edit, 
 ## Quick Start
 
 ```bash
-# Run GUI
-sbt dev
+# Build solution
+dotnet build
+
+# Run CLI
+dotnet run --project JagFX.CLI
 
 # Run tests
-sbt test
+dotnet test
 ```
 
 ## CLI Usage
 
-Batch convert files without opening GUI:
+The CLI supports both positional and flag-based arguments (but not mixed):
 
 ```bash
-# Convert single file
-sbt "cli input.synth output.wav"
+# Positional arguments
+dotnet run --project JagFX.CLI -- input.synth output.wav
+dotnet run --project JagFX.CLI -- input.synth output.wav 4
 
-# Convert with loop count
-sbt "cli input.synth output_looped.wav 4"
+# Flag arguments  
+dotnet run --project JagFX.CLI -- -i input.synth -o output.wav
+dotnet run --project JagFX.CLI -- -i input.synth -o output.wav -l 4
+
+# Inspect synth file structure
+dotnet run --project JagFX.CLI -- inspect input.synth
 ```
 
 ## Building for Distribution
 
-### Universal Fat Jar
+### Self-Contained Executable
 
-Build single `.jar` file that includes all dependencies and works on Windows, Linux, and macOS (x86 & ARM):
-
-```bash
-sbt assembly
-```
-
-Output will be in `target/scala-3.7.4/jagfx-assembly-<version>.jar`.
-
-### Native Launchers
+Build a single executable for your platform:
 
 ```bash
-sbt dist
+# Windows (x64)
+dotnet publish -c Release -r win-x64 --self-contained -o publish/win-x64
+
+# Linux (x64)
+dotnet publish -c Release -r linux-x64 --self-contained -o publish/linux-x64
+
+# macOS (x64)
+dotnet publish -c Release -r osx-x64 --self-contained -o publish/osx-x64
+
+# macOS (ARM64)
+dotnet publish -c Release -r osx-arm64 --self-contained -o publish/osx-arm64
 ```
 
-Creates `target/universal/jagfx-<version>.zip` with platform launchers for macOS, Linux, and Windows.
+### Framework-Dependent
+
+```bash
+dotnet publish -c Release -o publish
+```
 
 ## Project Structure
 
 ```text
-src/main/scala/jagfx/
-├── io/              # Binary .synth reader/writer
-├── model/           # Data models (Voice, Envelope, Filter)
-├── synth/           # DSP engine (oscillators, filters, synthesis)
-├── tools/           # Utility classes for various tasks
-├── ui/              # JavaFX controllers and components
-├── utils/           # Utilities (icons, colors, preferences)
-├── JagFX.scala      # GUI entry point
-└── JagFXCli.scala   # CLI entry point
+JagFX.sln                    # Solution file
+├── JagFX.CLI/               # CLI application
+│   ├── JagFXCli.cs          # CLI command handling
+│   └── Program.cs           # Entry point
+├── JagFX.Domain/            # Domain models and types
+│   ├── Models/
+│   │   ├── Voice.cs         # Voice configuration
+│   │   ├── Envelope.cs      # Envelope with segments
+│   │   ├── Filter.cs        # IIR filter parameters
+│   │   ├── Lfo.cs           # LFO configuration
+│   │   ├── Loop.cs          # Loop settings
+│   │   ├── Oscillator.cs    # Oscillator with waveform
+│   │   ├── Patch.cs         # Complete patch/sound
+│   │   └── FeedbackDelay.cs # Echo/delay settings
+│   ├── Utilities/
+│   │   └── MathUtils.cs     # Math utilities (dB, conversions)
+│   ├── Constants.cs         # Global constants
+│   ├── Types.cs             # Millis, Percent, Samples
+│   └── TestFixtures.cs      # Test data
+├── JagFX.IO/                # File I/O operations
+│   ├── SynthFileReader.cs   # Binary .synth reader
+│   ├── SynthFileWriter.cs   # Binary .synth writer
+│   ├── SynthInspector.cs    # Debug inspection tool
+│   ├── BinaryBuffer.cs      # Binary buffer utilities
+│   └── WaveFileWriter.cs    # WAV export
+├── JagFX.Synthesis/         # DSP synthesis engine
+│   ├── ToneSynthesizer.cs   # Per-voice synthesis
+│   ├── TrackMixer.cs        # Multi-voice mixing
+│   ├── FilterProcessor.cs   # IIR filter processing
+│   ├── EnvelopeEvaluator.cs # Envelope evaluation
+│   ├── SampleBuffer.cs      # Sample buffer type
+│   ├── SampleBufferPool.cs  # Buffer pooling
+│   └── LookupTables.cs      # Precomputed tables
+├── JagFX.Synthesis.Tests/   # Synthesis unit tests
+├── JagFX.IO.Tests/          # I/O unit tests
+└── SmartInt/                # Smart integer types
+    ├── src/
+    │   ├── Smart16.cs
+    │   └── USmart16.cs
+    └── tests/
 ```
 
 ## Requirements
 
-- JDK 21+
-- sbt 1.11+
-- Node.js (for SCSS compilation)
+- .NET 8.0 SDK or later
 
 ## Examples
 
