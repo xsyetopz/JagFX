@@ -1,0 +1,78 @@
+OLD GUI (JagFX – original internal tool)
+
+The original JagFX interface was a low-level, developer-oriented editor that
+exposed the .synth file format almost verbatim.
+
+A sound was edited as one active voice at a time, chosen from up to ten voice
+slots. All parameters for that voice were visible simultaneously, regardless
+of relevance or complexity.
+
+The main workspace was a fixed 3×4 grid of panels arranged by signal domain.
+Rows loosely followed signal flow (pitch, amplitude, output), while columns
+separated base envelopes, modulation envelopes, and analytic views.
+
+Each editable panel was an envelope editor. Envelopes were defined by waveform
+type, start and end values, and a list of time-segmented interpolation points
+measured in milliseconds. Numeric fields operated directly on serialized
+values. Average values were computed and displayed but not editable.
+
+Time scaling and auto-fit controls affected only the viewport. Modulation
+selection and envelope copying were handled through unlabeled or abbreviated
+buttons, requiring prior knowledge of the synthesis model.
+
+Filter analysis was shown in dedicated panels but editing was spatially
+separated from the envelopes that modulated the filter. Additive oscillators,
+feedback delay, looping, and playback controls were grouped at the bottom
+without visual connection to the signal timeline.
+
+The UI assumed strong familiarity with synthesis concepts, envelope-driven
+modulation, and the RuneScape sound pipeline. It prioritized completeness and
+directness over approachability or discoverability.
+
+---
+
+NEW GUI (Format-faithful, accessibility-oriented redesign)
+
+The new GUI still edits one voice at a time and preserves a 1:1 mapping to the
+.synth file format, but presents the voice as a guided signal flow rather than
+a static grid.
+
+A voice is displayed as a vertical stack of lanes on a shared timeline. Each
+lane represents a functional stage in sound generation: pitch, amplitude,
+gating, oscillators, feedback, and filtering. Time always flows left to right,
+and all envelopes align on the same timeline.
+
+Every envelope in the file format is visible as a curve, but envelopes are
+grouped by purpose and labeled in plain language (e.g. "Pitch over time",
+"Pitch wobble speed", "Pitch wobble amount"). Advanced users can still view
+and edit raw segment data, but casual users interact primarily by dragging
+points and durations.
+
+Modulation is explicit and visual. Each envelope clearly states which
+parameter it controls, and modulation depth is shown as an overlay rather than
+an abstract range. No parameter requires selecting a hidden source; all
+connections are visible by default.
+
+Additive oscillators are shown as layered contributors beneath the main signal.
+Each oscillator displays its delay, pitch offset, and volume as spatial
+relationships on the timeline, making harmonic structure understandable
+without prior theory.
+
+Filter controls and analysis are colocated. When a filter is active, its
+envelope, poles/zeros, and frequency response appear together, updating live
+as parameters change. Users can adjust filters by manipulating either the
+envelope or the response curve, with both views remaining synchronized.
+
+The interface provides optional guidance layers. Users can enable presets,
+tooltips, and simplified modes that limit visible parameters while still
+writing fully valid .synth data. Advanced controls are progressively revealed
+rather than hidden in separate tools.
+
+Copying and reuse operate on named structures such as "envelope", "oscillator",
+or "voice" instead of anonymous buttons. Actions describe intent rather than
+implementation.
+
+The new GUI allows users with little synthesis experience to create sounds by
+direct manipulation and visual feedback, while still giving expert users full
+access to the exact data structures and behaviors defined by the original
+format.
