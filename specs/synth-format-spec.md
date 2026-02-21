@@ -243,7 +243,7 @@ flowchart TD
 | SampleRate | `22050` | Audio sample rate (Hz) |
 | MaxVoices | `10` | Maximum concurrent voices |
 | MaxOscillators | `10` | Maximum oscillators per voice |
-| MaxFilterPairs | `4` | Maximum pole pairs in current implementations (format allows up to `15`) |
+| MaxFilterPairs | `15` | Maximum pole pairs in current implementations |
 | FilterUpdateRate | `256` | Samples between filter coefficient updates |
 | FixedPoint.Scale | `65536` | 16.16 fixed-point multiplier |
 | FixedPoint.Offset | `32768` | Fixed-point offset |
