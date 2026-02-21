@@ -5,7 +5,7 @@ using System.CommandLine;
 namespace JagFX.CLI.Commands;
 
 /// <summary>
-/// CLI command for inspecting .synth file structure.
+/// CLI command for inspecting .synth file structure in assembly-like format.
 /// </summary>
 public class InspectCommand : Command
 {
@@ -27,17 +27,30 @@ public class InspectCommand : Command
 
     private static int Execute(string? filePath)
     {
-        if (!ValidateFilePath(filePath, out var validPath))
+        if (string.IsNullOrWhiteSpace(filePath))
+        {
+            Console.Error.WriteLine("Error: File path is required");
             return 1;
+        }
 
-        var bytes = ReadFileBytes(validPath);
+        if (!File.Exists(filePath))
+        {
+            Console.Error.WriteLine($"Error: File not found: {filePath}");
+            return 1;
+        }
+
+        var bytes = File.ReadAllBytes(filePath);
         var ctx = new InspectorContext(bytes);
 
-        PrintHeader(validPath, bytes.Length);
+        Console.WriteLine($"; File: {filePath}");
+        Console.WriteLine($"; Size: {bytes.Length} bytes");
+        Console.WriteLine();
 
         try
         {
-            InspectFile(ctx);
+            InspectVoices(ctx);
+            InspectLoop(ctx);
+            PrintSummary(ctx);
             return 0;
         }
         catch (Exception ex)
@@ -47,291 +60,237 @@ public class InspectCommand : Command
         }
     }
 
-    private static bool ValidateFilePath(string? filePath, out string validPath)
-    {
-        validPath = filePath ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(validPath))
-        {
-            Console.Error.WriteLine("Error: File path is required");
-            return false;
-        }
-
-        if (!File.Exists(validPath))
-        {
-            Console.Error.WriteLine($"Error: File not found: {validPath}");
-            return false;
-        }
-
-        return true;
-    }
-
-    private static byte[] ReadFileBytes(string filePath)
-    {
-        return File.ReadAllBytes(filePath);
-    }
-
-    private static void PrintHeader(string filePath, int size)
-    {
-        Console.WriteLine($"File: {filePath}");
-        Console.WriteLine($"Size: {size} bytes ({size / 1024.0:F2} KB)");
-        Console.WriteLine();
-    }
-
-    private static void InspectFile(InspectorContext ctx)
-    {
-        InspectVoices(ctx);
-        InspectLoop(ctx);
-        PrintSummary(ctx);
-    }
-
     private static void InspectVoices(InspectorContext ctx)
     {
-        Console.WriteLine("Voices:");
-        for (int i = 0; i < Constants.MaxVoices; i++)
+        for (var i = 0; i < Constants.MaxVoices; i++)
         {
             if (ctx.Buffer.Remaining == 0) break;
 
             var marker = ctx.Buffer.Peek();
             if (marker == 0)
             {
-                var pos = ctx.Buffer.Position;
-                ctx.Buffer.ReadUInt8();
-                Console.WriteLine($"  Voice {i}: Empty (Offset 0x{pos:X4})");
+                ctx.ReadByte("empty", $"voice {i}");
                 continue;
             }
 
             InspectVoice(ctx, i);
         }
-        Console.WriteLine();
     }
 
     private static void InspectVoice(InspectorContext ctx, int voiceIndex)
     {
-        Console.WriteLine($"  Voice {voiceIndex} (Offset 0x{ctx.Buffer.Position:X4}):");
+        var marker = ctx.Buffer.Peek();
+        ctx.PrintLine($"voice {voiceIndex}", $"active, wf={GetWaveformName((byte)marker)}");
 
-        InspectEnvelope(ctx, "Pitch");
-        InspectEnvelope(ctx, "Volume");
-        InspectOptionalLFO(ctx, "Vibrato");
-        InspectOptionalLFO(ctx, "Tremolo");
-        InspectOptionalLFO(ctx, "Gate");
+        InspectEnvelope(ctx, "penv");
+        InspectEnvelope(ctx, "aenv");
+
+        InspectOptionalLFO(ctx, "vib");
+        InspectOptionalLFO(ctx, "trem");
+        InspectOptionalLFO(ctx, "gate");
+
         InspectOscillators(ctx);
 
-        ctx.ReadSmart("Feedback Amount", "Echo feedback amount");
-        ctx.ReadSmart("Feedback Mix", "Echo dry/wet mix");
-        ctx.ReadUInt16("Duration", "ms");
-        ctx.ReadUInt16("Start Time", "ms");
+        ctx.ReadSmart("echo", "feedback");
+        ctx.ReadSmart("", "mix");
+
+        ctx.ReadUInt16("time", "dur");
+        ctx.ReadUInt16("", "start");
 
         InspectFilter(ctx);
-
-        Console.WriteLine();
     }
 
-    private static void InspectEnvelope(InspectorContext ctx, string name)
+    private static void InspectEnvelope(InspectorContext ctx, string _)
     {
-        Console.WriteLine($"    {name} Envelope:");
-        ctx.ReadByte("      Waveform", GetWaveformName);
-        ctx.ReadInt32("      Start Level", "fixed");
-        ctx.ReadInt32("      End Level", "fixed");
-        var segCount = ctx.ReadByte("      Segment Count", b => b.ToString());
-        for (int i = 0; i < segCount; i++)
+        ctx.ReadByte("", "wf");
+        ctx.ReadInt32("", "start");
+        ctx.ReadInt32("", "end");
+        ctx.ReadByte("", $"segs={ctx.LastByte}");
+
+        for (var i = 0; i < ctx.LastByte; i++)
         {
-            ctx.ReadUInt16($"      Segment {i} Duration", "ms");
-            ctx.ReadUInt16($"      Segment {i} Peak", "fixed");
+            ctx.ReadUInt16("", $"seg{i}.dur");
+            ctx.ReadUInt16("", $"seg{i}.peak");
         }
     }
 
-    private static void InspectOptionalLFO(InspectorContext ctx, string name)
+    private static void InspectOptionalLFO(InspectorContext ctx, string label)
     {
         var marker = ctx.Buffer.Peek();
         if (marker == 0)
         {
-            ctx.ReadByte($"    {name} LFO Present", _ => "No");
+            ctx.ReadByte("", $"{label}=none");
             return;
         }
 
-        ctx.ReadByte($"    {name} LFO Present", _ => "Yes");
-        InspectEnvelope(ctx, $"{name} Rate");
-        InspectEnvelope(ctx, $"{name} Depth");
+        ctx.PrintLine(label, "present");
+        InspectEnvelope(ctx, $"  {label}.rate");
+        InspectEnvelope(ctx, $"  {label}.depth");
     }
 
     private static void InspectOscillators(InspectorContext ctx)
     {
-        Console.WriteLine("    Oscillators:");
-        int oscIndex = 0;
-        while (oscIndex < Constants.MaxOscillators)
+        var idx = 0;
+        while (idx < Constants.MaxOscillators && ctx.Buffer.Remaining > 0)
         {
-            if (ctx.Buffer.Remaining == 0) break;
-
             var marker = ctx.Buffer.Peek();
             if (marker == 0)
             {
-                ctx.ReadByte("      Terminator", _ => "End");
+                ctx.ReadByte("", "osc=end");
                 break;
             }
 
-            Console.WriteLine($"      Oscillator {oscIndex}:");
-            ctx.ReadSmart("        Amplitude", "%");
-            ctx.ReadSmart("        Pitch Offset", "decicents");
-            ctx.ReadSmart("        Delay", "ms");
-            oscIndex++;
+            ctx.ReadSmart("", $"osc{idx}");
+            ctx.ReadSmart("", $"pitch");
+            ctx.ReadSmart("", $"delay");
+            idx++;
         }
     }
 
     private static void InspectFilter(InspectorContext ctx)
     {
-        Console.WriteLine("    Filter:");
-        if (!HasFilterData(ctx))
+        if (ctx.Buffer.Remaining == 0)
         {
-            Console.WriteLine("      Not present (insufficient data)");
+            ctx.PrintLine("; filter", "none (EOF)");
             return;
         }
 
-        _ = ReadFilterConfig(ctx, out int ch0Pairs, out int ch1Pairs);
-        if (!HasPolePairs(ch0Pairs, ch1Pairs))
+        var packed = ctx.Buffer.Peek();
+        var pair0 = packed >> 4;
+        var pair1 = packed & 0x0F;
+
+        if (packed == 0)
         {
-            Console.WriteLine("      Not present (no pole pairs)");
+            ctx.ReadByte("", "filt=none");
             return;
         }
 
-        Console.WriteLine($"      Pole Pairs: Ch0={ch0Pairs}, Ch1={ch1Pairs}");
-        ReadFilterGains(ctx);
-        var modMask = ReadFilterModMask(ctx);
+        ctx.ReadByte("", $"filt: ch0={pair0}, ch1={pair1}");
+        ctx.ReadUInt16("", "unity0");
+        ctx.ReadUInt16("", "unity1");
+        ctx.ReadByte("", $"modmask=0x{ctx.LastByte:X2}");
 
-        InspectFilterPoles(ctx, ch0Pairs, ch1Pairs);
-
-        if (modMask != 0)
+        // Poles
+        for (var ch = 0; ch < 2; ch++)
         {
-            InspectEnvelope(ctx, "Filter Mod");
-        }
-    }
-
-    private static bool HasFilterData(InspectorContext ctx)
-    {
-        return ctx.Buffer.Remaining >= 5;
-    }
-
-    private static byte ReadFilterConfig(InspectorContext ctx, out int ch0Pairs, out int ch1Pairs)
-    {
-        var packed = ctx.ReadByte("      Channel Config", b => $"0x{b:X2}");
-        ch0Pairs = packed >> 4;
-        ch1Pairs = packed & 0x0F;
-        return packed;
-    }
-
-    private static bool HasPolePairs(int ch0Pairs, int ch1Pairs)
-    {
-        return ch0Pairs != 0 || ch1Pairs != 0;
-    }
-
-    private static void ReadFilterGains(InspectorContext ctx)
-    {
-        ctx.ReadUInt16("      Unity Gain Ch0", "fixed");
-        ctx.ReadUInt16("      Unity Gain Ch1", "fixed");
-    }
-
-    private static byte ReadFilterModMask(InspectorContext ctx)
-    {
-        return ctx.ReadByte("      Modulation Mask", b => $"0x{b:X2}");
-    }
-
-    private static void InspectFilterPoles(InspectorContext ctx, int ch0Pairs, int ch1Pairs)
-    {
-        for (int ch = 0; ch < 2; ch++)
-        {
-            int pairs = ch == 0 ? ch0Pairs : ch1Pairs;
+            var pairs = ch == 0 ? pair0 : pair1;
             if (pairs == 0) continue;
 
-            Console.WriteLine($"      Channel {ch} Poles:");
-            for (int i = 0; i < pairs; i++)
+            for (var p = 0; p < pairs; p++)
             {
-                ctx.ReadUInt16($"        Pole {i} Frequency", "Hz");
-                ctx.ReadUInt16($"        Pole {i} Magnitude", "fixed");
+                ctx.ReadUInt16("", $"ch{ch}.pole{p}.freq");
+                ctx.ReadUInt16("", $"mag");
             }
+        }
+
+        // Modulation
+        if (ctx.LastByte != 0)
+        {
+            for (var ch = 0; ch < 2; ch++)
+            {
+                var pairs = ch == 0 ? pair0 : pair1;
+                for (var p = 0; p < pairs; p++)
+                {
+                    if ((ctx.LastByte & (1 << (ch * 4 + p))) != 0)
+                    {
+                        ctx.ReadUInt16("", $"ch{ch}.pole{p}.freq_mod");
+                        ctx.ReadUInt16("", $"mag_mod");
+                    }
+                }
+            }
+            InspectEnvelopeSegments(ctx);
+        }
+    }
+
+    private static void InspectEnvelopeSegments(InspectorContext ctx)
+    {
+        ctx.ReadByte("", $"env_segs={ctx.LastByte}");
+        for (var i = 0; i < ctx.LastByte; i++)
+        {
+            ctx.ReadUInt16("", $"seg{i}.dur");
+            ctx.ReadUInt16("", $"seg{i}.peak");
         }
     }
 
     private static void InspectLoop(InspectorContext ctx)
     {
-        Console.WriteLine("Loop Parameters:");
         if (ctx.Buffer.Remaining >= 4)
         {
-            ctx.ReadUInt16("  Loop Start", "samples");
-            ctx.ReadUInt16("  Loop End", "samples");
+            ctx.ReadUInt16("loop", "start");
+            ctx.ReadUInt16("", "end");
         }
-        else
-        {
-            Console.WriteLine("  Loop parameters missing or file truncated");
-        }
-        Console.WriteLine();
     }
 
     private static void PrintSummary(InspectorContext ctx)
     {
-        Console.WriteLine("Summary:");
-        Console.WriteLine($"  Total Bytes Read:    {ctx.Buffer.Position}");
-        Console.WriteLine($"  Total Bytes in File: {ctx.Buffer.Data.Length}");
-        Console.WriteLine($"  Bytes Remaining:     {ctx.Buffer.Remaining} ({ctx.Buffer.Remaining * 100.0 / ctx.Buffer.Data.Length:F1}%)");
-
+        Console.WriteLine($"; Parsed {ctx.Buffer.Position}/{ctx.Buffer.Data.Length} bytes ({ctx.Buffer.Position * 100.0 / ctx.Buffer.Data.Length:F1}%)");
         if (ctx.Buffer.Remaining > 0)
         {
-            Console.WriteLine("  WARNING: Unparsed bytes remain at end of file");
+            Console.WriteLine($"; Remaining: {ctx.Buffer.Remaining} bytes unparsed");
         }
-        else
-        {
-            Console.WriteLine("  Status: File parsed completely");
-        }
-        Console.WriteLine();
     }
 
     private static void PrintError(InspectorContext ctx, Exception ex)
     {
-        Console.WriteLine("Parsing Error:");
-        Console.WriteLine($"  Offset: 0x{ctx.Buffer.Position:X4}");
-        Console.WriteLine($"  Error:  {ex.Message}");
+        Console.WriteLine($"; ERROR at 0x{ctx.Buffer.Position:X4}: {ex.Message}");
     }
 
-    private static string GetWaveformName(byte id)
+    private static string GetWaveformName(byte id) => id switch
     {
-        return id switch
-        {
-            0 => "Off",
-            1 => "Square",
-            2 => "Sine",
-            3 => "Saw",
-            4 => "Noise",
-            _ => $"Unknown ({id})"
-        };
-    }
+        0 => "off",
+        1 => "square",
+        2 => "sine",
+        3 => "saw",
+        4 => "noise",
+        _ => $"?({id})"
+    };
 
     private class InspectorContext(byte[] data)
     {
         public BinaryBuffer Buffer { get; } = new(data);
+        public byte LastByte { get; private set; }
 
-        public byte ReadByte(string name, Func<byte, string> formatter)
-        {
-            return ReadAndPrint(() => (byte)Buffer.ReadUInt8(), name, formatter);
-        }
+        public byte ReadByte(string mnemonic, string comment)
+            => (byte)ReadAndPrint(1, mnemonic, comment, Buffer.ReadUInt8);
 
-        public int ReadSmart(string name, string unit)
+        public int ReadSmart(string mnemonic, string comment)
         {
-            return ReadAndPrint(Buffer.ReadSmart, name, v => $"{v} {unit}");
-        }
-
-        public int ReadInt32(string name, string unit)
-        {
-            return ReadAndPrint(Buffer.ReadInt32BE, name, v => $"{v} {unit}");
-        }
-
-        public int ReadUInt16(string name, string unit)
-        {
-            return ReadAndPrint(Buffer.ReadUInt16BE, name, v => $"{v} {unit}");
-        }
-
-        private static T ReadAndPrint<T>(Func<T> read, string name, Func<T, string> formatter)
-        {
-            var value = read();
-            Console.WriteLine($"      {name}: {formatter(value)}");
+            var startPos = Buffer.Position;
+            var value = Buffer.ReadSmart();
+            var len = Buffer.Position - startPos;
+            var bytes = Buffer.Data.Skip(startPos).Take(len).ToArray();
+            PrintLine(startPos, bytes, mnemonic, comment.Length > 0 ? $"{comment}={value}" : value.ToString());
             return value;
+        }
+
+        public int ReadInt32(string mnemonic, string comment)
+            => ReadAndPrint(4, mnemonic, comment, Buffer.ReadInt32BE);
+
+        public int ReadUInt16(string mnemonic, string comment)
+            => ReadAndPrint(2, mnemonic, comment, Buffer.ReadUInt16BE);
+
+        private int ReadAndPrint(int byteCount, string mnemonic, string comment, Func<int> readFunc)
+        {
+            var startPos = Buffer.Position;
+            var value = readFunc();
+            var bytes = Buffer.Data.Skip(startPos).Take(byteCount).ToArray();
+            if (byteCount == 1) LastByte = bytes[0];
+            PrintLine(startPos, bytes, mnemonic, comment.Length > 0 ? $"{comment}={value}" : value.ToString());
+            return value;
+        }
+
+        public void PrintLine(string mnemonic, string comment)
+        {
+            PrintLine(Buffer.Position, [], mnemonic, comment);
+        }
+
+        private static void PrintLine(int pos, byte[] bytes, string mnemonic, string comment)
+        {
+            var hex = bytes.Length > 0 ? string.Join(" ", bytes.Select(b => b.ToString("X2"))) : "";
+            if (hex.Length > 18) hex = hex[..15] + "...";
+            var mnem = mnemonic.PadRight(10);
+            var comma = comment.Length > 0 && mnemonic.Length > 0 ? ", " : "";
+            Console.WriteLine($"{pos:X4}: {hex,-18} {mnem}{comma}{comment}");
         }
     }
 }
