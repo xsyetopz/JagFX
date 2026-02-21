@@ -4,13 +4,13 @@ Formal specification based on C# implementation (JagFX).
 
 ## Overview
 
-Binary format for synthesized sound effects used in RuneScape. Contains up to **10 voices** with envelope-controlled pitch, amplitude, LFO modulation, and optional IIR filtering.
+Binary format for synthesized sound effects used in OldSchool RuneScape. Contains up to **`10` voices** with envelope-controlled pitch, amplitude, LFO modulation, and optional IIR filtering.
 
 - **Byte Order**: Big Endian
-- **Sample Rate**: 22,050 Hz (fixed)
-- **Max Voices**: 10
-- **Max Oscillators per Voice**: 10
-- **Fixed-Point Scale**: 65,536 (16.16 format)
+- **Sample Rate**: `22,050` Hz (fixed)
+- **Max Voices**: `10`
+- **Max Oscillators per Voice**: `10`
+- **Fixed-Point Scale**: `65,536` (16.16 format)
 
 ---
 
@@ -18,11 +18,11 @@ Binary format for synthesized sound effects used in RuneScape. Contains up to **
 
 | Type | Size | Description |
 |------|------|-------------|
-| `u8` | 1 byte | Unsigned 8-bit integer |
-| `u16` | 2 bytes | Unsigned 16-bit integer (big-endian) |
-| `s32` | 4 bytes | Signed 32-bit integer (big-endian) |
-| `smart` | 1-2 bytes | Signed variable-length integer. If value < 64: encoded as `val + 64`. If value >= 64: encoded as `((val + 49152) >> 8)` followed by `((val + 49152) & 0xFF)` |
-| `usmart` | 1-2 bytes | Unsigned variable-length integer. If value < 128: encoded as `val`. If value >= 128: encoded as `((val >> 8) + 128)` followed by `(val & 0xFF)` |
+| `u8` | `1` byte | Unsigned 8-bit integer |
+| `u16` | `2` bytes | Unsigned 16-bit integer (big-endian) |
+| `s32` | `4` bytes | Signed 32-bit integer (big-endian) |
+| `smart` | `1-2` bytes | Signed variable-length integer. Values `-64` to `63`: encoded as`val + 64` in `1` byte. Values outside this range: 2-byte encoding |
+| `usmart` | `1-2` bytes | Unsigned variable-length integer. Values 0`-127`: encoded as`val` in `1` byte. Values `128-65535`: 2-byte encoding with high bit set |
 
 ---
 
@@ -36,7 +36,7 @@ Binary format for synthesized sound effects used in RuneScape. Contains up to **
 ### Format Revisions
 
 - **Rev245** (2004-07-13): Compact layout without padding
-- **Rev377** (2006-05-02): Introduces 0x00 padding between voices
+- **Rev377** (2006-05-02): Introduces `0x00` padding between voices
 
 Parser detects format automatically and applies compatibility patches.
 
@@ -44,9 +44,9 @@ Parser detects format automatically and applies compatibility patches.
 
 ## Voice Structure
 
-Each voice begins with a **marker byte**:
+Each voice begins with **marker byte**:
 
-- `0x00`: Empty slot (consume 1 byte, advance to next)
+- `0x00`: Empty slot (consume `1` byte, advance to next)
 - `!= 0x00`: Voice present (marker = Waveform ID of Pitch Envelope)
 
 ### Voice Fields
@@ -91,7 +91,7 @@ Peek next byte:
 | **Duration** | u16 | Time to reach peak (ms) |
 | **Peak** | u16 | Target value at segment end |
 
-**Note**: Segment.Peak (0-65535) maps to progress between Start and End values.
+**Note**: S`egment.Peak`(`0-65535`) maps to progress between`Start` and `End` values.
 
 ---
 
@@ -111,13 +111,13 @@ Read until `0x00` terminator or max 10 oscillators:
 
 ## Filter Structure
 
-IIR filter with configurable poles. Max 4 pole pairs per channel.
+IIR filter with configurable poles. Format supports up to `15` pole pairs per channel (packed into `4` bits), though typical implementations use `-4` pairs.
 
 | Field | Type | Description |
 |-------|------|-------------|
 | **Channel Config** | u8 | Packed: `Count0 = byte >> 4`, `Count1 = byte & 0x0F` |
-| **Unity Gain Ch0** | u16 | Gain for channel 0 |
-| **Unity Gain Ch1** | u16 | Gain for channel 1 |
+| **Unity Gain Ch0** | u16 | Gain for channel `0` |
+| **Unity Gain Ch1** | u16 | Gain for channel `1` |
 | **Modulation Mask** | u8 | Bit flags: `bit (ch*4+p)` indicates modulated pole |
 
 ### Pole Data
@@ -135,8 +135,8 @@ If `Modulation Mask != 0`, for each modulated pole:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| **Freq Modulation** | u16 | Frequency modulation amount |
-| **Mag Modulation** | u16 | Magnitude modulation amount |
+| **Frequency Modulation** | u16 | Frequency modulation amount |
+| **Magnitude Modulation** | u16 | Magnitude modulation amount |
 
 ### Filter Envelope
 
@@ -151,6 +151,38 @@ Read **only if** `Modulation Mask != 0`:
 
 ---
 
+## Example: Complex Filter Structure
+
+This file `ice_cast_rev377.synth` (`331` bytes) demonstrates voice with maximum filter complexity:
+
+```text
+Voice 0:
+├── Pitch Envelope (sine, 5 segments, 40→2000)
+├── Volume Envelope (off, 5 segments, 0→100)
+├── Vibrato: none
+├── Tremolo: none
+├── Gate Envelopes (present: 5+4 segments)
+├── 4 Oscillators (vol: 70, 150, 1024, 7602)
+├── Echo (delay=24329, mix=66)
+├── Duration=36610ms, Start=0ms
+└── Filter (15 pairs per channel!)
+    ├── Channel Config: 0xFF (15 pairs × 2 channels)
+    ├── Unity Gains: 65535, 65535
+    ├── Modulation Mask: 0xFF (all 30 poles modulated)
+    ├── 30 Phase-0 coefficients (freq+mag)
+    ├── 30 Phase-1 coefficients (freq+mag)
+    ├── 30 Frequency modulation values
+    ├── 30 Magnitude modulation values
+    └── Filter Envelope (255 segments)
+
+Voices 1-9: Empty (0x00 markers)
+Loop: truncated/not present
+```
+
+This file consumes 100% of its `331` bytes with `Voice 0`'s complex filter alone. Most synth files use simpler filters (`1-4` pairs) with room for multiple voices.
+
+---
+
 ## Loop Parameters
 
 Optional 4-byte footer (may be truncated):
@@ -162,7 +194,7 @@ Optional 4-byte footer (may be truncated):
 
 **Truncation Handling**:
 
-- If file ends before Loop: loop disabled (0, 0)
+- If file ends before Loop: loop disabled `(0, 0)`
 - If truncated during Voice: remaining voices are empty (null)
 
 ---
@@ -208,13 +240,13 @@ flowchart TD
 
 | Constant | Value | Description |
 |----------|-------|-------------|
-| SampleRate | 22050 | Audio sample rate (Hz) |
-| MaxVoices | 10 | Maximum concurrent voices |
-| MaxOscillators | 10 | Maximum oscillators per voice |
-| MaxFilterPairs | 4 | Maximum pole pairs per filter channel |
-| FilterUpdateRate | 256 | Samples between filter coefficient updates |
-| FixedPoint.Scale | 65536 | 16.16 fixed-point multiplier |
-| FixedPoint.Offset | 32768 | Fixed-point offset |
+| SampleRate | `22050` | Audio sample rate (Hz) |
+| MaxVoices | `10` | Maximum concurrent voices |
+| MaxOscillators | `10` | Maximum oscillators per voice |
+| MaxFilterPairs | `4` | Maximum pole pairs in current implementations (format allows up to `15`) |
+| FilterUpdateRate | `256` | Samples between filter coefficient updates |
+| FixedPoint.Scale | `65536` | 16.16 fixed-point multiplier |
+| FixedPoint.Offset | `32768` | Fixed-point offset |
 
 ---
 
@@ -222,13 +254,13 @@ flowchart TD
 
 | ID | Name | Description |
 |----|------|-------------|
-| 0 | Off | Silent output |
-| 1 | Square | Square wave |
-| 2 | Sine | Sine wave |
-| 3 | Saw | Sawtooth wave |
-| 4 | Noise | Random noise |
+| `0` | Off | Silent output |
+| `1` | Square | Square wave |
+| `2` | Sine | Sine wave |
+| `3` | Saw | Sawtooth wave |
+| `4` | Noise | Random noise |
 
-**Note**: IDs outside 0-4 treated as Off.
+**Note**: IDs outside `0-4` treated as Off.
 
 ---
 
