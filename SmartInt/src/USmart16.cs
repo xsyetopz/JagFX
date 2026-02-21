@@ -5,7 +5,12 @@ namespace SmartInt;
 /// <summary>
 /// Represents an unsigned 16-bit smart integer value (0 to 65535).
 /// </summary>
-public readonly struct USmart16 : IEquatable<USmart16>, IComparable<USmart16>,
+/// <remarks>
+/// Initializes a new instance of the USmart16 struct with the specified value.
+/// </remarks>
+/// <param name="value">The value to store.</param>
+/// <exception cref="ArgumentOutOfRangeException">Thrown when value is outside the valid range.</exception>
+public readonly struct USmart16(ushort value) : IEquatable<USmart16>, IComparable<USmart16>,
     IFormattable, ISpanFormattable, ISpanParsable<USmart16>
 {
     /// <summary>
@@ -18,22 +23,12 @@ public readonly struct USmart16 : IEquatable<USmart16>, IComparable<USmart16>,
     /// </summary>
     public const ushort MinValue = 0;
 
-    private readonly ushort _value;
+    private readonly ushort _value = value;
 
     /// <summary>
     /// Gets the underlying ushort value.
     /// </summary>
     public ushort Value => _value;
-
-    /// <summary>
-    /// Initializes a new instance of the USmart16 struct with the specified value.
-    /// </summary>
-    /// <param name="value">The value to store.</param>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when value is outside the valid range.</exception>
-    public USmart16(ushort value)
-    {
-        _value = value;
-    }
 
     #region Encoding/Decoding
 
@@ -43,26 +38,15 @@ public readonly struct USmart16 : IEquatable<USmart16>, IComparable<USmart16>,
     /// <param name="data">The data to decode.</param>
     /// <param name="bytesRead">When this method returns, contains the number of bytes read.</param>
     /// <returns>A new USmart16 instance.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when data is empty or too short.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when data is empty.</exception>
     public static USmart16 FromEncoded(ReadOnlySpan<byte> data, out int bytesRead)
     {
         if (data.IsEmpty)
             throw new ArgumentOutOfRangeException(nameof(data), "Data cannot be empty.");
 
         var b = data[0];
-        if (b == 0)
-        {
-            if (data.Length < 3)
-                throw new ArgumentOutOfRangeException(nameof(data), "Data is too short for 3-byte unsigned encoding.");
-
-            bytesRead = 3;
-            return new USmart16((ushort)((data[1] << 8) | data[2]));
-        }
-        else
-        {
-            bytesRead = 1;
-            return new USmart16(b);
-        }
+        bytesRead = 1;
+        return new USmart16(b);
     }
 
     /// <summary>
