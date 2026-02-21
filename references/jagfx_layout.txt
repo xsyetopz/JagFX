@@ -1,90 +1,53 @@
-How was original JagFX laid out in GUI side?
-
-In the following grid:
-
-### TOP..MIDDLE ---
-
-[Freq Base]     [Freq Mod rate]     [Freq Mod range]    [Graph of poles/zeros]
-[Amp Base]      [Amp Mod rate]      [Amp Mod range]     [Transition Curve]
-[Final Output]  [Gap off]           [Gap on]            [Frequency Response]
-
----
-
-these grid cells:
-[Freq Base]     [Freq Mod rate]     [Freq Mod range]
-[Amp Base]      [Amp Mod rate]      [Amp Mod range]     [Transition Curve]
-[Final Output]  [Gap off]           [Gap on]
-
-had the following title buttons:
-{1x}{2x}{4x}{..}{M...}{*down_arrow*}
-
-what exactly was '..' 'M...' and down_arrow are unknown as we've never seen their full names,
-nor have we seen them clicked/used in any developer video we've gotten.
-
-however, these two: [Graph of poles/zeros] and [Frequency Response]:
-only contain these:
-{1x}{2x}{4x}{..}
-
-What even were 1x 2x 4x for?
-
----
-
-### BOTTOM ---
-
-# Editing Tone section                                                                          # Mode (used to display the last 3 filter-related panels at the far right only, or all at once)
-[1][2][3][4][5][6][7][8][9][10]     [Harmonic1][Harmonic2][Harmonic3][Harmonic4][Harmonic5]     [Main][Filter][Both]
-      [Copy][Reset Active]          |Semi: ...||Semi: ...||Semi: ...||Semi: ...||Semi: ...|
-                                    |Vol : ...||Vol : ...||Vol : ...||Vol : ...||Vol : ...|
-
-There was also Reverb with values 'Reverb vol' and 'Reverb del' next to Harmonic5
-
----
-
-# To left were settings and various buttons for some elements:
-0 - [Off]
-1 - [Sqr]
-2 - [Sin]
-3 - [Saw]
-4 - [Noise]
-5 - [Triangle] # <-- this doesn't exist, but some files actually contained a "5th" waveform called Triangle. For full support, we could add this!
-Min Hz: ...
-Max Hz: ...
-Avg Hz: *immutable calculated value*
-
-# these were seen on Gap Off/On panel controls.
-[Off]
-[On]
-Min Gap: ...
-Max Gap: ...
-Avg Gap: *immutable calculated value*
-
----
-
-Len ms: ^... # these were up-down text fields
-Pos ms: ^...
-L1 ms : ^...
-L2 ms : ^...
-
-[Play]
-[Play All] # meant to play all "tones" at once
-[Loop]
-[Loop All] # meant to loop all tones maybe?
-
-===
-Loops
-^...
-=== # this is a groupbox in original, same with harmonics
-
-[Stop]
-[Load]
-[Save]
-
-[True Wave] # this always showed up as toggled on, so what even does this do?
-
----
-
-At the end of day, we never had hand or code into the original, so we don't know what more there could be.
-
-Best to just design properly around the file format, and the idea behind a wavetable synthesizer with additive synthesis.
-
-Image reference: /Users/krystian/CodeProjects/jagfx-scala/references/images/370_cow_death.jpeg (Kimi K2.5 can read this via MCP)
+> JagFX C:\path/to\sound_file.synth
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+            |---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+            | /Freq Base          [1x][2x][4x][..][M..][↓]/---------| /Freq Mod rate      [1x][2x][4x][..][M..][↓]/           /Freq Mod range     [1x][2x][4x][..][M..][↓]/           /Graph of poles and zeros   [1x][2x][4x][..]/ |
+[Off]       | /===========================================/[Off]    | /===========================================/           /===========================================/           /===========================================/ |
+[Sqr]       | /                                           /[Sqr]    | /                                           /           /                                           /           /                                           / |
+[Sin]       | /                                           /[Sin]    | /                                           /           /                                           /           /                                           / |
+[Saw]       | /                                           /[Noise]  | /                                           /           /                                           /           /                                           / |
+[Noise]     | /                                           /Min Hz:  | /                                           /           /                                           /           /                                           / |
+Min Hz:     | /                                           /    0  ^ | /                                           /           /                                           /           /                                           / |
+    0  ^    | /                                           /         | /                                           /           /                                           /           /                                           / |
+Max Hz:     | /                                           /Max Hz:  | /                                           /           /                                           /           /                                           / |
+    0  ^    | /                                           /    0  ^ | /                                           /           /                                           /           /                                           / |
+Av Hz:      | /                                           /         | /                                           /           /                                           /           /                                           / |
+    0       | /                                           /Av Hz:   | /                                           /           /                                           /           /                                           / |
+------------| /                                           /    0    | /                                           /           /                                           /           /                                           / |
+            | /===========================================/---------| /===========================================/           /===========================================/           /===========================================/ |
+------------|                                                                                                                                                                                                                       |
+Len ms:     | /Amp Base           [1x][2x][4x][..][M..][↓]/---------| /Amp Mod rate       [1x][2x][4x][..][M..][↓]/           /Amp Mod range      [1x][2x][4x][..][M..][↓]/           /Transition Curve   [1x][2x][4x][..][M..][↓]/ |
+    0  ^    | /===========================================/[Off]    | /===========================================/           /===========================================/           /===========================================/ |
+Pos ms:     | /                                           /[Sqr]    | /                                           /           /                                           /           /                                           / |
+    0  ^    | /                                           /[Sin]    | /                                           /           /                                           /           /                                           / |
+L1 ms       | /                                           /[Noise]  | /                                           /           /                                           /           /                                           / |
+    0  ^    | /                                           /Min Hz:  | /                                           /           /                                           /           /                                           / |
+L2 ms       | /                                           /    0  ^ | /                                           /           /                                           /           /                                           / |
+    0  ^    | /                                           /         | /                                           /           /                                           /           /                                           / |
+------------| /                                           /Max Hz:  | /                                           /           /                                           /           /                                           / |
+[Play]      | /                                           /    0  ^ | /                                           /           /                                           /           /                                           / |
+[Play All]  | /                                           /         | /                                           /           /                                           /           /                                           / |
+[Loop]      | /                                           /Av Hz:   | /                                           /           /                                           /           /                                           / |
+[Loop All]  | /                                           /    0    | /                                           /           /                                           /           /                                           / |
+            | /===========================================/---------| /===========================================/           /===========================================/           /===========================================/ |
+------------|                                                                                                                                                                                                                       |
+Loops:      | /Final Output       [1x][2x][4x][..][M..][↓]/---------| /Gap off            [1x][2x][4x][..][M..][↓]/           /Gap on             [1x][2x][4x][..][M..][↓]/           /Frequency Response         [1x][2x][4x][..]/ |
+    0  ^    | /===========================================/[Off]    | /===========================================/           /===========================================/           /===========================================/ |
+------------| /                                           /[On]     | /                                           /           /                                           /           /                                           / |
+[Stop]      | /                                           /Min Gap: | /                                           /           /                                           /           /                                           / |
+[Load]      | /                                           /    0  ^ | /                                           /           /                                           /           /                                           / |
+[Save]      | /                                           /         | /                                           /           /                                           /           /                                           / |
+            | /                                           /Max Gap: | /                                           /           /                                           /           /                                           / |
+[True Wave] | /                                           /    0  ^ | /                                           /           /                                           /           /                                           / |
+            | /                                           /         | /                                           /           /                                           /           /                                           / |
+            | /                                           /Av Gap:  | /                                           /           /                                           /           /                                           / |
+            | /                                           /    0    | /                                           /           /                                           /           /                                           / |
+            | /                                           /---------| /                                           /           /                                           /           /                                           / |
+            | /                                           /           /                                           /           /                                           /           /                                           / |
+            |-/===========================================/-----------/===========================================/-----------/===========================================/-----------/===========================================/ |
+                                                                      \Harmonic 1     \ \Harmonic 2     \ \Harmonic 3     \ \Harmonic 4     \ \Harmonic 5     \                                                                     |
+                Editing Tone                                          \ Semi:    0  ^ \ \ Semi:    0  ^ \ \ Semi:    0  ^ \ \ Semi:    0  ^ \ \ Semi:    0  ^ \ \ Reverb              \                                Mode         |
+[ 1][ 2][ 3][ 4][ 5][ 6][ 7][ 8][ 9][10][Copy]                        \ Vol :    0  ^ \ \ Vol :    0  ^ \ \ Vol :    0  ^ \ \ Vol :    0  ^ \ \ Vol :    0  ^ \ \ Reverb vol:    0  ^ \                                             |
+                                                                      \ Del :    0  ^ \ \ Del :    0  ^ \ \ Del :    0  ^ \ \ Del :    0  ^ \ \ Del :    0  ^ \ \ Reverb del:    0  ^ \                        [Main][Filter][Both] |
+               [Reset Active]                                         \===============\ \===============\ \===============\ \===============\ \===============\ \=====================\                                             |
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
