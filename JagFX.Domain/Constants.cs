@@ -10,7 +10,7 @@ public static class Constants
 
     public const int MaxVoices = 10;
     public const int MaxOscillators = 10;
-    public const int MaxFilterPairs = 4;
+    public const int MaxFilterPairs = 15;
     public const int FilterUpdateRate = byte.MaxValue + 1;
 
     public const int PhaseMask = 0x7fff;
