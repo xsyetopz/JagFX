@@ -94,7 +94,7 @@ namespace JagFX.IO
             if (_position >= Data.Length) return 0;
 
             var b = Data[_position] & 0xFF;
-            return b < 128 ? ReadSmartOneByte() : ReadSmartTwoBytes();
+            return b < 64 ? ReadSmartOneByte() : ReadSmartTwoBytes();
         }
 
         public ushort ReadUSmart()
