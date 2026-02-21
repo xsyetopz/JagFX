@@ -54,14 +54,20 @@ public static class SynthFileReader
                 if (_buf.Remaining > 0)
                 {
                     var marker = _buf.Peek();
-                    if (marker != 0)
+                    if (marker != 0 && IsValidWaveform(marker))
                     {
                         var voice = ReadVoice();
-                        RemoveLeadingZeroPadding();
                         voices.Add(voice);
                     }
                     else
                     {
+                        if (marker != 0)
+                        {
+                            voices.Add(null);
+                            for (var j = i + 1; j < Constants.MaxVoices; j++)
+                                voices.Add(null);
+                            break;
+                        }
                         _buf.Skip(1);
                         voices.Add(null);
                     }
@@ -309,10 +315,9 @@ public static class SynthFileReader
             return possibleSegCount <= MaxReasonableSegCount;
         }
 
-        private void RemoveLeadingZeroPadding()
+        private static bool IsValidWaveform(int waveformId)
         {
-            if (_buf.Remaining > 0 && _buf.Peek() == 0)
-                _buf.Skip(1);
+            return waveformId >= MinWaveformId && waveformId <= MaxWaveformId;
         }
 
         private static void CopyPhase0ToPhase1(int[,,] frequencies, int[,,] magnitudes, int channel, int p)
