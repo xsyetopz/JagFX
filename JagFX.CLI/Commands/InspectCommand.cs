@@ -65,7 +65,6 @@ public class InspectCommand : Command
         for (var i = 0; i < Constants.MaxVoices; i++)
         {
             if (ctx.Buffer.Remaining == 0) break;
-
             var marker = ctx.Buffer.Peek();
             if (marker == 0)
             {
@@ -91,8 +90,8 @@ public class InspectCommand : Command
 
         InspectOscillators(ctx);
 
-        ctx.ReadSmart("echo", "feedback");
-        ctx.ReadSmart("", "mix");
+        ctx.ReadUSmart("echo", "feedback");
+        ctx.ReadUSmart("", "mix");
 
         ctx.ReadUInt16("time", "dur");
         ctx.ReadUInt16("", "start");
@@ -105,9 +104,10 @@ public class InspectCommand : Command
         ctx.ReadByte("", "wf");
         ctx.ReadInt32("", "start");
         ctx.ReadInt32("", "end");
-        ctx.ReadByte("", $"segs={ctx.LastByte}");
-
-        for (var i = 0; i < ctx.LastByte; i++)
+        var nSegs = ctx.ReadByte("", "segs");
+        var maxSegs = ctx.Buffer.Remaining / 4;
+        var segLimit = Math.Min(nSegs, maxSegs);
+        for (var i = 0; i < segLimit; i++)
         {
             ctx.ReadUInt16("", $"seg{i}.dur");
             ctx.ReadUInt16("", $"seg{i}.peak");
@@ -140,16 +140,16 @@ public class InspectCommand : Command
                 break;
             }
 
-            ctx.ReadSmart("", $"osc{idx}");
+            ctx.ReadUSmart("", $"osc{idx}");
             ctx.ReadSmart("", $"pitch");
-            ctx.ReadSmart("", $"delay");
+            ctx.ReadUSmart("", $"delay");
             idx++;
         }
     }
 
     private static void InspectFilter(InspectorContext ctx)
     {
-        if (ctx.Buffer.Remaining == 0)
+        if (ctx.Buffer.Remaining < 1)
         {
             ctx.PrintLine("; filter", "none (EOF)");
             return;
@@ -158,7 +158,6 @@ public class InspectCommand : Command
         var packed = ctx.Buffer.Peek();
         var pair0 = packed >> 4;
         var pair1 = packed & 0x0F;
-
         if (packed == 0)
         {
             ctx.ReadByte("", "filt=none");
@@ -168,9 +167,14 @@ public class InspectCommand : Command
         ctx.ReadByte("", $"filt: ch0={pair0}, ch1={pair1}");
         ctx.ReadUInt16("", "unity0");
         ctx.ReadUInt16("", "unity1");
-        ctx.ReadByte("", $"modmask=0x{ctx.LastByte:X2}");
+        var modmask = ctx.ReadByte("", $"modmask");
 
-        // Poles
+        InspectFilterPoles(ctx, pair0, pair1);
+        InspectFilterModulation(ctx, pair0, pair1, modmask);
+    }
+
+    private static void InspectFilterPoles(InspectorContext ctx, int pair0, int pair1)
+    {
         for (var ch = 0; ch < 2; ch++)
         {
             var pairs = ch == 0 ? pair0 : pair1;
@@ -182,30 +186,33 @@ public class InspectCommand : Command
                 ctx.ReadUInt16("", $"mag");
             }
         }
+    }
 
-        // Modulation
-        if (ctx.LastByte != 0)
+    private static void InspectFilterModulation(InspectorContext ctx, int pair0, int pair1, int modmask)
+    {
+        if (modmask == 0) return;
+
+        for (var ch = 0; ch < 2; ch++)
         {
-            for (var ch = 0; ch < 2; ch++)
+            var pairs = ch == 0 ? pair0 : pair1;
+            for (var p = 0; p < pairs; p++)
             {
-                var pairs = ch == 0 ? pair0 : pair1;
-                for (var p = 0; p < pairs; p++)
+                if ((modmask & (1 << (ch * 4 + p))) != 0)
                 {
-                    if ((ctx.LastByte & (1 << (ch * 4 + p))) != 0)
-                    {
-                        ctx.ReadUInt16("", $"ch{ch}.pole{p}.freq_mod");
-                        ctx.ReadUInt16("", $"mag_mod");
-                    }
+                    ctx.ReadUInt16("", $"ch{ch}.pole{p}.freq_mod");
+                    ctx.ReadUInt16("", $"mag_mod");
                 }
             }
-            InspectEnvelopeSegments(ctx);
         }
+        InspectEnvelopeSegments(ctx);
     }
 
     private static void InspectEnvelopeSegments(InspectorContext ctx)
     {
-        ctx.ReadByte("", $"env_segs={ctx.LastByte}");
-        for (var i = 0; i < ctx.LastByte; i++)
+        var nSegs = ctx.ReadByte("", "env_segs");
+        var maxSegs = ctx.Buffer.Remaining / 4;
+        var segLimit = Math.Min(nSegs, maxSegs);
+        for (var i = 0; i < segLimit; i++)
         {
             ctx.ReadUInt16("", $"seg{i}.dur");
             ctx.ReadUInt16("", $"seg{i}.peak");
@@ -248,15 +255,26 @@ public class InspectCommand : Command
     private class InspectorContext(byte[] data)
     {
         public BinaryBuffer Buffer { get; } = new(data);
-        public byte LastByte { get; private set; }
-
         public byte ReadByte(string mnemonic, string comment)
-            => (byte)ReadAndPrint(1, mnemonic, comment, Buffer.ReadUInt8);
+        {
+            var value = (byte)ReadAndPrint(1, mnemonic, comment, Buffer.ReadUInt8);
+            return value;
+        }
 
         public int ReadSmart(string mnemonic, string comment)
         {
             var startPos = Buffer.Position;
             var value = Buffer.ReadSmart();
+            var len = Buffer.Position - startPos;
+            var bytes = Buffer.Data.Skip(startPos).Take(len).ToArray();
+            PrintLine(startPos, bytes, mnemonic, comment.Length > 0 ? $"{comment}={value}" : value.ToString());
+            return value;
+        }
+
+        public int ReadUSmart(string mnemonic, string comment)
+        {
+            var startPos = Buffer.Position;
+            var value = Buffer.ReadUSmart();
             var len = Buffer.Position - startPos;
             var bytes = Buffer.Data.Skip(startPos).Take(len).ToArray();
             PrintLine(startPos, bytes, mnemonic, comment.Length > 0 ? $"{comment}={value}" : value.ToString());
@@ -274,7 +292,6 @@ public class InspectCommand : Command
             var startPos = Buffer.Position;
             var value = readFunc();
             var bytes = Buffer.Data.Skip(startPos).Take(byteCount).ToArray();
-            if (byteCount == 1) LastByte = bytes[0];
             PrintLine(startPos, bytes, mnemonic, comment.Length > 0 ? $"{comment}={value}" : value.ToString());
             return value;
         }
