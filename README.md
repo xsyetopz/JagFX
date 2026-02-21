@@ -43,7 +43,7 @@ The CLI supports both positional and flag-based arguments (but not mixed):
 dotnet run --project JagFX.CLI -- input.synth output.wav
 dotnet run --project JagFX.CLI -- input.synth output.wav 4
 
-# Flag arguments  
+# Flag arguments
 dotnet run --project JagFX.CLI -- -i input.synth -o output.wav
 dotnet run --project JagFX.CLI -- -i input.synth -o output.wav -l 4
 
@@ -75,51 +75,6 @@ dotnet publish -c Release -r osx-arm64 --self-contained -o publish/osx-arm64
 
 ```bash
 dotnet publish -c Release -o publish
-```
-
-## Project Structure
-
-```text
-JagFX.sln                    # Solution file
-├── JagFX.CLI/               # CLI application
-│   ├── JagFXCli.cs          # CLI command handling
-│   └── Program.cs           # Entry point
-├── JagFX.Domain/            # Domain models and types
-│   ├── Models/
-│   │   ├── Voice.cs         # Voice configuration
-│   │   ├── Envelope.cs      # Envelope with segments
-│   │   ├── Filter.cs        # IIR filter parameters
-│   │   ├── Lfo.cs           # LFO configuration
-│   │   ├── Loop.cs          # Loop settings
-│   │   ├── Oscillator.cs    # Oscillator with waveform
-│   │   ├── Patch.cs         # Complete patch/sound
-│   │   └── FeedbackDelay.cs # Echo/delay settings
-│   ├── Utilities/
-│   │   └── MathUtils.cs     # Math utilities (dB, conversions)
-│   ├── Constants.cs         # Global constants
-│   ├── Types.cs             # Millis, Percent, Samples
-│   └── TestFixtures.cs      # Test data
-├── JagFX.IO/                # File I/O operations
-│   ├── SynthFileReader.cs   # Binary .synth reader
-│   ├── SynthFileWriter.cs   # Binary .synth writer
-│   ├── SynthInspector.cs    # Debug inspection tool
-│   ├── BinaryBuffer.cs      # Binary buffer utilities
-│   └── WaveFileWriter.cs    # WAV export
-├── JagFX.Synthesis/         # DSP synthesis engine
-│   ├── ToneSynthesizer.cs   # Per-voice synthesis
-│   ├── TrackMixer.cs        # Multi-voice mixing
-│   ├── FilterProcessor.cs   # IIR filter processing
-│   ├── EnvelopeEvaluator.cs # Envelope evaluation
-│   ├── SampleBuffer.cs      # Sample buffer type
-│   ├── SampleBufferPool.cs  # Buffer pooling
-│   └── LookupTables.cs      # Precomputed tables
-├── JagFX.Synthesis.Tests/   # Synthesis unit tests
-├── JagFX.IO.Tests/          # I/O unit tests
-└── SmartInt/                # Smart integer types
-    ├── src/
-    │   ├── Smart16.cs
-    │   └── USmart16.cs
-    └── tests/
 ```
 
 ## Requirements
