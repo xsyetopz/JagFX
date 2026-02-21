@@ -1,3 +1,5 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+
 namespace SmartInt.Tests;
 
 [TestClass]
@@ -6,7 +8,7 @@ public class Smart16Tests
     [TestMethod]
     public void EncodeDecode_SmallValue_Works()
     {
-        var smart = new Smart16((short)42);
+        var smart = new Smart16(42);
         var buffer = new byte[3];
         var bytes = smart.Encode(buffer);
         var decoded = Smart16.FromEncoded(buffer, out var bytesRead);
@@ -18,7 +20,7 @@ public class Smart16Tests
     [TestMethod]
     public void EncodeDecode_NegativeValue_Works()
     {
-        var smart = new Smart16((short)-100);
+        var smart = new Smart16(-100);
         var buffer = new byte[3];
         var bytes = smart.Encode(buffer);
         var decoded = Smart16.FromEncoded(buffer, out var bytesRead);
