@@ -6,20 +6,17 @@ namespace JagFX.IO
 {
     public class BinaryBuffer
     {
-        private const int SmartOneByteOffset = 64;
-        private const int SmartTwoByteOffset = 49152;
-
         private int _position;
         private bool _truncated;
+
+        public BinaryBuffer(byte[] data) => Data = data ?? throw new ArgumentNullException(nameof(data));
+        public BinaryBuffer(int size) => Data = new byte[size];
 
         public byte[] Data { get; }
         public int Position => _position;
         public bool IsTruncated => _truncated;
         public int Remaining => Data.Length - _position;
 
-        public BinaryBuffer(byte[] data) => Data = data ?? throw new ArgumentNullException(nameof(data));
-
-        public BinaryBuffer(int size) => Data = new byte[size];
 
         public void Skip(int n) => _position += n;
 
@@ -91,18 +88,18 @@ namespace JagFX.IO
 
         public short ReadSmart()
         {
-            if (_position >= Data.Length) return 0;
-
-            var b = Data[_position] & 0xFF;
-            return b < 64 ? ReadSmartOneByte() : ReadSmartTwoBytes();
+            return ReadSmartBase<short>(
+                static (span) => (Smart16.FromEncoded(span, out var bytesRead).Value, bytesRead),
+                Smart16.SmartOneByteThreshold
+            );
         }
 
         public ushort ReadUSmart()
         {
-            if (_position >= Data.Length) return 0;
-
-            var value = Data[_position] & 0xFF;
-            return value < 128 ? ReadUSmartOneByte() : ReadUSmartTwoBytes();
+            return ReadSmartBase<ushort>(
+                static (span) => (USmart16.FromEncoded(span, out var bytesRead).Value, bytesRead),
+                USmart16.USmartOneByteThreshold
+            );
         }
 
         public void WriteInt32BE(int value)
@@ -147,33 +144,17 @@ namespace JagFX.IO
             _position += smart.Encode(Data.AsSpan(_position));
         }
 
-        private short ReadSmartOneByte()
+        private delegate (T Smart, int BytesRead) SmartDecoder<T>(ReadOnlySpan<byte> span);
+
+        private T ReadSmartBase<T>(SmartDecoder<T> fromEncoded, int oneByteThreshold)
         {
+            if (_position >= Data.Length) return default!;
             var b = Data[_position] & 0xFF;
-            _position++;
-            return (short)(b - SmartOneByteOffset);
-        }
-
-        private short ReadSmartTwoBytes()
-        {
-            if (CheckTruncation(2)) return 0;
-            var value = BinaryPrimitives.ReadUInt16BigEndian(Data.AsSpan(_position, 2));
-            _position += 2;
-            return (short)(value - SmartTwoByteOffset);
-        }
-
-        private ushort ReadUSmartOneByte()
-        {
-            _position++;
-            return (ushort)(Data[_position - 1] & 0xFF);
-        }
-
-        private ushort ReadUSmartTwoBytes()
-        {
-            if (CheckTruncation(2)) return 0;
-            var value = BinaryPrimitives.ReadUInt16BigEndian(Data.AsSpan(_position, 2));
-            _position += 2;
-            return (ushort)(value - Constants.FixedPoint.Offset);
+            var needed = b < oneByteThreshold ? 1 : 2;
+            if (CheckTruncation(needed)) return default!;
+            var (smart, bytesRead) = fromEncoded(Data.AsSpan(_position));
+            _position += bytesRead;
+            return smart;
         }
 
         private bool CheckTruncation(int bytes)
