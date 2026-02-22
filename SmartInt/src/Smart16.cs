@@ -1,9 +1,10 @@
 using System;
+using System.Buffers.Binary;
 
 namespace SmartInt;
 
 /// <summary>
-/// Represents a signed 15-bit smart integer value (-32768 to 32767).
+/// Represents a signed 16-bit smart integer value (-32768 to 16383).
 /// </summary>
 public readonly struct Smart16 : IEquatable<Smart16>, IComparable<Smart16>,
     IFormattable, ISpanFormattable, ISpanParsable<Smart16>
@@ -11,7 +12,7 @@ public readonly struct Smart16 : IEquatable<Smart16>, IComparable<Smart16>,
     /// <summary>
     /// The maximum value that can be represented by Smart16.
     /// </summary>
-    public const short MaxValue = 32767;
+    public const short MaxValue = 16383;
 
     /// <summary>
     /// The minimum value that can be represented by Smart16.
@@ -19,9 +20,25 @@ public readonly struct Smart16 : IEquatable<Smart16>, IComparable<Smart16>,
     public const short MinValue = -32768;
 
     /// <summary>
-    /// The threshold for single-byte encoding.
+    /// The threshold for single-byte encoding (bytes 0-127).
     /// </summary>
-    public const int Threshold = 128;
+    /// <remarks>
+    /// Java reference: peek < 128 ? readUnsignedByte() - 64 : readUnsignedShort() - 49152
+    /// </remarks>
+    public const int SmartOneByteThreshold = 128;
+
+    /// <summary>
+    /// The offset for single-byte decoding.
+    /// </summary>
+    /// <remarks>
+    /// Java reference: readUnsignedByte() - 64
+    /// </remarks>
+    public const int SmartOneByteOffset = 64;
+
+    /// <summary>
+    /// The offset for two-byte encoding.
+    /// </summary>
+    public const int SmartTwoByteOffset = 49152;
 
     private readonly short _value;
 
@@ -57,10 +74,10 @@ public readonly struct Smart16 : IEquatable<Smart16>, IComparable<Smart16>,
             throw new ArgumentOutOfRangeException(nameof(data), "Data cannot be empty.");
 
         var b = data[0];
-        if (b < Threshold)
+        if (b < SmartOneByteThreshold)
         {
             bytesRead = 1;
-            return new Smart16((short)(b - Threshold));
+            return new Smart16((short)(b - SmartOneByteOffset));
         }
         else
         {
@@ -68,11 +85,8 @@ public readonly struct Smart16 : IEquatable<Smart16>, IComparable<Smart16>,
                 throw new ArgumentOutOfRangeException(nameof(data), "Data is too short for 2-byte encoding.");
 
             bytesRead = 2;
-            var value = ((b & 0x7F) << 8) | data[1];
-            if ((value & 0x8000) != 0)
-                value |= unchecked((int)0xFFFF0000);
-
-            return new Smart16((short)value);
+            var encoded = BinaryPrimitives.ReadUInt16BigEndian(data);
+            return new Smart16((short)(encoded - SmartTwoByteOffset));
         }
     }
 
@@ -88,18 +102,9 @@ public readonly struct Smart16 : IEquatable<Smart16>, IComparable<Smart16>,
             throw new ArgumentOutOfRangeException(nameof(buffer), "Buffer cannot be empty.");
 
         var value = _value;
-        if (value >= Threshold)
+        if (value >= -SmartOneByteOffset && value < SmartOneByteOffset)
         {
-            if (buffer.Length < 2)
-                throw new ArgumentOutOfRangeException(nameof(buffer), "Buffer is too small for 2-byte encoding.");
-
-            buffer[0] = (byte)(0x80 | (value >> 8));
-            buffer[1] = (byte)(value & 0xFF);
-            return 2;
-        }
-        else if (value >= -Threshold && value < 0)
-        {
-            buffer[0] = (byte)(value + Threshold);
+            buffer[0] = (byte)(value + SmartOneByteOffset);
             return 1;
         }
         else
@@ -107,8 +112,8 @@ public readonly struct Smart16 : IEquatable<Smart16>, IComparable<Smart16>,
             if (buffer.Length < 2)
                 throw new ArgumentOutOfRangeException(nameof(buffer), "Buffer is too small for 2-byte encoding.");
 
-            buffer[0] = (byte)(0x80 | ((value >> 8) & 0xFF));
-            buffer[1] = (byte)(value & 0xFF);
+            var encoded = (ushort)(value + SmartTwoByteOffset);
+            BinaryPrimitives.WriteUInt16BigEndian(buffer, encoded);
             return 2;
         }
     }
@@ -120,7 +125,7 @@ public readonly struct Smart16 : IEquatable<Smart16>, IComparable<Smart16>,
     public int GetEncodedLength()
     {
         var value = _value;
-        return value >= -Threshold && value < 0 ? 1 : 2;
+        return value >= -SmartOneByteThreshold && value < 0 ? 1 : 2;
     }
 
     /// <summary>

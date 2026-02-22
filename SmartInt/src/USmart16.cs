@@ -1,9 +1,10 @@
 using System;
+using System.Buffers.Binary;
 
 namespace SmartInt;
 
 /// <summary>
-/// Represents an unsigned 16-bit smart integer value (0 to 65535).
+/// Represents an unsigned 16-bit smart integer value (0 to 32767).
 /// </summary>
 /// <remarks>
 /// Initializes a new instance of the USmart16 struct with the specified value.
@@ -16,12 +17,22 @@ public readonly struct USmart16(ushort value) : IEquatable<USmart16>, IComparabl
     /// <summary>
     /// The maximum value that can be represented by USmart16.
     /// </summary>
-    public const ushort MaxValue = 65535;
+    public const ushort MaxValue = 32767;
 
     /// <summary>
     /// The minimum value that can be represented by USmart16.
     /// </summary>
     public const ushort MinValue = 0;
+
+    /// <summary>
+    /// The threshold for single-byte encoding (values 0 to 127).
+    /// </summary>
+    public const int USmartOneByteThreshold = 128;
+
+    /// <summary>
+    /// The offset for two-byte encoding (values 0 to 32768).
+    /// </summary>
+    public const int USmartTwoByteOffset = 32768;
 
     private readonly ushort _value = value;
 
@@ -45,8 +56,20 @@ public readonly struct USmart16(ushort value) : IEquatable<USmart16>, IComparabl
             throw new ArgumentOutOfRangeException(nameof(data), "Data cannot be empty.");
 
         var b = data[0];
-        bytesRead = 1;
-        return new USmart16(b);
+        if (b < USmartOneByteThreshold)
+        {
+            bytesRead = 1;
+            return new USmart16(b);
+        }
+        else
+        {
+            if (data.Length < 2)
+                throw new ArgumentOutOfRangeException(nameof(data), "Data is too short for 2-byte encoding.");
+
+            bytesRead = 2;
+            var encoded = BinaryPrimitives.ReadUInt16BigEndian(data);
+            return new USmart16((ushort)(encoded - USmartTwoByteOffset));
+        }
     }
 
     /// <summary>
@@ -60,30 +83,30 @@ public readonly struct USmart16(ushort value) : IEquatable<USmart16>, IComparabl
         if (buffer.IsEmpty)
             throw new ArgumentOutOfRangeException(nameof(buffer), "Buffer cannot be empty.");
 
-        if (_value > byte.MaxValue)
+        var value = _value;
+        if (value < USmartOneByteThreshold)
         {
-            if (buffer.Length < 3)
-                throw new ArgumentOutOfRangeException(nameof(buffer), "Buffer is too small for 3-byte unsigned encoding.");
-
-            buffer[0] = 0;
-            buffer[1] = (byte)(_value >> 8);
-            buffer[2] = (byte)(_value & 0xFF);
-            return 3;
+            buffer[0] = (byte)value;
+            return 1;
         }
         else
         {
-            buffer[0] = (byte)_value;
-            return 1;
+            if (buffer.Length < 2)
+                throw new ArgumentOutOfRangeException(nameof(buffer), "Buffer is too small for 2-byte encoding.");
+
+            var encoded = (ushort)(value + USmartTwoByteOffset);
+            BinaryPrimitives.WriteUInt16BigEndian(buffer, encoded);
+            return 2;
         }
     }
 
     /// <summary>
     /// Gets the encoded length in bytes for this USmart16 value.
     /// </summary>
-    /// <returns>The encoded length (1 or 3 bytes).</returns>
+    /// <returns>The encoded length (1 or 2 bytes).</returns>
     public int GetEncodedLength()
     {
-        return _value > byte.MaxValue ? 3 : 1;
+        return _value < USmartOneByteThreshold ? 1 : 2;
     }
 
     /// <summary>
@@ -154,8 +177,11 @@ public readonly struct USmart16(ushort value) : IEquatable<USmart16>, IComparabl
 
         if (ushort.TryParse(s, out var ushortValue))
         {
-            result = new USmart16(ushortValue);
-            return true;
+            if (ushortValue >= MinValue && ushortValue <= MaxValue)
+            {
+                result = new USmart16(ushortValue);
+                return true;
+            }
         }
         return false;
     }
