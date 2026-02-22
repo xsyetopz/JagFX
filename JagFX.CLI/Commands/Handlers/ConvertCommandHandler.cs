@@ -78,7 +78,7 @@ public static class ConvertCommandHandler
 
             var patch = SynthFileReader.ReadFromPath(inputPath);
             var audio = TrackMixer.Synthesize(patch, loopCount);
-            WaveFileWriter.WriteToPath(audio.ToUBytes(), outputPath);
+            WaveFileWriter.WriteToPath(audio.ToBytes16LE(), outputPath, bitsPerSample: 16);
 
             Console.WriteLine($"Successfully wrote {outputPath}");
             return 0;
