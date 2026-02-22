@@ -40,7 +40,7 @@ public class InspectCommand : Command
         }
 
         var bytes = File.ReadAllBytes(filePath);
-        var ctx = new InspectorContext(bytes);
+        var context = new InspectorContext(bytes);
 
         Console.WriteLine($"; File: {filePath}");
         Console.WriteLine($"; Size: {bytes.Length} bytes");
@@ -48,198 +48,198 @@ public class InspectCommand : Command
 
         try
         {
-            InspectVoices(ctx);
-            InspectLoop(ctx);
-            PrintSummary(ctx);
+            InspectVoices(context);
+            InspectLoop(context);
+            PrintSummary(context);
             return 0;
         }
         catch (Exception ex)
         {
-            PrintError(ctx, ex);
+            PrintError(context, ex);
             return 1;
         }
     }
 
-    private static void InspectVoices(InspectorContext ctx)
+    private static void InspectVoices(InspectorContext context)
     {
         for (var i = 0; i < Constants.MaxVoices; i++)
         {
-            if (ctx.Buffer.Remaining == 0) break;
-            var marker = ctx.Buffer.Peek();
+            if (context.Buffer.Remaining == 0) break;
+            var marker = context.Buffer.Peek();
             if (marker == 0)
             {
-                ctx.ReadByte("empty", $"voice {i}");
+                context.ReadByte("empty", $"voice {i}");
                 continue;
             }
 
-            InspectVoice(ctx, i);
+            InspectVoice(context, i);
         }
     }
 
-    private static void InspectVoice(InspectorContext ctx, int voiceIndex)
+    private static void InspectVoice(InspectorContext context, int voiceIndex)
     {
-        var marker = ctx.Buffer.Peek();
-        ctx.PrintLine($"voice {voiceIndex}", $"active, wf={GetWaveformName((byte)marker)}");
+        var marker = context.Buffer.Peek();
+        context.PrintLine($"voice {voiceIndex}", $"active, wf={GetWaveformName((byte)marker)}");
 
-        InspectEnvelope(ctx, "penv");
-        InspectEnvelope(ctx, "aenv");
+        InspectEnvelope(context, "penv");
+        InspectEnvelope(context, "aenv");
 
-        InspectOptionalLFO(ctx, "vib");
-        InspectOptionalLFO(ctx, "trem");
-        InspectOptionalLFO(ctx, "gate");
+        InspectOptionalLFO(context, "vib");
+        InspectOptionalLFO(context, "trem");
+        InspectOptionalLFO(context, "gate");
 
-        InspectOscillators(ctx);
+        InspectOscillators(context);
 
-        ctx.ReadUSmart("echo", "feedback");
-        ctx.ReadUSmart("", "mix");
+        context.ReadUSmart("echo", "feedback");
+        context.ReadUSmart("", "mix");
 
-        ctx.ReadUInt16("time", "dur");
-        ctx.ReadUInt16("", "start");
+        context.ReadUInt16("time", "dur");
+        context.ReadUInt16("", "start");
 
-        InspectFilter(ctx);
+        InspectFilter(context);
     }
 
-    private static void InspectEnvelope(InspectorContext ctx, string _)
+    private static void InspectEnvelope(InspectorContext context, string _)
     {
-        ctx.ReadByte("", "wf");
-        ctx.ReadInt32("", "start");
-        ctx.ReadInt32("", "end");
-        var nSegs = ctx.ReadByte("", "segs");
-        var maxSegs = ctx.Buffer.Remaining / 4;
+        context.ReadByte("", "wf");
+        context.ReadInt32("", "start");
+        context.ReadInt32("", "end");
+        var nSegs = context.ReadByte("", "segs");
+        var maxSegs = context.Buffer.Remaining / 4;
         var segLimit = Math.Min(nSegs, maxSegs);
         for (var i = 0; i < segLimit; i++)
         {
-            ctx.ReadUInt16("", $"seg{i}.dur");
-            ctx.ReadUInt16("", $"seg{i}.peak");
+            context.ReadUInt16("", $"seg{i}.dur");
+            context.ReadUInt16("", $"seg{i}.peak");
         }
     }
 
-    private static void InspectOptionalLFO(InspectorContext ctx, string label)
+    private static void InspectOptionalLFO(InspectorContext context, string label)
     {
-        var marker = ctx.Buffer.Peek();
+        var marker = context.Buffer.Peek();
         if (marker == 0)
         {
-            ctx.ReadByte("", $"{label}=none");
+            context.ReadByte("", $"{label}=none");
             return;
         }
 
-        ctx.PrintLine(label, "present");
-        InspectEnvelope(ctx, $"  {label}.rate");
-        InspectEnvelope(ctx, $"  {label}.depth");
+        context.PrintLine(label, "present");
+        InspectEnvelope(context, $"  {label}.rate");
+        InspectEnvelope(context, $"  {label}.depth");
     }
 
-    private static void InspectOscillators(InspectorContext ctx)
+    private static void InspectOscillators(InspectorContext context)
     {
-        var idx = 0;
-        while (idx < Constants.MaxOscillators && ctx.Buffer.Remaining > 0)
+        var index = 0;
+        while (index < Constants.MaxOscillators && context.Buffer.Remaining > 0)
         {
-            var marker = ctx.Buffer.Peek();
+            var marker = context.Buffer.Peek();
             if (marker == 0)
             {
-                ctx.ReadByte("", "osc=end");
+                context.ReadByte("", "osc=end");
                 break;
             }
 
-            ctx.ReadUSmart("", $"osc{idx}");
-            ctx.ReadSmart("", $"pitch");
-            ctx.ReadUSmart("", $"delay");
-            idx++;
+            context.ReadUSmart("", $"osc{index}");
+            context.ReadSmart("", $"pitch");
+            context.ReadUSmart("", $"delay");
+            index++;
         }
     }
 
-    private static void InspectFilter(InspectorContext ctx)
+    private static void InspectFilter(InspectorContext context)
     {
-        if (ctx.Buffer.Remaining < 1)
+        if (context.Buffer.Remaining < 1)
         {
-            ctx.PrintLine("; filter", "none (EOF)");
+            context.PrintLine("; filter", "none (EOF)");
             return;
         }
 
-        var packed = ctx.Buffer.Peek();
+        var packed = context.Buffer.Peek();
         var pair0 = packed >> 4;
         var pair1 = packed & 0x0F;
         if (packed == 0)
         {
-            ctx.ReadByte("", "filt=none");
+            context.ReadByte("", "filt=none");
             return;
         }
 
-        ctx.ReadByte("", $"filt: ch0={pair0}, ch1={pair1}");
-        ctx.ReadUInt16("", "unity0");
-        ctx.ReadUInt16("", "unity1");
-        var modmask = ctx.ReadByte("", $"modmask");
+        context.ReadByte("", $"filt: ch0={pair0}, ch1={pair1}");
+        context.ReadUInt16("", "unity0");
+        context.ReadUInt16("", "unity1");
+        var modmask = context.ReadByte("", $"modmask");
 
-        InspectFilterPoles(ctx, pair0, pair1);
-        InspectFilterModulation(ctx, pair0, pair1, modmask);
+        InspectFilterPoles(context, pair0, pair1);
+        InspectFilterModulation(context, pair0, pair1, modmask);
     }
 
-    private static void InspectFilterPoles(InspectorContext ctx, int pair0, int pair1)
+    private static void InspectFilterPoles(InspectorContext context, int pair0, int pair1)
     {
-        for (var ch = 0; ch < 2; ch++)
+        for (var channel = 0; channel < 2; channel++)
         {
-            var pairs = ch == 0 ? pair0 : pair1;
+            var pairs = channel == 0 ? pair0 : pair1;
             if (pairs == 0) continue;
 
             for (var p = 0; p < pairs; p++)
             {
-                ctx.ReadUInt16("", $"ch{ch}.pole{p}.freq");
-                ctx.ReadUInt16("", $"mag");
+                context.ReadUInt16("", $"ch{channel}.pole{p}.freq");
+                context.ReadUInt16("", $"mag");
             }
         }
     }
 
-    private static void InspectFilterModulation(InspectorContext ctx, int pair0, int pair1, int modmask)
+    private static void InspectFilterModulation(InspectorContext context, int pair0, int pair1, int modmask)
     {
         if (modmask == 0) return;
 
-        for (var ch = 0; ch < 2; ch++)
+        for (var channel = 0; channel < 2; channel++)
         {
-            var pairs = ch == 0 ? pair0 : pair1;
+            var pairs = channel == 0 ? pair0 : pair1;
             for (var p = 0; p < pairs; p++)
             {
-                if ((modmask & (1 << (ch * 4 + p))) != 0)
+                if ((modmask & (1 << (channel * 4 + p))) != 0)
                 {
-                    ctx.ReadUInt16("", $"ch{ch}.pole{p}.freq_mod");
-                    ctx.ReadUInt16("", $"mag_mod");
+                    context.ReadUInt16("", $"ch{channel}.pole{p}.freq_mod");
+                    context.ReadUInt16("", $"mag_mod");
                 }
             }
         }
-        InspectEnvelopeSegments(ctx);
+        InspectEnvelopeSegments(context);
     }
 
-    private static void InspectEnvelopeSegments(InspectorContext ctx)
+    private static void InspectEnvelopeSegments(InspectorContext context)
     {
-        var nSegs = ctx.ReadByte("", "env_segs");
-        var maxSegs = ctx.Buffer.Remaining / 4;
-        var segLimit = Math.Min(nSegs, maxSegs);
-        for (var i = 0; i < segLimit; i++)
+        var segmentCount = context.ReadByte("", "env_segs");
+        var maxSegments = context.Buffer.Remaining / 4;
+        var segmentLimit = Math.Min(segmentCount, maxSegments);
+        for (var i = 0; i < segmentLimit; i++)
         {
-            ctx.ReadUInt16("", $"seg{i}.dur");
-            ctx.ReadUInt16("", $"seg{i}.peak");
+            context.ReadUInt16("", $"seg{i}.dur");
+            context.ReadUInt16("", $"seg{i}.peak");
         }
     }
 
-    private static void InspectLoop(InspectorContext ctx)
+    private static void InspectLoop(InspectorContext context)
     {
-        if (ctx.Buffer.Remaining >= 4)
+        if (context.Buffer.Remaining >= 4)
         {
-            ctx.ReadUInt16("loop", "start");
-            ctx.ReadUInt16("", "end");
+            context.ReadUInt16("loop", "start");
+            context.ReadUInt16("", "end");
         }
     }
 
-    private static void PrintSummary(InspectorContext ctx)
+    private static void PrintSummary(InspectorContext context)
     {
-        Console.WriteLine($"; Parsed {ctx.Buffer.Position}/{ctx.Buffer.Data.Length} bytes ({ctx.Buffer.Position * 100.0 / ctx.Buffer.Data.Length:F1}%)");
-        if (ctx.Buffer.Remaining > 0)
+        Console.WriteLine($"; Parsed {context.Buffer.Position}/{context.Buffer.Data.Length} bytes ({context.Buffer.Position * 100.0 / context.Buffer.Data.Length:F1}%)");
+        if (context.Buffer.Remaining > 0)
         {
-            Console.WriteLine($"; Remaining: {ctx.Buffer.Remaining} bytes unparsed");
+            Console.WriteLine($"; Remaining: {context.Buffer.Remaining} bytes unparsed");
         }
     }
 
-    private static void PrintError(InspectorContext ctx, Exception ex)
+    private static void PrintError(InspectorContext context, Exception ex)
     {
-        Console.WriteLine($"; ERROR at 0x{ctx.Buffer.Position:X4}: {ex.Message}");
+        Console.WriteLine($"; ERROR at 0x{context.Buffer.Position:X4}: {ex.Message}");
     }
 
     private static string GetWaveformName(byte id) => id switch

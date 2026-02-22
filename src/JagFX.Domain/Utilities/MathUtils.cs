@@ -13,7 +13,7 @@ public static class MathUtils
     public const double TwoPi = /* 2.0 * Math.PI */ 6.283185307179586;
     public const double HalfPi = /* Math.PI / 2.0 */ 1.5707963267948966;
 
-    private const double DbDivisor = 20.0;
+    private const double DecibelDivisor = 20.0;
     private const double PercentScale = 100.0;
     private const double DecicentsScale = 1200.0;
 
@@ -70,12 +70,12 @@ public static class MathUtils
 
     public static double DbToLinear(double dB)
     {
-        return Math.Exp(dB / DbDivisor * Log10);
+        return Math.Exp(dB / DecibelDivisor * Log10);
     }
 
     public static double LinearToDb(double linear)
     {
-        return DbDivisor * Math.Log10(linear);
+        return DecibelDivisor * Math.Log10(linear);
     }
 
     public static double Convert(double value, UnitType from, UnitType to)
@@ -104,13 +104,13 @@ public static class MathUtils
 
     public static string Format(double value, UnitType unit, int decimals = 1)
     {
-        var fmt = $"%.{decimals}f";
+        var formattedDecimalString = $"%.{decimals}f";
         return unit switch
         {
             UnitType.Raw16 => ((int)value).ToString(),
-            UnitType.Percent => $"{string.Format(fmt, value)}%",
-            UnitType.Normalized => string.Format(fmt, value),
-            UnitType.Decicents => $"{string.Format(fmt, value / 10.0)} st",
+            UnitType.Percent => $"{string.Format(formattedDecimalString, value)}%",
+            UnitType.Normalized => string.Format(formattedDecimalString, value),
+            UnitType.Decicents => $"{string.Format(formattedDecimalString, value / 10.0)} st",
             _ => value.ToString()
         };
     }

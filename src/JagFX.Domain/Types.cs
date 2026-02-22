@@ -1,12 +1,12 @@
 namespace JagFX.Domain;
 
-public readonly record struct Millis
+public readonly record struct Milliseconds
 {
     public int Value { get; }
 
-    public Millis(int value) => Value = value;
+    public Milliseconds(int value) => Value = value;
 
-    public Millis ToMillis() => new(Value * Constants.MillisecondsPerSample);
+    public Milliseconds ToMilliseconds() => new(Value * Constants.MillisecondsPerSample);
 
     public Samples ToSamples() => new((int)(Value * Constants.SampleRatePerMillisecond));
 }

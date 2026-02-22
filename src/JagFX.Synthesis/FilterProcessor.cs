@@ -146,10 +146,10 @@ public static class FilterProcessor
         return value0 + factor * (value1 - value0);
     }
 
-    private static float GetAmplitude(Filter filter, int dir, int pair, float factor)
+    private static float GetAmplitude(Filter filter, int direction, int pair, float factor)
     {
-        var mag0 = filter.PairMagnitude[dir][0][pair];
-        var mag1 = filter.PairMagnitude[dir][1][pair];
+        var mag0 = filter.PairMagnitude[direction][0][pair];
+        var mag1 = filter.PairMagnitude[direction][1][pair];
         var interpolatedMag = Interpolate(mag0, mag1, factor);
         var dbValue = interpolatedMag * 0.0015258789f;
         return 1.0f - (float)MathUtils.DbToLinear(-dbValue);

@@ -4,7 +4,7 @@ public static class Constants
 {
     public const int SampleRate = 22050;
     public const int BitsPerSample = 8;
-    public const int NumChannels = 1;
+    public const int AudioChannelCount = 1;
     public const int MillisecondsPerSample = 1000 / SampleRate;
     public const double SampleRatePerMillisecond = SampleRate / 1000.0;
 
