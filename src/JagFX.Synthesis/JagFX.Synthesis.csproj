@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>JagFX.Synthesis</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\libs\JavaRandom\JavaRandom.csproj" />
+    <ProjectReference Include="..\JagFX.Domain\JagFX.Domain.csproj" />
+    <ProjectReference Include="..\JagFX.IO\JagFX.IO.csproj" />
+  </ItemGroup>
+
+</Project>
