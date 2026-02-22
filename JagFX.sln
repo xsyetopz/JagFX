@@ -5,12 +5,14 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JagFX.CLI", "src\JagFX.CLI\JagFX.CLI.csproj", "{265D628D-19F8-45CF-8349-11E2DF96CB28}"
 EndProject
+
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JagFX.Domain", "src\JagFX.Domain\JagFX.Domain.csproj", "{DA277A9C-E66E-4AEE-9D04-E00BBDA9561C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JagFX.IO", "src\JagFX.IO\JagFX.IO.csproj", "{90456C7F-91CF-4643-8542-047D617F08AE}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JagFX.Synthesis", "src\JagFX.Synthesis\JagFX.Synthesis.csproj", "{05A6452C-C05C-40DF-A555-B9C1856600D2}"
 EndProject
+
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JavaRandom", "libs\JavaRandom\JavaRandom.csproj", "{A1B2C3D4-E5F6-7890-ABCD-EF1234567891}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartInt", "libs\SmartInt\SmartInt.csproj", "{3CFF2272-A74F-493D-A189-16BB5F9AE22D}"
