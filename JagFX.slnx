@@ -1,9 +1,0 @@
-<Solution>
-  <Project Path="JagFX.CLI/JagFX.CLI.csproj" />
-  <Project Path="JagFX.Domain/JagFX.Domain.csproj" />
-  <Project Path="JagFX.IO/JagFX.IO.csproj" />
-  <Project Path="JagFX.IO.Tests/JagFX.IO.Tests.csproj" />
-  <Project Path="JagFX.Synthesis/JagFX.Synthesis.csproj" />
-  <Project Path="JagFX.Synthesis.Tests/JagFX.Synthesis.Tests.csproj" />
-  <Project Path="SmartInt/SmartInt.csproj" />
-</Solution>
