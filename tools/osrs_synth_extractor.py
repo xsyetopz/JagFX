@@ -173,7 +173,7 @@ def dump_index(
             continue
 
         ext = ".bin" if raw else ".synth"
-        out_path = index_out_dir / f"{group_id:04d}{ext}"
+        out_path = index_out_dir / f"{group_id}{ext}"
         out_path.write_bytes(data)
         extracted += 1
 
