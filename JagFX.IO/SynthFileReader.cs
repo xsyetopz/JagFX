@@ -11,6 +11,7 @@ public static class SynthFileReader
     private const int EnvelopeStartThreshold = 10_000_000;
     private const int SegCountOffset = 9;
     private const int MaxReasonableSegCount = 15;
+    private const int MinVoiceSize = 30;
 
     public static Patch Read(byte[] data)
     {
@@ -51,7 +52,7 @@ public static class SynthFileReader
 
             for (var i = 0; i < Constants.MaxVoices; i++)
             {
-                if (_buf.Remaining > 0)
+                if (_buf.Remaining >= MinVoiceSize)
                 {
                     var marker = _buf.Peek();
                     if (marker != 0 && IsValidWaveform(marker))
