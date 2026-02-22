@@ -115,12 +115,34 @@ def extract_group(
     compression_type, uncompressed_len, payload, _ = parse_js5_container(container)
     return decompress_js5(compression_type, payload, uncompressed_len)
 
+def get_ids_to_extract(
+    idx_path: Path,
+    ids: Optional[list[int]] = None,
+    start_id: Optional[int] = None,
+    end_id: Optional[int] = None,
+    extract_all: bool = False
+) -> list[int]:
+    """Determine which IDs to extract based on provided arguments."""
+    if ids:
+        return sorted(set(ids))
+
+    if extract_all or (start_id is None and end_id is None):
+        idx_size = idx_path.stat().st_size
+        max_id = (idx_size // 6) - 1
+        return list(range(0, max_id + 1))
+
+    start = start_id if start_id is not None else 0
+    end = end_id if end_id is not None else start
+    return list(range(start, end + 1))
+
 def dump_index(
     cache_dir: Path,
     archive_id: int,
     out_dir: Path,
-    start_id: int = 0,
+    ids: Optional[list[int]] = None,
+    start_id: Optional[int] = None,
     end_id: Optional[int] = None,
+    extract_all: bool = False,
     raw: bool = False
 ) -> int:
     idx_path = cache_dir / f"main_file_cache.idx{archive_id}"
@@ -132,14 +154,19 @@ def dump_index(
     index_out_dir = out_dir / f"idx{archive_id}"
     index_out_dir.mkdir(parents=True, exist_ok=True)
 
-    if end_id is None:
-        idx_size = idx_path.stat().st_size
-        end_id = (idx_size // 6) - 1
+    ids_to_extract = get_ids_to_extract(idx_path, ids, start_id, end_id, extract_all)
 
-    print(f"Dumping idx{archive_id} (groups {start_id}-{end_id})...")
+    if len(ids_to_extract) == 0:
+        print(f"No groups to extract from idx{archive_id}")
+        return 0
+
+    if len(ids_to_extract) == 1:
+        print(f"Dumping idx{archive_id} (group {ids_to_extract[0]})...")
+    else:
+        print(f"Dumping idx{archive_id} ({len(ids_to_extract)} groups)...")
 
     extracted = 0
-    for group_id in range(start_id, end_id + 1):
+    for group_id in ids_to_extract:
         data = extract_group(cache_dir, archive_id, group_id, raw=raw)
 
         if data is None:
@@ -158,11 +185,19 @@ def main():
     parser.add_argument("--cache", type=Path, required=True, help="Path to RuneLite LIVE cache directory")
     parser.add_argument("--out", type=Path, default=Path("./dump_synth"), help="Output directory")
     parser.add_argument("--indices", type=int, nargs="+", default=[4], choices=[4, 14, 15], help="Indices to dump")
-    parser.add_argument("--start-id", type=int, default=0, help="Starting group ID")
-    parser.add_argument("--end-id", type=int, default=None, help="Ending group ID")
+
+    id_group = parser.add_mutually_exclusive_group()
+    id_group.add_argument("--ids", type=int, nargs="+", help="Specific group IDs to extract (e.g., 5876 5844 5822)")
+    id_group.add_argument("--start-id", type=int, default=None, help="Starting group ID for range")
+    id_group.add_argument("--all", action="store_true", help="Extract all groups")
+
+    parser.add_argument("--end-id", type=int, default=None, help="Ending group ID for range (requires --start-id)")
     parser.add_argument("--raw", action="store_true", help="Write raw JS5 containers")
 
     args = parser.parse_args()
+
+    if args.end_id is not None and args.start_id is None:
+        parser.error("--end-id requires --start-id")
 
     if not args.cache.exists():
         print(f"Error: Cache directory does not exist: {args.cache}")
@@ -177,6 +212,16 @@ def main():
     print(f"Output: {args.out}")
     print(f"Indices: {args.indices}")
 
+    if args.ids:
+        print(f"Mode: Specific IDs: {args.ids}")
+    elif args.all:
+        print(f"Mode: All files")
+    elif args.start_id is not None:
+        end_str = args.end_id if args.end_id is not None else args.start_id
+        print(f"Mode: Range {args.start_id}-{end_str}")
+    else:
+        print(f"Mode: Single ID 0 (default)")
+
     args.out.mkdir(parents=True, exist_ok=True)
 
     total_extracted = 0
@@ -185,8 +230,10 @@ def main():
             args.cache,
             archive_id,
             args.out,
+            ids=args.ids,
             start_id=args.start_id,
             end_id=args.end_id,
+            extract_all=args.all,
             raw=args.raw
         )
         total_extracted += extracted
