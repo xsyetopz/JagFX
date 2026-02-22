@@ -53,17 +53,12 @@ public static class FilterProcessor
     private static void ProcessMainChunks(Span<int> inputSpan, Span<int> bufferSpan, FilterState state, EnvelopeEvaluator? envelopeEval, int sampleCount, ref int count0, ref int count1)
     {
         int sampleIndex = count1;
-        int chunkEnd = ChunkSize;
 
         while (sampleIndex < sampleCount - count0)
         {
-            chunkEnd = Math.Min(chunkEnd, sampleCount - count0);
+            int chunkEnd = Math.Min(sampleIndex + ChunkSize, sampleCount - count0);
+            ProcessSampleRange(inputSpan, bufferSpan, state, envelopeEval, sampleIndex, chunkEnd, count0, count1, sampleCount);
             sampleIndex = chunkEnd;
-
-            if (sampleIndex < sampleCount - count0)
-            {
-                chunkEnd += ChunkSize;
-            }
         }
     }
 
@@ -100,13 +95,13 @@ public static class FilterProcessor
 
     private static void ApplyFilterToSample(Span<int> inputSpan, Span<int> bufferSpan, FilterState state, int sampleIndex, int count0, int feedbackCount)
     {
-        var inputIdx = sampleIndex + count0;
-        var xCurr = inputIdx < inputSpan.Length ? inputSpan[inputIdx] : 0;
-        long output = (xCurr * state.InverseA0) >> 16;
+        var output = 0L;
         AddFeedforwardTerms(inputSpan, state, sampleIndex, count0, ref output);
         AddFeedbackTerms(bufferSpan, state, sampleIndex, feedbackCount, ref output, subtract: true);
         bufferSpan[sampleIndex] = (int)output;
     }
+
+
 
     private static void ApplyFilterToFinalSample(Span<int> inputSpan, Span<int> bufferSpan, FilterState state, int sampleIndex, int count0, int feedbackCount, int sampleCount)
     {
@@ -118,11 +113,10 @@ public static class FilterProcessor
 
     private static void AddFeedforwardTerms(Span<int> inputSpan, FilterState state, int sampleIndex, int count0, ref long output)
     {
+        output += ((long)inputSpan[sampleIndex + count0] * state.InverseA0) >> 16;
         for (var j = 0; j < count0; j++)
         {
-            var ffIdx = sampleIndex + count0 - 1 - j;
-            if (ffIdx < inputSpan.Length)
-                output += ((long)inputSpan[ffIdx] * state.Feedforward[j]) >> 16;
+            output += ((long)inputSpan[sampleIndex + count0 - 1 - j] * state.Feedforward[j]) >> 16;
         }
     }
 
