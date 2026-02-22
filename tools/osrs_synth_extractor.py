@@ -183,7 +183,7 @@ def dump_index(
 def main():
     parser = argparse.ArgumentParser(description="Extract .synth files from RuneLite cache")
     parser.add_argument("--cache", type=Path, required=True, help="Path to RuneLite LIVE cache directory")
-    parser.add_argument("--out", type=Path, default=Path("./dump_synth"), help="Output directory")
+    parser.add_argument("--out", type=Path, default=Path("./synths"), help="Output directory")
     parser.add_argument("--indices", type=int, nargs="+", default=[4], choices=[4, 14, 15], help="Indices to dump")
 
     id_group = parser.add_mutually_exclusive_group()
