@@ -29,11 +29,11 @@ public static class LookupTables
 
     private static int[] InitializeNoise()
     {
-        var rng = new Random(unchecked((int)0xdeadbeef));
+        var rng = new Random(0);
         var table = new int[Constants.FixedPoint.Offset];
         for (var i = 0; i < Constants.FixedPoint.Offset; i++)
         {
-            table[i] = rng.Next(2) == 1 ? 1 : -1;
+            table[i] = (rng.Next() & 2) - 1;
         }
         return table;
     }
