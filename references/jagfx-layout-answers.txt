@@ -1,86 +1,73 @@
-Q: What are the `{1x}{2x}{4x}` buttons on each envelope graph?
-A: Horizontal time-scale zoom controls for the graph viewport.
-   - Envelopes are segment-based and measured in milliseconds.
-   - Voices have independent durations, so a fixed scale is impractical.
-   - Filter envelopes update internally at a fixed rate (256 samples).
-   - These buttons change only the visual time scale, not the underlying data,
-     allowing inspection of both very short transients and long sounds.
+Q: What are `{1x}{2x}{4x}` buttons on each envelope graph?
+A: These are zoom controls for graph’s time scale.
+   - Envelope segments are measured in milliseconds.
+   - Each voice can have different duration, so fixed scale doesn’t work.
+   - Filter envelopes update at fixed rate (256 samples).
+   - Buttons only change how graph looks, not actual data. This helps you see both short and long sounds.
 
-Q: What is the `{..}` button after the zoom controls?
-A: Likely a "Fit to Data" / auto-scale control.
-   - Recomputes the graph’s horizontal scale so all segments fit within view.
-   - Ignores absolute voice duration and focuses only on the envelope’s data.
-   - Present even on poles/zeros and frequency-response graphs because:
-     - Frequency response can be auto-fit to pole spread.
-     - Poles/zeros graphs can auto-center and scale the complex plane extents.
+Q: What is `{..}` button after zoom controls?
+A: This is auto-fit button.
+   - It adjusts graph so all envelope segments fit in view.
+   - It ignores total voice duration and focuses on envelope’s data.
+   - It’s also used on poles/zeros and frequency-response graphs to fit data.
 
-Q: What is the `{M...}` button found on most envelope graphs?
-A: Probably a "Modulation Source" selector.
-   - Opens a small modal or popup to choose what drives the displayed curve.
-   - Likely options included:
+Q: What is `{M...}` button found on most envelope graphs?
+A: This is modulation source selector.
+   - It opens menu to choose what controls curve.
+   - Possible options:
      - Base envelope
      - LFO rate envelope
      - LFO depth envelope
-     - Gate (gap) envelope
-     - Filter envelope (when applicable)
-   - Only present on time-varying or modulatable graphs.
-   - Absent on purely analytic views like poles/zeros and frequency response.
+     - Gate envelope
+     - Filter envelope (if available)
+   - Only shown on graphs that can be modulated.
 
-Q: What is the `{↓}` (down-arrow) button on envelope panels?
-A: Likely a copy / apply / transfer control.
-   - Used to copy the current envelope to:
-     - Another tone slot
-     - Multiple tones
-     - Possibly all tones
-   - Fits the workflow implied by:
-     - 10 editable tones
-     - Reusable envelope structures
-     - Separate global "Copy" and "Reset Active" buttons
+Q: What is `{↓}` (down-arrow) button on envelope panels?
+A: This is copy or transfer button.
+   - It copies current envelope to another tone slot, multiple tones, or all tones.
+   - Useful for working with 10 tones and reusing envelope shapes.
+   - There are also global "Copy" and "Reset Active" buttons.
 
 Q: Why do "Graph of poles/zeros" and "Frequency Response" only have `{1x}{2x}{4x}{..}`?
-A: These are derived, non-editable visualizations.
-   - No envelope data to rebind or copy.
-   - No modulation source to select.
-   - Only zoom and auto-fit are meaningful.
+A: These are visualizations, not editable data.
+   - You can only zoom or auto-fit view.
+   - No envelope to copy or modulation source to select.
 
 Q: What does "Editing Tone [1–10]" represent?
-A: Direct selection of the 10 possible voices in the `.synth` file.
-   - Each slot maps to one voice definition.
-   - Empty slots serialize as a single `0x00` marker.
+A: Lets you pick one of 10 voices in `.synth` file.
+   - Each slot is voice definition.
+   - Empty slots are marked with `0x00`.
 
 Q: What are Harmonic 1–5 controls?
-A: Additive oscillators layered on top of the base waveform.
-   - Maps directly to oscillator entries in the file format:
-     - `Semi` -> Pitch Offset
-     - `Vol`  -> Amplitude
-     - `Del`  -> Delay
-   - UI exposes 5 harmonics even though the format allows up to 10 oscillators.
+A: These add extra oscillators to base waveform.
+   - Each maps to oscillator in file:
+     - `Semi` is pitch offset
+     - `Vol` is amplitude
+     - `Del` is delay
+   - UI shows 5 harmonics, but format allows up to 10.
 
 Q: What are "Reverb vol" and "Reverb del"?
-A: Feedback delay (echo) parameters, not true reverb.
-   - Correspond to:
-     - Feedback Amount
-     - Feedback Mix
-   - Naming reflects intended usage rather than DSP accuracy.
+A: These are feedback delay (echo) settings, not true reverb.
+   - They set feedback amount and mix.
+   - Names are for convenience.
 
 Q: What does "Mode: Main / Filter / Both" do?
-A: UI visibility toggle only.
-   - Controls whether filter-related panels are shown.
-   - Does not affect serialization or synthesis behavior.
+A: Shows or hides filter panels in UI.
+   - Doesn’t affect file saving or sound generation.
 
 Q: What are Gap Off / Gap On panels?
-A: Gate envelopes controlling silence and active durations.
-   - Correspond to the optional gate envelope pair in the voice structure.
-   - "Avg Gap" values are derived and immutable.
+A: These are gate envelopes for silence and active time.
+   - They match optional gate envelope pair in voice.
+   - "Avg Gap" values are shown but can’t be changed.
 
 Q: Why is "Triangle" mentioned when it doesn’t exist in shipped assets?
-A: Early or internal tooling likely supported it.
-   - File format officially defines only waveforms 0–5.
-   - Triangle may have been experimental or deprecated.
-   - Adding it for editor completeness is reasonable if exported safely.
+A: It was probably used in early tools.
+   - File format officially supports waveforms 0–5.
+   - Triangle may have been experimental or removed.
+   - It’s fine to add it for editing, as long as it exports safely.
 
 Q: What does "True Wave" do?
-A: Toggles band-limited (anti-aliased) waveform generation.
-   - On: proper band-limited oscillators.
-   - Off: naïve waveform math with audible aliasing.
-   - Almost always enabled in practice, especially at 22,050 Hz.
+A: Switches between band-limited (anti-aliased) and basic waveforms.
+   - On: uses band-limited oscillators.
+   - Off: uses simple math, which can cause aliasing.
+   - Usually kept on, especially at 22,050 Hz.
