@@ -44,9 +44,9 @@ public static class ToneSynthesizer
         freqBaseEval.Reset();
         ampBaseEval.Reset();
 
-        var (freqModRateEval, freqModRangeEval, vibratoStart, vibratoDuration) =
+        var (freqModRateEval, freqModRangeEval, vibratoStep, vibratoBase) =
             InitFrequencyModulation(voice, samplesPerStep);
-        var (ampModRateEval, ampModRangeEval, amplitudeStart, amplitudeDuration) =
+        var (ampModRateEval, ampModRangeEval, tremoloStep, tremoloBase) =
             InitAmplitudeModulation(voice, samplesPerStep);
 
         var (delays, volumes, semitones, starts) =
@@ -67,10 +67,10 @@ public static class ToneSynthesizer
             FreqModRangeEval = freqModRangeEval,
             AmpModRateEval = ampModRateEval,
             AmpModRangeEval = ampModRangeEval,
-            FrequencyStart = vibratoStart,
-            FrequencyDuration = vibratoDuration,
-            AmplitudeStart = amplitudeStart,
-            AmplitudeDuration = amplitudeDuration,
+            FrequencyStep = vibratoStep,
+            FrequencyBase = vibratoBase,
+            AmplitudeStep = tremoloStep,
+            AmplitudeBase = tremoloBase,
             PartialDelays = delays,
             PartialVolumes = volumes,
             PartialSemitones = semitones,
@@ -79,7 +79,7 @@ public static class ToneSynthesizer
         };
     }
 
-    private static (EnvelopeEvaluator? rateEval, EnvelopeEvaluator? rangeEval, int start, int duration)
+    private static (EnvelopeEvaluator? rateEval, EnvelopeEvaluator? rangeEval, int step, int baseValue)
         InitFrequencyModulation(Voice voice, double samplesPerStep)
     {
         if (voice.PitchLfo != null)
@@ -89,16 +89,16 @@ public static class ToneSynthesizer
             rateEval.Reset();
             rangeEval.Reset();
 
-            var start = (int)((double)(voice.PitchLfo.Rate.End - voice.PitchLfo.Rate.Start) * Constants.PhaseScale / samplesPerStep);
-            var duration = (int)(voice.PitchLfo.Rate.Start * Constants.PhaseScale / samplesPerStep);
+            var step = (int)((double)(voice.PitchLfo.Rate.End - voice.PitchLfo.Rate.Start) * Constants.PhaseScale / samplesPerStep);
+            var baseValue = (int)(voice.PitchLfo.Rate.Start * Constants.PhaseScale / samplesPerStep);
 
-            return (rateEval, rangeEval, start, duration);
+            return (rateEval, rangeEval, step, baseValue);
         }
 
         return (null, null, 0, 0);
     }
 
-    private static (EnvelopeEvaluator? rateEval, EnvelopeEvaluator? rangeEval, int start, int duration)
+    private static (EnvelopeEvaluator? rateEval, EnvelopeEvaluator? rangeEval, int step, int baseValue)
         InitAmplitudeModulation(Voice voice, double samplesPerStep)
     {
         if (voice.AmplitudeLfo != null)
@@ -108,10 +108,10 @@ public static class ToneSynthesizer
             rateEval.Reset();
             rangeEval.Reset();
 
-            var start = (int)((double)(voice.AmplitudeLfo.Rate.End - voice.AmplitudeLfo.Rate.Start) * Constants.PhaseScale / samplesPerStep);
-            var duration = (int)(voice.AmplitudeLfo.Rate.Start * Constants.PhaseScale / samplesPerStep);
+            var step = (int)((double)(voice.AmplitudeLfo.Rate.End - voice.AmplitudeLfo.Rate.Start) * Constants.PhaseScale / samplesPerStep);
+            var baseValue = (int)(voice.AmplitudeLfo.Rate.Start * Constants.PhaseScale / samplesPerStep);
 
-            return (rateEval, rangeEval, start, duration);
+            return (rateEval, rangeEval, step, baseValue);
         }
 
         return (null, null, 0, 0);
@@ -225,7 +225,7 @@ public static class ToneSynthesizer
             var rate = state.FreqModRateEval.Evaluate(sampleCount);
             var range = state.FreqModRangeEval.Evaluate(sampleCount);
             var mod = GenerateSample(range, phase, voice.PitchLfo!.Rate.Waveform) >> 1;
-            var nextPhase = phase + (rate * state.FrequencyStart >> 16) + state.FrequencyDuration;
+            var nextPhase = phase + state.FrequencyBase + (rate * state.FrequencyStep >> 16);
 
             return (frequency + mod, nextPhase);
         }
@@ -247,7 +247,7 @@ public static class ToneSynthesizer
             var mod = GenerateSample(range, phase, voice.AmplitudeLfo!.Rate.Waveform) >> 1;
 
             var newAmp = amplitude * (mod + Constants.FixedPoint.Offset) >> 15;
-            var nextPhase = phase + (rate * state.AmplitudeStart >> 16) + state.AmplitudeDuration;
+            var nextPhase = phase + state.AmplitudeBase + (rate * state.AmplitudeStep >> 16);
             return (newAmp, nextPhase);
         }
 
@@ -322,10 +322,10 @@ public static class ToneSynthesizer
         public EnvelopeEvaluator? FreqModRangeEval { get; init; }
         public EnvelopeEvaluator? AmpModRateEval { get; init; }
         public EnvelopeEvaluator? AmpModRangeEval { get; init; }
-        public int FrequencyStart { get; init; }
-        public int FrequencyDuration { get; init; }
-        public int AmplitudeStart { get; init; }
-        public int AmplitudeDuration { get; init; }
+        public int FrequencyStep { get; init; }
+        public int FrequencyBase { get; init; }
+        public int AmplitudeStep { get; init; }
+        public int AmplitudeBase { get; init; }
         public int[] PartialDelays { get; init; } = null!;
         public int[] PartialVolumes { get; init; } = null!;
         public int[] PartialSemitones { get; init; } = null!;
