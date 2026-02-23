@@ -1,7 +1,7 @@
 using JagFX.Core.Constants;
 using JagFX.Core.Types;
-using JagFX.Domain;
 using JagFX.Domain.Models;
+using JagFX.Io.Buffers;
 using System.Collections.Immutable;
 
 namespace JagFX.Io;
@@ -37,10 +37,10 @@ public static class SynthFileReader
             var voices = ReadVoices();
 
             var loopParams = _buf.Remaining >= 4
-                ? new Loop(_buf.ReadUInt16BE(), _buf.ReadUInt16BE())
+                ? new LoopSegment(_buf.ReadUInt16BigEndian(), _buf.ReadUInt16BigEndian())
                 : _buf.IsTruncated
-                    ? new Loop(0, 0)
-                    : new Loop(0, 0);
+                    ? new LoopSegment(0, 0)
+                    : new LoopSegment(0, 0);
 
             if (_buf.IsTruncated)
                 _warnings.Add($"File truncated at byte offset {_buf.Position}; loop parameters may be incomplete or invalid");
@@ -98,8 +98,8 @@ public static class SynthFileReader
             var echoDelay = _buf.ReadUSmart();
             var echoMix = _buf.ReadUSmart();
 
-            var duration = _buf.ReadUInt16BE();
-            var startTime = _buf.ReadUInt16BE();
+            var duration = _buf.ReadUInt16BigEndian();
+            var startTime = _buf.ReadUInt16BigEndian();
 
             var filter = ReadFilter();
 
@@ -120,8 +120,8 @@ public static class SynthFileReader
         private Envelope ReadEnvelope()
         {
             var waveformId = _buf.ReadUInt8();
-            var startSample = _buf.ReadInt32BE();
-            var endSample = _buf.ReadInt32BE();
+            var startSample = _buf.ReadInt32BigEndian();
+            var endSample = _buf.ReadInt32BigEndian();
             var waveform = (waveformId >= 0 && waveformId <= 4) ? (Waveform)waveformId : Waveform.Off;
             var segmentLength = _buf.ReadUInt8();
 
@@ -129,8 +129,8 @@ public static class SynthFileReader
             for (var i = 0; i < segmentLength; i++)
             {
                 segments.Add(new Segment(
-                    _buf.ReadUInt16BE(),
-                    _buf.ReadUInt16BE()));
+                    _buf.ReadUInt16BigEndian(),
+                    _buf.ReadUInt16BigEndian()));
             }
 
             return new Envelope(waveform, startSample, endSample, [.. segments]);
@@ -179,8 +179,8 @@ public static class SynthFileReader
             if (!DetectFilterPresent()) return null;
 
             var (poleCount0, poleCount1) = ReadFilterHeader();
-            var unityGain0 = _buf.ReadUInt16BE();
-            var unityGain1 = _buf.ReadUInt16BE();
+            var unityGain0 = _buf.ReadUInt16BigEndian();
+            var unityGain1 = _buf.ReadUInt16BigEndian();
             var modulationMask = _buf.ReadUInt8();
 
             var (frequencies, magnitudes) = ReadFilterCoefficients(
@@ -238,9 +238,9 @@ public static class SynthFileReader
                 for (var p = 0; p < maxPoles; p++)
                 {
                     if (_buf.Remaining < 2) return;
-                    frequencies[channel, 0, p] = _buf.ReadUInt16BE();
+                    frequencies[channel, 0, p] = _buf.ReadUInt16BigEndian();
                     if (_buf.Remaining < 2) return;
-                    magnitudes[channel, 0, p] = _buf.ReadUInt16BE();
+                    magnitudes[channel, 0, p] = _buf.ReadUInt16BigEndian();
                 }
             }
         }
@@ -257,9 +257,9 @@ public static class SynthFileReader
                     if ((modulationMask & (1 << (channel * 4 + p))) != 0)
                     {
                         if (_buf.Remaining < 2) return;
-                        frequencies[channel, 1, p] = _buf.ReadUInt16BE();
+                        frequencies[channel, 1, p] = _buf.ReadUInt16BigEndian();
                         if (_buf.Remaining < 2) return;
-                        magnitudes[channel, 1, p] = _buf.ReadUInt16BE();
+                        magnitudes[channel, 1, p] = _buf.ReadUInt16BigEndian();
                     }
                     else
                     {
@@ -277,8 +277,8 @@ public static class SynthFileReader
             for (var i = 0; i < length; i++)
             {
                 segments.Add(new Segment(
-                    _buf.ReadUInt16BE(),
-                    _buf.ReadUInt16BE()));
+                    _buf.ReadUInt16BigEndian(),
+                    _buf.ReadUInt16BigEndian()));
             }
 
             return new Envelope(Waveform.Off, 0, 0, [.. segments]);
