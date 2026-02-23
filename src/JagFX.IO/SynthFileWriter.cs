@@ -147,10 +147,10 @@ public static class SynthFileWriter
         for (var channel = 0; channel < 2; channel++)
         {
             var poles = poleCounts[channel];
-            for (var p = 0; p < poles; p++)
+            for (var pole = 0; pole < poles; pole++)
             {
-                buffer.WriteUInt16BigEndian(polePhase[channel][phase][p]);
-                buffer.WriteUInt16BigEndian(poleMagnitude[channel][phase][p]);
+                buffer.WriteUInt16BigEndian(polePhase[channel][phase][pole]);
+                buffer.WriteUInt16BigEndian(poleMagnitude[channel][phase][pole]);
             }
         }
     }
