@@ -1,9 +1,7 @@
 using JagFX.Core.Constants;
-using JagFX.Domain;
 using JagFX.Domain.Models;
 using JagFX.Domain.Utilities;
 using JagFX.Synthesis.Data;
-using JagFX.Synthesis.Core;
 using System.Collections.Immutable;
 
 namespace JagFX.Synthesis.Core;
