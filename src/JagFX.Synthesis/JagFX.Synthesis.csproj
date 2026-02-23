@@ -5,12 +5,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>JagFX.Synthesis</RootNamespace>
+    <AssemblyName>JagFX.Synthesis</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\libs\JavaRandom\JavaRandom.csproj" />
+    <ProjectReference Include="..\JagFX.Core\JagFX.Core.csproj" />
     <ProjectReference Include="..\JagFX.Domain\JagFX.Domain.csproj" />
-    <ProjectReference Include="..\JagFX.IO\JagFX.IO.csproj" />
   </ItemGroup>
 
 </Project>

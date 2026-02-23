@@ -1,9 +1,9 @@
-namespace JagFX.CLI;
+namespace JagFX.Cli;
 
 public static class Program
 {
     public static Task<int> Main(string[] args)
     {
-        return JagFXCli.RunAsync(args);
+        return JagFxCli.RunAsync(args);
     }
 }

@@ -1,8 +1,9 @@
+using JagFX.Core.Constants;
 using JagFX.Domain;
 using JagFX.Domain.Models;
 using System.Collections.Immutable;
 
-namespace JagFX.IO;
+namespace JagFX.Io;
 
 public static class SynthFileWriter
 {
@@ -24,7 +25,7 @@ public static class SynthFileWriter
 
     private static void WriteVoices(BinaryBuffer buf, ImmutableList<Voice?> voices)
     {
-        for (var i = 0; i < Constants.MaxVoices; i++)
+        for (var i = 0; i < AudioConstants.MaxVoices; i++)
         {
             var voice = i < voices.Count ? voices[i] : null;
             if (voice == null)
@@ -75,7 +76,7 @@ public static class SynthFileWriter
         }
     }
 
-    private static void WriteOptionalEnvelopePair(BinaryBuffer buf, Lfo? lfo)
+    private static void WriteOptionalEnvelopePair(BinaryBuffer buf, LowFrequencyOscillator? lfo)
     {
         if (lfo == null)
         {

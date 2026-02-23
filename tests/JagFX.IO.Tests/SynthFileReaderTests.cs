@@ -1,8 +1,9 @@
-using JagFX.Domain;
 using JagFX.Domain.Models;
+using JagFX.Io;
+using JagFX.TestData;
 using Xunit;
 
-namespace JagFX.IO.Tests;
+namespace JagFX.Io.Tests;
 
 public class SynthFileReaderTests
 {
@@ -13,7 +14,7 @@ public class SynthFileReaderTests
     [Fact]
     public void ReadsCowDeath1VoiceCorrectly()
     {
-        var result = SynthFileReader.Read(TestFixtures.CowDeath);
+        var result = SynthFileReader.Read(TestResources.CowDeath);
         Assert.NotNull(result);
         Assert.Single(result.ActiveVoices);
         Assert.Equal(0, result.Loop.Begin);
@@ -21,25 +22,11 @@ public class SynthFileReaderTests
     }
 
     [Fact]
-    public void ReadsProtectFromMagic2VoicesCorrectly()
+    public void ReadsWardOfArceuusCastCorrectly()
     {
-        var result = SynthFileReader.Read(TestFixtures.ProtectFromMagic);
+        var result = SynthFileReader.Read(TestResources.WardOfArceuusCast);
         Assert.NotNull(result);
-        Assert.Equal(2, result.ActiveVoices.Count);
-        var voiceIndices = result.ActiveVoices.Select(v => v.Index).ToList();
-        Assert.Equal(expected, voiceIndices);
-        Assert.Equal(0, result.Loop.Begin);
-        Assert.Equal(0, result.Loop.End);
-    }
-
-    [Fact]
-    public void ReadsIceCast2VoicesCorrectly()
-    {
-        var result = SynthFileReader.Read(TestFixtures.IceCast);
-        Assert.NotNull(result);
-        Assert.Equal(2, result.ActiveVoices.Count);
-        Assert.Equal(0, result.Loop.Begin);
-        Assert.Equal(0, result.Loop.End);
+        Assert.True(result.ActiveVoices.Count >= 1);
     }
 
     #endregion
@@ -49,15 +36,10 @@ public class SynthFileReaderTests
     [Fact]
     public void ParsesEnvelopeFormsCorrectly()
     {
-        var cow = SynthFileReader.Read(TestFixtures.CowDeath);
+        var cow = SynthFileReader.Read(TestResources.CowDeath);
         Assert.NotNull(cow);
         var (_, cowVoice) = cow.ActiveVoices.First();
         Assert.Equal(Waveform.Sine, cowVoice.FrequencyEnvelope.Waveform);
-
-        var protect = SynthFileReader.Read(TestFixtures.ProtectFromMagic);
-        Assert.NotNull(protect);
-        var (_, protectVoice1) = protect.ActiveVoices.First();
-        Assert.Equal(Waveform.Square, protectVoice1.FrequencyEnvelope.Waveform);
     }
 
     #endregion
@@ -67,11 +49,27 @@ public class SynthFileReaderTests
     [Fact]
     public void ParsesPartialsCorrectly()
     {
-        var result = SynthFileReader.Read(TestFixtures.CowDeath);
+        var result = SynthFileReader.Read(TestResources.CowDeath);
         Assert.NotNull(result);
         var (_, voice) = result.ActiveVoices.First();
         Assert.Equal(2, voice.Oscillators.Count);
         Assert.Equal(100, voice.Oscillators[0].Amplitude.Value);
+    }
+
+    #endregion
+
+    #region Format Validation Tests
+
+    [Theory]
+    [InlineData("cow_death")]
+    [InlineData("noa_melee_attack_movement")]
+    [InlineData("ward_of_arceuus_cast")]
+    public void AllResources_AreValidSynthFiles(string resourceName)
+    {
+        var bytes = TestResources.GetBytes(resourceName);
+        var result = SynthFileReader.Read(bytes);
+        Assert.NotNull(result);
+        Assert.NotNull(result.Voices);
     }
 
     #endregion

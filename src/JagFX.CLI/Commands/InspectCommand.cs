@@ -1,8 +1,9 @@
+using JagFX.Core.Constants;
 using JagFX.Domain;
-using JagFX.IO;
+using JagFX.Io;
 using System.CommandLine;
 
-namespace JagFX.CLI.Commands;
+namespace JagFX.Cli.Commands;
 
 /// <summary>
 /// CLI command for inspecting .synth file structure in assembly-like format.
@@ -62,7 +63,7 @@ public class InspectCommand : Command
 
     private static void InspectVoices(InspectorContext context)
     {
-        for (var i = 0; i < Constants.MaxVoices; i++)
+        for (var i = 0; i < AudioConstants.MaxVoices; i++)
         {
             if (context.Buffer.Remaining == 0) break;
             var marker = context.Buffer.Peek();
@@ -131,7 +132,7 @@ public class InspectCommand : Command
     private static void InspectOscillators(InspectorContext context)
     {
         var index = 0;
-        while (index < Constants.MaxOscillators && context.Buffer.Remaining > 0)
+        while (index < AudioConstants.MaxOscillators && context.Buffer.Remaining > 0)
         {
             var marker = context.Buffer.Peek();
             if (marker == 0)

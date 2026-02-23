@@ -1,12 +1,12 @@
-using JagFX.CLI.Commands;
+using JagFX.Cli.Commands;
 using System.CommandLine;
 
-namespace JagFX.CLI;
+namespace JagFX.Cli;
 
 /// <summary>
 /// Entry point for the JagFX CLI application.
 /// </summary>
-public static class JagFXCli
+public static class JagFxCli
 {
     /// <summary>
     /// Runs the CLI with the provided arguments.
@@ -21,7 +21,7 @@ public static class JagFXCli
     private static RootCommand BuildRootCommand()
     {
         var rootCommand = new RootCommand("JagFX CLI");
-        ConvertCommandHandler.Configure(rootCommand);
+        ConvertCommand.Configure(rootCommand);
 
         rootCommand.Add(new InspectCommand());
         return rootCommand;

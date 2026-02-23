@@ -5,9 +5,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>JagFX.Domain</RootNamespace>
+    <AssemblyName>JagFX.Domain</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\JagFX.Core\JagFX.Core.csproj" />
     <ProjectReference Include="..\..\libs\SmartInt\SmartInt.csproj" />
   </ItemGroup>
 

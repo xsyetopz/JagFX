@@ -5,8 +5,8 @@ namespace JagFX.Domain.Models;
 public record class Voice(
     Envelope FrequencyEnvelope,
     Envelope AmplitudeEnvelope,
-    Lfo? PitchLfo,
-    Lfo? AmplitudeLfo,
+    LowFrequencyOscillator? PitchLfo,
+    LowFrequencyOscillator? AmplitudeLfo,
     Envelope? GateSilence,
     Envelope? GateDuration,
     ImmutableList<Oscillator> Oscillators,

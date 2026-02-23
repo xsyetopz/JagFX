@@ -1,8 +1,10 @@
+using JagFX.Core.Constants;
+using JagFX.Core.Types;
 using JagFX.Domain;
 using JagFX.Domain.Models;
 using System.Collections.Immutable;
 
-namespace JagFX.IO;
+namespace JagFX.Io;
 
 public static class SynthFileReader
 {
@@ -48,9 +50,9 @@ public static class SynthFileReader
 
         private ImmutableList<Voice?> ReadVoices()
         {
-            var voices = new List<Voice?>(Constants.MaxVoices);
+            var voices = new List<Voice?>(AudioConstants.MaxVoices);
 
-            for (var i = 0; i < Constants.MaxVoices; i++)
+            for (var i = 0; i < AudioConstants.MaxVoices; i++)
             {
                 if (_buf.Remaining >= MinVoiceSize)
                 {
@@ -65,7 +67,7 @@ public static class SynthFileReader
                         if (marker != 0)
                         {
                             voices.Add(null);
-                            for (var j = i + 1; j < Constants.MaxVoices; j++)
+                            for (var j = i + 1; j < AudioConstants.MaxVoices; j++)
                                 voices.Add(null);
                             break;
                         }
@@ -104,8 +106,8 @@ public static class SynthFileReader
             return new Voice(
                 FrequencyEnvelope: CreateEnvelopeWithDuration(pitchEnvelope, duration),
                 AmplitudeEnvelope: CreateEnvelopeWithDuration(volumeEnvelope, duration),
-                PitchLfo: vibratoRate != null && vibratoDepth != null ? new Lfo(vibratoRate, vibratoDepth) : null,
-                AmplitudeLfo: tremoloRate != null && tremoloDepth != null ? new Lfo(tremoloRate, tremoloDepth) : null,
+                PitchLfo: vibratoRate != null && vibratoDepth != null ? new LowFrequencyOscillator(vibratoRate, vibratoDepth) : null,
+                AmplitudeLfo: tremoloRate != null && tremoloDepth != null ? new LowFrequencyOscillator(tremoloRate, tremoloDepth) : null,
                 GateSilence: gateSilence,
                 GateDuration: gateDuration,
                 Oscillators: oscillators,
@@ -150,9 +152,9 @@ public static class SynthFileReader
 
         private ImmutableList<Oscillator> ReadOscillators()
         {
-            var oscillators = new List<Oscillator>(Constants.MaxOscillators);
+            var oscillators = new List<Oscillator>(AudioConstants.MaxOscillators);
 
-            while (oscillators.Count < Constants.MaxOscillators)
+            while (oscillators.Count < AudioConstants.MaxOscillators)
             {
                 if (_buf.Remaining == 0) break;
 
@@ -165,7 +167,7 @@ public static class SynthFileReader
                 oscillators.Add(new Oscillator(
                     new Percent(volume),
                     pitchOffset,
-                    new Millis(startDelay)));
+                    new Milliseconds(startDelay)));
             }
 
             return [.. oscillators];
@@ -217,8 +219,8 @@ public static class SynthFileReader
         private (int[,,] frequencies, int[,,] magnitudes) ReadFilterCoefficients(
             int pairCount0, int pairCount1, int modulationMask)
         {
-            var frequencies = new int[2, 2, Constants.MaxFilterPairs];
-            var magnitudes = new int[2, 2, Constants.MaxFilterPairs];
+            var frequencies = new int[2, 2, AudioConstants.MaxFilterPairs];
+            var magnitudes = new int[2, 2, AudioConstants.MaxFilterPairs];
 
             ReadFilterPhase0Coefficients(frequencies, magnitudes, pairCount0, pairCount1);
             ReadFilterPhase1Coefficients(frequencies, magnitudes, pairCount0, pairCount1, modulationMask);
@@ -232,7 +234,7 @@ public static class SynthFileReader
             for (var channel = 0; channel < 2; channel++)
             {
                 var pairs = channel == 0 ? pairCount0 : pairCount1;
-                var maxPairs = Math.Min(pairs, Constants.MaxFilterPairs);
+                var maxPairs = Math.Min(pairs, AudioConstants.MaxFilterPairs);
                 for (var p = 0; p < maxPairs; p++)
                 {
                     if (_buf.Remaining < 2) return;
@@ -249,7 +251,7 @@ public static class SynthFileReader
             for (var channel = 0; channel < 2; channel++)
             {
                 var pairs = channel == 0 ? pairCount0 : pairCount1;
-                var maxPairs = Math.Min(pairs, Constants.MaxFilterPairs);
+                var maxPairs = Math.Min(pairs, AudioConstants.MaxFilterPairs);
                 for (var p = 0; p < maxPairs; p++)
                 {
                     if ((modulationMask & (1 << (channel * 4 + p))) != 0)
@@ -297,7 +299,7 @@ public static class SynthFileReader
         private bool IsAmbiguousFilterByte(int b)
         {
             return b >= MinWaveformId && b <= MaxWaveformId &&
-                   _buf.Remaining >= Constants.MaxVoices;
+                   _buf.Remaining >= AudioConstants.MaxVoices;
         }
 
         private bool LooksLikeEnvelope()
@@ -354,7 +356,7 @@ public static class SynthFileReader
             for (var channel = 0; channel < 2; channel++)
             {
                 var pairs = channel == 0 ? pairCount0 : pairCount1;
-                var maxPairs = Math.Min(pairs, Constants.MaxFilterPairs);
+                var maxPairs = Math.Min(pairs, AudioConstants.MaxFilterPairs);
                 freqArray[channel] = new ImmutableArray<int>[2];
                 magArray[channel] = new ImmutableArray<int>[2];
 
