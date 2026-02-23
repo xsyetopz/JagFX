@@ -10,7 +10,7 @@ public static class WaveformTables
     public const double DecicentRatio = 1.0057929410678534;
 
     public static int[] NoiseTable { get; }
-    public static int[] SinTable { get; }
+    public static int[] SineWaveTable { get; }
     public static double[] UnitCircleXArray { get; }
     public static double[] UnitCircleYArray { get; }
 
@@ -22,14 +22,14 @@ public static class WaveformTables
 
     static WaveformTables()
     {
-        NoiseTable = InitializeNoise();
-        SinTable = InitializeSin();
-        UnitCircleXArray = InitializeUnitCircleX();
-        UnitCircleYArray = InitializeUnitCircleY();
-        SemitoneCache = InitializeSemitoneCache();
+        NoiseTable = GenerateNoiseTable();
+        SineWaveTable = GenerateSineWaveTable();
+        UnitCircleXArray = CreateUnitCircleXArray();
+        UnitCircleYArray = CreateUnitCircleYArray();
+        SemitoneCache = CreateSemitoneCache();
     }
 
-    private static int[] InitializeNoise()
+    private static int[] GenerateNoiseTable()
     {
         var rng = new JavaRng(0);
         var table = new int[AudioConstants.FixedPoint.Offset];
@@ -40,7 +40,7 @@ public static class WaveformTables
         return table;
     }
 
-    private static int[] InitializeSin()
+    private static int[] GenerateSineWaveTable()
     {
         var table = new int[AudioConstants.FixedPoint.Offset];
         for (var i = 0; i < AudioConstants.FixedPoint.Offset; i++)
@@ -50,7 +50,7 @@ public static class WaveformTables
         return table;
     }
 
-    private static double[] InitializeUnitCircleX()
+    private static double[] CreateUnitCircleXArray()
     {
         var table = new double[CircleSegments + 1];
         for (var i = 0; i <= CircleSegments; i++)
@@ -60,7 +60,7 @@ public static class WaveformTables
         return table;
     }
 
-    private static double[] InitializeUnitCircleY()
+    private static double[] CreateUnitCircleYArray()
     {
         var table = new double[CircleSegments + 1];
         for (var i = 0; i <= CircleSegments; i++)
@@ -70,7 +70,7 @@ public static class WaveformTables
         return table;
     }
 
-    private static double[] InitializeSemitoneCache()
+    private static double[] CreateSemitoneCache()
     {
         const int cacheSize = SemitoneRange * 2 + 1;
         var table = new double[cacheSize];

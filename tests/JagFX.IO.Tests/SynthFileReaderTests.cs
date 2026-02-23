@@ -17,8 +17,8 @@ public class SynthFileReaderTests
         var result = SynthFileReader.Read(TestResources.CowDeath);
         Assert.NotNull(result);
         Assert.Single(result.ActiveVoices);
-        Assert.Equal(0, result.Loop.Begin);
-        Assert.Equal(0, result.Loop.End);
+        Assert.Equal(0, result.Loop.BeginSample);
+        Assert.Equal(0, result.Loop.EndSample);
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public class SynthFileReaderTests
 
     #endregion
 
-    #region Oscillator Tests
+    #region Partial Tests
 
     [Fact]
     public void ParsesPartialsCorrectly()
@@ -52,8 +52,8 @@ public class SynthFileReaderTests
         var result = SynthFileReader.Read(TestResources.CowDeath);
         Assert.NotNull(result);
         var (_, voice) = result.ActiveVoices.First();
-        Assert.Equal(2, voice.Oscillators.Count);
-        Assert.Equal(100, voice.Oscillators[0].Amplitude.Value);
+        Assert.Equal(2, voice.Partials.Count);
+        Assert.Equal(100, voice.Partials[0].Amplitude.Value);
     }
 
     #endregion

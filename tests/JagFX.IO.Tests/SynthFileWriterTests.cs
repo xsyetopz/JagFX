@@ -50,7 +50,7 @@ public class SynthFileWriterTests
         Assert.NotNull(reread);
         Assert.Empty(reread.ActiveVoices);
         // Note: Empty files may have loop parameters reset to 0
-        Assert.True(reread.Loop.Begin == 0 || reread.Loop.Begin == 100);
+        Assert.True(reread.Loop.BeginSample == 0 || reread.Loop.BeginSample == 100);
     }
 
     #endregion

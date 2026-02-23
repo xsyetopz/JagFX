@@ -23,8 +23,8 @@ public static class PatchMixer
         }
 
         var sampleCount = (int)(maxDuration * AudioConstants.SampleRatePerMillisecond);
-        var loopStart = (int)(patch.Loop.Begin * AudioConstants.SampleRatePerMillisecond);
-        var loopStop = (int)(patch.Loop.End * AudioConstants.SampleRatePerMillisecond);
+        var loopStart = (int)(patch.Loop.BeginSample * AudioConstants.SampleRatePerMillisecond);
+        var loopStop = (int)(patch.Loop.EndSample * AudioConstants.SampleRatePerMillisecond);
 
         var effectiveLoopCount = ValidateLoopRegion(loopStart, loopStop, sampleCount, loopCount);
         var totalSampleCount = sampleCount + (loopStop - loopStart) * Math.Max(0, effectiveLoopCount - 1);
@@ -49,7 +49,7 @@ public static class PatchMixer
         var maxDuration = 0;
         foreach (var (_, voice) in voices)
         {
-            var endTime = voice.Duration + voice.StartTime;
+            var endTime = voice.DurationSamples + voice.StartSample;
             if (endTime > maxDuration)
             {
                 maxDuration = endTime;
@@ -79,7 +79,7 @@ public static class PatchMixer
         foreach (var (_, voice) in voices)
         {
             var voiceBuffer = VoiceSynthesizer.Synthesize(voice);
-            var startOffset = (int)(voice.StartTime * AudioConstants.SampleRatePerMillisecond);
+            var startOffset = (int)(voice.StartSample * AudioConstants.SampleRatePerMillisecond);
 
             for (var i = 0; i < voiceBuffer.Length; i++)
             {

@@ -93,10 +93,10 @@ public static class SynthFileReader
             var (tremoloRate, tremoloDepth) = ReadOptionalEnvelopePair();
             var (gateSilence, gateDuration) = ReadOptionalEnvelopePair();
 
-            var oscillators = ReadOscillators();
+            var partials = ReadPartials();
 
-            var feedbackDelay = _buf.ReadUSmart();
-            var feedbackMix = _buf.ReadUSmart();
+            var echoDelay = _buf.ReadUSmart();
+            var echoMix = _buf.ReadUSmart();
 
             var duration = _buf.ReadUInt16BE();
             var startTime = _buf.ReadUInt16BE();
@@ -108,20 +108,20 @@ public static class SynthFileReader
                 AmplitudeEnvelope: CreateEnvelopeWithDuration(volumeEnvelope, duration),
                 PitchLfo: vibratoRate != null && vibratoDepth != null ? new LowFrequencyOscillator(vibratoRate, vibratoDepth) : null,
                 AmplitudeLfo: tremoloRate != null && tremoloDepth != null ? new LowFrequencyOscillator(tremoloRate, tremoloDepth) : null,
-                GateSilence: gateSilence,
-                GateDuration: gateDuration,
-                Oscillators: oscillators,
-                FeedbackDelay: new FeedbackDelay(feedbackDelay, feedbackMix),
-                Duration: duration,
-                StartTime: startTime,
+                GateSilenceEnvelope: gateSilence,
+                GateDurationEnvelope: gateDuration,
+                Partials: partials,
+                Echo: new Echo(echoDelay, echoMix),
+                DurationSamples: duration,
+                StartSample: startTime,
                 Filter: filter);
         }
 
         private Envelope ReadEnvelope()
         {
             var waveformId = _buf.ReadUInt8();
-            var start = _buf.ReadInt32BE();
-            var end = _buf.ReadInt32BE();
+            var startSample = _buf.ReadInt32BE();
+            var endSample = _buf.ReadInt32BE();
             var waveform = (waveformId >= 0 && waveformId <= 4) ? (Waveform)waveformId : Waveform.Off;
             var segmentLength = _buf.ReadUInt8();
 
@@ -133,7 +133,7 @@ public static class SynthFileReader
                     _buf.ReadUInt16BE()));
             }
 
-            return new Envelope(waveform, start, end, [.. segments]);
+            return new Envelope(waveform, startSample, endSample, [.. segments]);
         }
 
         private (Envelope? first, Envelope? second) ReadOptionalEnvelopePair()
@@ -150,11 +150,11 @@ public static class SynthFileReader
             return (null, null);
         }
 
-        private ImmutableList<Oscillator> ReadOscillators()
+        private ImmutableList<Partial> ReadPartials()
         {
-            var oscillators = new List<Oscillator>(AudioConstants.MaxOscillators);
+            var partials = new List<Partial>(AudioConstants.MaxOscillators);
 
-            while (oscillators.Count < AudioConstants.MaxOscillators)
+            while (partials.Count < AudioConstants.MaxOscillators)
             {
                 if (_buf.Remaining == 0) break;
 
@@ -164,13 +164,13 @@ public static class SynthFileReader
                 var pitchOffset = _buf.ReadSmart();
                 var startDelay = _buf.ReadUSmart();
 
-                oscillators.Add(new Oscillator(
+                partials.Add(new Partial(
                     new Percent(volume),
                     pitchOffset,
                     new Milliseconds(startDelay)));
             }
 
-            return [.. oscillators];
+            return [.. partials];
         }
 
         private Filter? ReadFilter()
@@ -178,18 +178,18 @@ public static class SynthFileReader
             if (_buf.Remaining == 0) return null;
             if (!DetectFilterPresent()) return null;
 
-            var (pairCount0, pairCount1) = ReadFilterHeader();
-            var unity0 = _buf.ReadUInt16BE();
-            var unity1 = _buf.ReadUInt16BE();
+            var (poleCount0, poleCount1) = ReadFilterHeader();
+            var unityGain0 = _buf.ReadUInt16BE();
+            var unityGain1 = _buf.ReadUInt16BE();
             var modulationMask = _buf.ReadUInt8();
 
             var (frequencies, magnitudes) = ReadFilterCoefficients(
-                pairCount0, pairCount1, modulationMask);
+                poleCount0, poleCount1, modulationMask);
 
-            Envelope? envelope = null;
-            if (modulationMask != 0 || unity1 != unity0)
+            Envelope? cutoffEnvelope = null;
+            if (modulationMask != 0 || unityGain1 != unityGain0)
             {
-                envelope = ReadEnvelopeSegments();
+                cutoffEnvelope = ReadEnvelopeSegments();
             }
 
             if (_buf.IsTruncated)
@@ -199,43 +199,43 @@ public static class SynthFileReader
             }
 
             return BuildFilter(
-                pairCount0,
-                pairCount1,
-                unity0,
-                unity1,
+                poleCount0,
+                poleCount1,
+                unityGain0,
+                unityGain1,
                 frequencies,
                 magnitudes,
-                envelope);
+                cutoffEnvelope);
         }
 
-        private (int pairCount0, int pairCount1) ReadFilterHeader()
+        private (int poleCount0, int poleCount1) ReadFilterHeader()
         {
-            var packedPairs = _buf.ReadUInt8();
-            var pairCount0 = packedPairs >> 4;
-            var pairCount1 = packedPairs & 0xF;
-            return (pairCount0, pairCount1);
+            var packedPoles = _buf.ReadUInt8();
+            var poleCount0 = packedPoles >> 4;
+            var poleCount1 = packedPoles & 0xF;
+            return (poleCount0, poleCount1);
         }
 
         private (int[,,] frequencies, int[,,] magnitudes) ReadFilterCoefficients(
-            int pairCount0, int pairCount1, int modulationMask)
+            int poleCount0, int poleCount1, int modulationMask)
         {
             var frequencies = new int[2, 2, AudioConstants.MaxFilterPairs];
             var magnitudes = new int[2, 2, AudioConstants.MaxFilterPairs];
 
-            ReadFilterPhase0Coefficients(frequencies, magnitudes, pairCount0, pairCount1);
-            ReadFilterPhase1Coefficients(frequencies, magnitudes, pairCount0, pairCount1, modulationMask);
+            ReadFilterPhase0Coefficients(frequencies, magnitudes, poleCount0, poleCount1);
+            ReadFilterPhase1Coefficients(frequencies, magnitudes, poleCount0, poleCount1, modulationMask);
 
             return (frequencies, magnitudes);
         }
 
         private void ReadFilterPhase0Coefficients(
-            int[,,] frequencies, int[,,] magnitudes, int pairCount0, int pairCount1)
+            int[,,] frequencies, int[,,] magnitudes, int poleCount0, int poleCount1)
         {
             for (var channel = 0; channel < 2; channel++)
             {
-                var pairs = channel == 0 ? pairCount0 : pairCount1;
-                var maxPairs = Math.Min(pairs, AudioConstants.MaxFilterPairs);
-                for (var p = 0; p < maxPairs; p++)
+                var poles = channel == 0 ? poleCount0 : poleCount1;
+                var maxPoles = Math.Min(poles, AudioConstants.MaxFilterPairs);
+                for (var p = 0; p < maxPoles; p++)
                 {
                     if (_buf.Remaining < 2) return;
                     frequencies[channel, 0, p] = _buf.ReadUInt16BE();
@@ -246,13 +246,13 @@ public static class SynthFileReader
         }
 
         private void ReadFilterPhase1Coefficients(
-            int[,,] frequencies, int[,,] magnitudes, int pairCount0, int pairCount1, int modulationMask)
+            int[,,] frequencies, int[,,] magnitudes, int poleCount0, int poleCount1, int modulationMask)
         {
             for (var channel = 0; channel < 2; channel++)
             {
-                var pairs = channel == 0 ? pairCount0 : pairCount1;
-                var maxPairs = Math.Min(pairs, AudioConstants.MaxFilterPairs);
-                for (var p = 0; p < maxPairs; p++)
+                var poles = channel == 0 ? poleCount0 : poleCount1;
+                var maxPoles = Math.Min(poles, AudioConstants.MaxFilterPairs);
+                for (var p = 0; p < maxPoles; p++)
                 {
                     if ((modulationMask & (1 << (channel * 4 + p))) != 0)
                     {
@@ -330,75 +330,75 @@ public static class SynthFileReader
         }
 
         private static Filter BuildFilter(
-            int pairCount0,
-            int pairCount1,
-            int unity0,
-            int unity1,
+            int poleCount0,
+            int poleCount1,
+            int unityGain0,
+            int unityGain1,
             int[,,] frequencies,
             int[,,] magnitudes,
-            Envelope? envelope)
+            Envelope? cutoffEnvelope)
         {
-            var pairCounts = ImmutableArray.Create(pairCount0, pairCount1);
-            var unity = ImmutableArray.Create(unity0, unity1);
+            var poleCounts = ImmutableArray.Create(poleCount0, poleCount1);
+            var unityGain = ImmutableArray.Create(unityGain0, unityGain1);
 
-            var (pairPhase, pairMagnitude) = BuildFilterCoeffientArrays(
-                frequencies, magnitudes, pairCount0, pairCount1);
+            var (polePhase, poleMagnitude) = BuildFilterCoeffientArrays(
+                frequencies, magnitudes, poleCount0, poleCount1);
 
-            return new Filter(pairCounts, unity, pairPhase, pairMagnitude, envelope);
+            return new Filter(poleCounts, unityGain, polePhase, poleMagnitude, cutoffEnvelope);
         }
 
-        private static (ImmutableArray<ImmutableArray<ImmutableArray<int>>> pairPhase, ImmutableArray<ImmutableArray<ImmutableArray<int>>> pairMagnitude) BuildFilterCoeffientArrays(
-            int[,,] frequencies, int[,,] magnitudes, int pairCount0, int pairCount1)
+        private static (ImmutableArray<ImmutableArray<ImmutableArray<int>>> polePhase, ImmutableArray<ImmutableArray<ImmutableArray<int>>> poleMagnitude) BuildFilterCoeffientArrays(
+            int[,,] frequencies, int[,,] magnitudes, int poleCount0, int poleCount1)
         {
             var freqArray = new ImmutableArray<int>[2][];
             var magArray = new ImmutableArray<int>[2][];
 
             for (var channel = 0; channel < 2; channel++)
             {
-                var pairs = channel == 0 ? pairCount0 : pairCount1;
-                var maxPairs = Math.Min(pairs, AudioConstants.MaxFilterPairs);
+                var poles = channel == 0 ? poleCount0 : poleCount1;
+                var maxPoles = Math.Min(poles, AudioConstants.MaxFilterPairs);
                 freqArray[channel] = new ImmutableArray<int>[2];
                 magArray[channel] = new ImmutableArray<int>[2];
 
                 for (var phase = 0; phase < 2; phase++)
                 {
-                    freqArray[channel][phase] = BuildCoeffientArray(frequencies, channel, phase, maxPairs);
-                    magArray[channel][phase] = BuildCoeffientArray(magnitudes, channel, phase, maxPairs);
+                    freqArray[channel][phase] = BuildCoeffientArray(frequencies, channel, phase, maxPoles);
+                    magArray[channel][phase] = BuildCoeffientArray(magnitudes, channel, phase, maxPoles);
                 }
             }
 
-            var pairPhase = ImmutableArray.Create(
+            var polePhase = ImmutableArray.Create(
                 [freqArray[0][0], freqArray[0][1]],
                 ImmutableArray.Create(freqArray[1][0], freqArray[1][1])
             );
-            var pairMagnitude = ImmutableArray.Create(
+            var poleMagnitude = ImmutableArray.Create(
                 [magArray[0][0], magArray[0][1]],
                 ImmutableArray.Create(magArray[1][0], magArray[1][1])
             );
 
-            return (pairPhase, pairMagnitude);
+            return (polePhase, poleMagnitude);
         }
 
         private static ImmutableArray<int> BuildCoeffientArray(
-            int[,,] coefficients, int channel, int phase, int pairs)
+            int[,,] coefficients, int channel, int phase, int poles)
         {
-            var builder = ImmutableArray.CreateBuilder<int>(pairs);
-            for (var p = 0; p < pairs; p++)
+            var builder = ImmutableArray.CreateBuilder<int>(poles);
+            for (var pole = 0; pole < poles; pole++)
             {
-                builder.Add(coefficients[channel, phase, p]);
+                builder.Add(coefficients[channel, phase, pole]);
             }
             return builder.ToImmutable();
         }
 
         private static Envelope CreateEnvelopeWithDuration(Envelope env, int duration)
         {
-            if (env.Segments.Count == 0 && env.Start != env.End)
+            if (env.Segments.Count == 0 && env.StartSample != env.EndSample)
             {
                 return new Envelope(
                     env.Waveform,
-                    env.Start,
-                    env.End,
-                    [new Segment(duration, env.End)]);
+                    env.StartSample,
+                    env.EndSample,
+                    [new Segment(duration, env.EndSample)]);
             }
             return env;
         }

@@ -23,169 +23,169 @@ public static class SynthFileWriter
         File.WriteAllBytes(path, data);
     }
 
-    private static void WriteVoices(BinaryBuffer buf, ImmutableList<Voice?> voices)
+    private static void WriteVoices(BinaryBuffer buffer, ImmutableList<Voice?> voices)
     {
         for (var i = 0; i < AudioConstants.MaxVoices; i++)
         {
             var voice = i < voices.Count ? voices[i] : null;
             if (voice == null)
             {
-                buf.WriteUInt8(0);
+                buffer.WriteUInt8(0);
             }
             else
             {
-                WriteVoice(buf, voice);
+                WriteVoice(buffer, voice);
             }
         }
     }
 
-    private static void WriteVoice(BinaryBuffer buf, Voice voice)
+    private static void WriteVoice(BinaryBuffer buffer, Voice voice)
     {
-        WriteEnvelope(buf, voice.FrequencyEnvelope);
-        WriteEnvelope(buf, voice.AmplitudeEnvelope);
+        WriteEnvelope(buffer, voice.FrequencyEnvelope);
+        WriteEnvelope(buffer, voice.AmplitudeEnvelope);
 
-        WriteOptionalEnvelopePair(buf, voice.PitchLfo);
-        WriteOptionalEnvelopePair(buf, voice.AmplitudeLfo);
-        WriteOptionalEnvelopePair(buf, voice.GateSilence, voice.GateDuration);
+        WriteOptionalEnvelopePair(buffer, voice.PitchLfo);
+        WriteOptionalEnvelopePair(buffer, voice.AmplitudeLfo);
+        WriteOptionalEnvelopePair(buffer, voice.GateSilenceEnvelope, voice.GateDurationEnvelope);
 
-        WriteOscillators(buf, voice.Oscillators);
+        WritePartials(buffer, voice.Partials);
 
-        buf.WriteUSmart((ushort)voice.FeedbackDelay.Delay);
-        buf.WriteUSmart((ushort)voice.FeedbackDelay.Mix);
+        buffer.WriteUSmart((ushort)voice.Echo.DelayMilliseconds);
+        buffer.WriteUSmart((ushort)voice.Echo.MixPercent);
 
-        buf.WriteUInt16BE(voice.Duration);
-        buf.WriteUInt16BE(voice.StartTime);
+        buffer.WriteUInt16BE(voice.DurationSamples);
+        buffer.WriteUInt16BE(voice.StartSample);
 
         if (voice.Filter != null)
         {
-            WriteFilter(buf, voice.Filter);
+            WriteFilter(buffer, voice.Filter);
         }
     }
 
-    private static void WriteEnvelope(BinaryBuffer buf, Envelope envelope)
+    private static void WriteEnvelope(BinaryBuffer buffer, Envelope envelope)
     {
-        buf.WriteUInt8((int)envelope.Waveform);
-        buf.WriteInt32BE(envelope.Start);
-        buf.WriteInt32BE(envelope.End);
-        buf.WriteUInt8(envelope.Segments.Count);
+        buffer.WriteUInt8((int)envelope.Waveform);
+        buffer.WriteInt32BE(envelope.StartSample);
+        buffer.WriteInt32BE(envelope.EndSample);
+        buffer.WriteUInt8(envelope.Segments.Count);
 
         foreach (var segment in envelope.Segments)
         {
-            buf.WriteUInt16BE(segment.Duration);
-            buf.WriteUInt16BE(segment.Peak);
+            buffer.WriteUInt16BE(segment.DurationSamples);
+            buffer.WriteUInt16BE(segment.PeakLevel);
         }
     }
 
-    private static void WriteOptionalEnvelopePair(BinaryBuffer buf, LowFrequencyOscillator? lfo)
+    private static void WriteOptionalEnvelopePair(BinaryBuffer buffer, LowFrequencyOscillator? lfo)
     {
         if (lfo == null)
         {
-            buf.WriteUInt8(0);
+            buffer.WriteUInt8(0);
         }
         else
         {
-            WriteEnvelope(buf, lfo.Rate);
-            WriteEnvelope(buf, lfo.Depth);
+            WriteEnvelope(buffer, lfo.FrequencyRate);
+            WriteEnvelope(buffer, lfo.ModulationDepth);
         }
     }
 
-    private static void WriteOptionalEnvelopePair(BinaryBuffer buf, Envelope? env1, Envelope? env2)
+    private static void WriteOptionalEnvelopePair(BinaryBuffer buffer, Envelope? env1, Envelope? env2)
     {
         if (env1 == null || env2 == null)
         {
-            buf.WriteUInt8(0);
+            buffer.WriteUInt8(0);
         }
         else
         {
-            WriteEnvelope(buf, env1);
-            WriteEnvelope(buf, env2);
+            WriteEnvelope(buffer, env1);
+            WriteEnvelope(buffer, env2);
         }
     }
 
-    private static void WriteOscillators(BinaryBuffer buf, ImmutableList<Oscillator> oscillators)
+    private static void WritePartials(BinaryBuffer buffer, ImmutableList<Partial> partials)
     {
-        foreach (var osc in oscillators)
+        foreach (var partial in partials)
         {
-            buf.WriteUSmart((ushort)osc.Amplitude.Value);
-            buf.WriteSmart((short)osc.PitchOffset);
-            buf.WriteUSmart((ushort)osc.Delay.Value);
+            buffer.WriteUSmart((ushort)partial.Amplitude.Value);
+            buffer.WriteSmart((short)partial.PitchOffsetSemitones);
+            buffer.WriteUSmart((ushort)partial.Delay.Value);
         }
-        buf.WriteUSmart(0);
+        buffer.WriteUSmart(0);
     }
 
-    private static void WriteFilter(BinaryBuffer buf, Filter filter)
+    private static void WriteFilter(BinaryBuffer buffer, Filter filter)
     {
-        var pairCounts = filter.PairCounts;
-        var unity = filter.Unity;
+        var poleCounts = filter.PoleCounts;
+        var unityGain = filter.UnityGain;
 
-        var packedPairs = (pairCounts[0] << 4) | pairCounts[1];
-        buf.WriteUInt8(packedPairs);
+        var packedPoles = (poleCounts[0] << 4) | poleCounts[1];
+        buffer.WriteUInt8(packedPoles);
 
-        buf.WriteUInt16BE(unity[0]);
-        buf.WriteUInt16BE(unity[1]);
+        buffer.WriteUInt16BE(unityGain[0]);
+        buffer.WriteUInt16BE(unityGain[1]);
 
         var modulationMask = CalculateModulationMask(filter);
-        buf.WriteUInt8(modulationMask);
+        buffer.WriteUInt8(modulationMask);
 
-        WriteFilterCoefficients(buf, filter, 0);
-        WriteFilterCoefficients(buf, filter, 1);
+        WriteFilterCoefficients(buffer, filter, 0);
+        WriteFilterCoefficients(buffer, filter, 1);
 
-        if (filter.Envelope != null)
+        if (filter.CutoffEnvelope != null)
         {
-            WriteFilterEnvelope(buf, filter.Envelope);
+            WriteFilterEnvelope(buffer, filter.CutoffEnvelope);
         }
     }
 
-    private static void WriteFilterCoefficients(BinaryBuffer buf, Filter filter, int phase)
+    private static void WriteFilterCoefficients(BinaryBuffer buffer, Filter filter, int phase)
     {
-        var pairCounts = filter.PairCounts;
-        var pairPhase = filter.PairPhase;
-        var pairMagnitude = filter.PairMagnitude;
+        var poleCounts = filter.PoleCounts;
+        var polePhase = filter.PolePhase;
+        var poleMagnitude = filter.PoleMagnitude;
 
         for (var channel = 0; channel < 2; channel++)
         {
-            var pairs = pairCounts[channel];
-            for (var p = 0; p < pairs; p++)
+            var poles = poleCounts[channel];
+            for (var p = 0; p < poles; p++)
             {
-                buf.WriteUInt16BE(pairPhase[channel][phase][p]);
-                buf.WriteUInt16BE(pairMagnitude[channel][phase][p]);
+                buffer.WriteUInt16BE(polePhase[channel][phase][p]);
+                buffer.WriteUInt16BE(poleMagnitude[channel][phase][p]);
             }
         }
     }
 
-    private static void WriteFilterEnvelope(BinaryBuffer buf, Envelope envelope)
+    private static void WriteFilterEnvelope(BinaryBuffer buffer, Envelope envelope)
     {
-        buf.WriteUInt8(envelope.Segments.Count);
+        buffer.WriteUInt8(envelope.Segments.Count);
 
         foreach (var segment in envelope.Segments)
         {
-            buf.WriteUInt16BE(segment.Duration);
-            buf.WriteUInt16BE(segment.Peak);
+            buffer.WriteUInt16BE(segment.DurationSamples);
+            buffer.WriteUInt16BE(segment.PeakLevel);
         }
     }
 
-    private static void WriteLoop(BinaryBuffer buf, Loop loop)
+    private static void WriteLoop(BinaryBuffer buffer, Loop loop)
     {
-        buf.WriteUInt16BE(loop.Begin);
-        buf.WriteUInt16BE(loop.End);
+        buffer.WriteUInt16BE(loop.BeginSample);
+        buffer.WriteUInt16BE(loop.EndSample);
     }
 
     private static int CalculateModulationMask(Filter filter)
     {
         var mask = 0;
-        var pairCounts = filter.PairCounts;
-        var pairPhase = filter.PairPhase;
+        var poleCounts = filter.PoleCounts;
+        var polePhase = filter.PolePhase;
 
         for (var channel = 0; channel < 2; channel++)
         {
-            var pairs = pairCounts[channel];
-            for (var p = 0; p < pairs; p++)
+            var poles = poleCounts[channel];
+            for (var pole = 0; pole < poles; pole++)
             {
-                var phase0 = pairPhase[channel][0][p];
-                var phase1 = pairPhase[channel][1][p];
+                var phase0 = polePhase[channel][0][pole];
+                var phase1 = polePhase[channel][1][pole];
                 if (phase0 != phase1)
                 {
-                    mask |= 1 << (channel * 4 + p);
+                    mask |= 1 << (channel * 4 + pole);
                 }
             }
         }

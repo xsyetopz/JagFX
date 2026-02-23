@@ -21,7 +21,7 @@ public class EnvelopeGenerator(Envelope envelope)
         _threshold = 1;
         _position = 0;
         _delta = 0;
-        _amplitude = Envelope.Start << EnvelopeScaleFactor;
+        _amplitude = Envelope.StartSample << EnvelopeScaleFactor;
         _ticks = 0;
     }
 
@@ -29,7 +29,7 @@ public class EnvelopeGenerator(Envelope envelope)
     {
         if (Envelope.Segments.Count == 0)
         {
-            return Envelope.Start;
+            return Envelope.StartSample;
         }
 
         if (_ticks >= _threshold)
@@ -44,7 +44,7 @@ public class EnvelopeGenerator(Envelope envelope)
 
     private void AdvanceSegment(int period)
     {
-        _amplitude = Envelope.Segments[_position].Peak << EnvelopeScaleFactor;
+        _amplitude = Envelope.Segments[_position].PeakLevel << EnvelopeScaleFactor;
         _position++;
 
         if (_position >= Envelope.Segments.Count)
@@ -52,9 +52,9 @@ public class EnvelopeGenerator(Envelope envelope)
             _position = Envelope.Segments.Count - 1;
         }
 
-        _threshold = (int)(Envelope.Segments[_position].Duration / (double)AudioConstants.FixedPoint.Scale * period);
+        _threshold = (int)(Envelope.Segments[_position].DurationSamples / (double)AudioConstants.FixedPoint.Scale * period);
         _delta = _threshold > _ticks
-            ? ((Envelope.Segments[_position].Peak << EnvelopeScaleFactor) - _amplitude) / (_threshold - _ticks)
+            ? ((Envelope.Segments[_position].PeakLevel << EnvelopeScaleFactor) - _amplitude) / (_threshold - _ticks)
             : 0;
     }
 }

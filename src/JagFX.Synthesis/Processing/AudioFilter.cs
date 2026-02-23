@@ -1,5 +1,4 @@
 using JagFX.Core.Constants;
-using JagFX.Domain;
 using JagFX.Domain.Models;
 using JagFX.Domain.Utilities;
 using JagFX.Synthesis.Data;
@@ -8,138 +7,136 @@ namespace JagFX.Synthesis.Processing;
 
 public static class AudioFilter
 {
-    private const int MaxCoefs = 8;
+    private const int MaxCoefficients = 8;
     private const int ChunkSize = 128;
 
     public static void Apply(int[] buffer, Filter filter, EnvelopeGenerator? envelopeEval, int sampleCount)
     {
-        if (filter.PairCounts[0] == 0 && filter.PairCounts[1] == 0)
+        if (filter.PoleCounts[0] == 0 && filter.PoleCounts[1] == 0)
         {
             return;
         }
 
         envelopeEval?.Reset();
 
-        var tempInput = AudioBufferPool.Acquire(sampleCount);
-        var inputSpan = tempInput.AsSpan();
-        var bufferSpan = buffer.AsSpan();
-        bufferSpan.CopyTo(inputSpan);
+        var tempBuffer = AudioBufferPool.Acquire(sampleCount);
+        var inputCopySpan = tempBuffer.AsSpan();
+        var outSpan = buffer.AsSpan();
+        outSpan.CopyTo(inputCopySpan);
 
         var state = new FilterState(filter);
         var envelopeValue = envelopeEval?.Evaluate(sampleCount) ?? AudioConstants.FixedPoint.Scale;
         var envelopeFactor = envelopeValue / (float)AudioConstants.FixedPoint.Scale;
 
-        var count0 = state.ComputeCoefs(0, envelopeFactor);
-        var inverseA0 = state.InverseA0;
-        var count1 = state.ComputeCoefs(1, envelopeFactor);
-        state.InverseA0 = inverseA0;
+        var ffCount = state.ComputeCoefficients(0, envelopeFactor);
+        var savedInverseA0 = state.InverseA0;
+        var fbCount = state.ComputeCoefficients(1, envelopeFactor);
+        state.InverseA0 = savedInverseA0;
 
-        if (sampleCount < count0 + count1)
+        if (sampleCount < ffCount + fbCount)
         {
-            AudioBufferPool.Release(tempInput);
+            AudioBufferPool.Release(tempBuffer);
             return;
         }
 
-        ProcessInitialChunk(inputSpan, bufferSpan, state, envelopeEval, count0, count1, sampleCount);
-        ProcessMainChunks(inputSpan, bufferSpan, state, envelopeEval, sampleCount, ref count0, ref count1);
-        ProcessFinalSamples(inputSpan, bufferSpan, state, envelopeEval, sampleCount, count0, count1);
+        ProcessInitialBlock(inputCopySpan, outSpan, state, envelopeEval, ffCount, fbCount, sampleCount);
+        ProcessMainBlocks(inputCopySpan, outSpan, state, envelopeEval, sampleCount, ref ffCount, ref fbCount);
+        ProcessFinalBlock(inputCopySpan, outSpan, state, envelopeEval, sampleCount, ffCount, fbCount);
 
-        AudioBufferPool.Release(tempInput);
+        AudioBufferPool.Release(tempBuffer);
     }
 
-    private static void ProcessInitialChunk(Span<int> inputSpan, Span<int> bufferSpan, FilterState state, EnvelopeGenerator? envelopeEval, int count0, int count1, int sampleCount)
+    private static void ProcessInitialBlock(Span<int> inputCopySpan, Span<int> outSpan, FilterState state, EnvelopeGenerator? envelopeEval, int ffCount, int fbCount, int sampleCount)
     {
-        ProcessSampleRange(inputSpan, bufferSpan, state, envelopeEval, 0, count1, count0, count1, sampleCount);
+        ProcessSampleRange(inputCopySpan, outSpan, state, envelopeEval, 0, fbCount, ffCount, fbCount, sampleCount);
     }
 
-    private static void ProcessMainChunks(Span<int> inputSpan, Span<int> bufferSpan, FilterState state, EnvelopeGenerator? envelopeEval, int sampleCount, ref int count0, ref int count1)
+    private static void ProcessMainBlocks(Span<int> inputCopySpan, Span<int> outSpan, FilterState state, EnvelopeGenerator? envelopeEval, int sampleCount, ref int ffCount, ref int fbCount)
     {
-        int sampleIndex = count1;
+        int pos = fbCount;
 
-        while (sampleIndex < sampleCount - count0)
+        while (pos < sampleCount - ffCount)
         {
-            int chunkEnd = Math.Min(sampleIndex + ChunkSize, sampleCount - count0);
-            ProcessSampleRange(inputSpan, bufferSpan, state, envelopeEval, sampleIndex, chunkEnd, count0, count1, sampleCount);
-            sampleIndex = chunkEnd;
+            int chunkEnd = Math.Min(pos + ChunkSize, sampleCount - ffCount);
+            ProcessSampleRange(inputCopySpan, outSpan, state, envelopeEval, pos, chunkEnd, ffCount, fbCount, sampleCount);
+            pos = chunkEnd;
         }
     }
 
-    private static void ProcessFinalSamples(Span<int> inputSpan, Span<int> bufferSpan, FilterState state, EnvelopeGenerator? envelopeEval, int sampleCount, int count0, int count1)
+    private static void ProcessFinalBlock(Span<int> inputCopySpan, Span<int> outSpan, FilterState state, EnvelopeGenerator? envelopeEval, int sampleCount, int ffCount, int fbCount)
     {
-        ProcessSampleRange(inputSpan, bufferSpan, state, envelopeEval, sampleCount - count0, sampleCount, count0, count1, sampleCount, isFinal: true);
+        ProcessSampleRange(inputCopySpan, outSpan, state, envelopeEval, sampleCount - ffCount, sampleCount, ffCount, fbCount, sampleCount, isFinal: true);
     }
 
-    private static int ProcessSampleRange(Span<int> inputSpan, Span<int> bufferSpan, FilterState state,
-        EnvelopeGenerator? envelopeEval, int start, int end, int count0, int count1, int sampleCount, bool isFinal = false)
+    private static int ProcessSampleRange(Span<int> inputCopySpan, Span<int> outSpan, FilterState state,
+        EnvelopeGenerator? envelopeEval, int start, int end, int ffCount, int fbCount, int sampleCount, bool isFinal = false)
     {
-        var lastEnvelopeValue = AudioConstants.FixedPoint.Scale;
-        for (var i = start; i < end; i++)
+        int lastEnvelopeValue = AudioConstants.FixedPoint.Scale;
+        for (var n = start; n < end; n++)
         {
             if (isFinal)
             {
-                ApplyFilterToFinalSample(inputSpan, bufferSpan, state, i, count0, count1, sampleCount);
+                ApplyFilterToFinalSample(inputCopySpan, outSpan, state, n, ffCount, fbCount, sampleCount);
             }
             else
             {
-                ApplyFilterToSample(inputSpan, bufferSpan, state, i, count0, count1);
+                ApplyFilterToSample(inputCopySpan, outSpan, state, n, ffCount, fbCount);
             }
             lastEnvelopeValue = envelopeEval?.Evaluate(sampleCount) ?? AudioConstants.FixedPoint.Scale;
 
-            if (i + 1 < sampleCount)
+            if (n + 1 < sampleCount)
             {
                 var envelopeFactor = lastEnvelopeValue / (float)AudioConstants.FixedPoint.Scale;
-                count0 = state.ComputeCoefs(0, envelopeFactor);
-                count1 = state.ComputeCoefs(1, envelopeFactor);
+                ffCount = state.ComputeCoefficients(0, envelopeFactor);
+                fbCount = state.ComputeCoefficients(1, envelopeFactor);
             }
         }
         return lastEnvelopeValue;
     }
 
-    private static void ApplyFilterToSample(Span<int> inputSpan, Span<int> bufferSpan, FilterState state, int sampleIndex, int count0, int feedbackCount)
+    private static void ApplyFilterToSample(Span<int> inputCopySpan, Span<int> outSpan, FilterState state, int sampleIndex, int ffCount, int fbCount)
     {
-        var output = 0L;
-        AddFeedforwardTerms(inputSpan, state, sampleIndex, count0, ref output);
-        AddFeedbackTerms(bufferSpan, state, sampleIndex, feedbackCount, ref output, subtract: true);
-        bufferSpan[sampleIndex] = (int)output;
+        var acc = 0L;
+        AddFeedforward(inputCopySpan, state, sampleIndex, ffCount, ref acc);
+        AddFeedback(outSpan, state, sampleIndex, fbCount, ref acc);
+        outSpan[sampleIndex] = (int)acc;
     }
 
-
-
-    private static void ApplyFilterToFinalSample(Span<int> inputSpan, Span<int> bufferSpan, FilterState state, int sampleIndex, int count0, int feedbackCount, int sampleCount)
+    private static void ApplyFilterToFinalSample(Span<int> inputCopySpan, Span<int> outSpan, FilterState state, int sampleIndex, int ffCount, int fbCount, int sampleCount)
     {
-        var output = 0L;
-        AddFeedforwardTermsForFinal(inputSpan, state, sampleIndex, count0, sampleCount, ref output);
-        AddFeedbackTerms(bufferSpan, state, sampleIndex, feedbackCount, ref output, subtract: true);
-        bufferSpan[sampleIndex] = (int)output;
+        var acc = 0L;
+        AddFeedforwardFinal(inputCopySpan, state, sampleIndex, ffCount, sampleCount, ref acc);
+        AddFeedback(outSpan, state, sampleIndex, fbCount, ref acc);
+        outSpan[sampleIndex] = (int)acc;
     }
 
-    private static void AddFeedforwardTerms(Span<int> inputSpan, FilterState state, int sampleIndex, int count0, ref long output)
+    private static void AddFeedforward(Span<int> inputCopySpan, FilterState state, int sampleIndex, int ffCount, ref long acc)
     {
-        output += ((long)inputSpan[sampleIndex + count0] * state.InverseA0) >> 16;
-        for (var j = 0; j < count0; j++)
+        acc += ((long)inputCopySpan[sampleIndex + ffCount] * state.InverseA0) >> 16;
+        for (var k = 0; k < ffCount; k++)
         {
-            output += ((long)inputSpan[sampleIndex + count0 - 1 - j] * state.Feedforward[j]) >> 16;
+            acc += ((long)inputCopySpan[sampleIndex + ffCount - 1 - k] * state.Feedforward[k]) >> 16;
         }
     }
 
-    private static void AddFeedforwardTermsForFinal(Span<int> inputSpan, FilterState state, int sampleIndex, int count0, int sampleCount, ref long output)
+    private static void AddFeedforwardFinal(Span<int> inputCopySpan, FilterState state, int sampleIndex, int ffCount, int sampleCount, ref long acc)
     {
-        var startJ = sampleIndex + count0 - sampleCount;
-        for (var j = startJ; j < count0; j++)
+        var startK = sampleIndex + ffCount - sampleCount;
+        for (var k = startK; k < ffCount; k++)
         {
-            var inputIndex = sampleIndex + count0 - 1 - j;
-            output += ((long)inputSpan[inputIndex] * state.Feedforward[j]) >> 16;
+            var inputIndex = sampleIndex + ffCount - 1 - k;
+            acc += ((long)inputCopySpan[inputIndex] * state.Feedforward[k]) >> 16;
         }
     }
 
-    private static void AddFeedbackTerms(Span<int> bufferSpan, FilterState state, int sampleIndex, int feedbackCount, ref long output, bool subtract = false)
+    private static void AddFeedback(Span<int> outSpan, FilterState state, int sampleIndex, int fbCount, ref long acc)
     {
-        var actualFeedbackCount = Math.Min(sampleIndex, feedbackCount);
-        for (var j = 0; j < actualFeedbackCount; j++)
+        var actualFb = Math.Min(sampleIndex, fbCount);
+        for (var k = 0; k < actualFb; k++)
         {
-            var bufferIndex = sampleIndex - 1 - j;
-            var term = ((long)bufferSpan[bufferIndex] * state.Feedback[j]) >> 16;
-            output -= term;
+            var bufferIndex = sampleIndex - 1 - k;
+            var fbTerm = ((long)outSpan[bufferIndex] * state.Feedback[k]) >> 16;
+            acc -= fbTerm;
         }
     }
 
@@ -148,19 +145,19 @@ public static class AudioFilter
         return value0 + factor * (value1 - value0);
     }
 
-    private static float GetAmplitude(Filter filter, int direction, int pair, float factor)
+    private static float GetAmplitude(Filter filter, int direction, int pole, float factor)
     {
-        var mag0 = filter.PairMagnitude[direction][0][pair];
-        var mag1 = filter.PairMagnitude[direction][1][pair];
+        var mag0 = filter.PoleMagnitude[direction][0][pole];
+        var mag1 = filter.PoleMagnitude[direction][1][pole];
         var interpolatedMag = Interpolate(mag0, mag1, factor);
         var dbValue = interpolatedMag * 0.0015258789f;
         return 1.0f - (float)AudioMath.DbToLinear(-dbValue);
     }
 
-    private static float CalculatePhase(Filter filter, int dir, int pair, float factor)
+    private static float CalculatePhase(Filter filter, int dir, int pole, float factor)
     {
-        var phase0 = filter.PairPhase[dir][0][pair];
-        var phase1 = filter.PairPhase[dir][1][pair];
+        var phase0 = filter.PolePhase[dir][0][pole];
+        var phase1 = filter.PolePhase[dir][1][pole];
         var interpolatedPhase = Interpolate(phase0, phase1, factor);
         var scaledPhase = interpolatedPhase * 1.2207031e-4f;
         return GetOctavePhase(scaledPhase);
@@ -174,93 +171,92 @@ public static class AudioFilter
 
     public class FilterState(Filter filter)
     {
-        private readonly Filter _filter = filter;
-        private readonly float[,] _floatCoefs = new float[2, MaxCoefs];
+        private readonly Filter _filterModel = filter;
+        private readonly float[,] _sosCoefficients = new float[2, MaxCoefficients];
 
-        public int[] Feedforward { get; } = new int[MaxCoefs];
-        public int[] Feedback { get; } = new int[MaxCoefs];
+        public int[] Feedforward { get; } = new int[MaxCoefficients];
+        public int[] Feedback { get; } = new int[MaxCoefficients];
         public int InverseA0 { get; set; }
 
-        public int ComputeCoefs(int dir, float envelopeFactor)
+        public int ComputeCoefficients(int dir, float envelopeFactor)
         {
-            Array.Clear(_floatCoefs, 0, _floatCoefs.Length);
+            Array.Clear(_sosCoefficients, 0, _sosCoefficients.Length);
 
-            var inverseA0 = ComputeInverseA0(envelopeFactor);
-            InverseA0 = inverseA0;
-            var floatInvA0 = inverseA0 / (float)AudioConstants.FixedPoint.Scale;
-            var pairCount = _filter.PairCounts[dir];
-
-            if (pairCount == 0)
+            var inverseA0Q16 = ComputeInverseA0Q16(envelopeFactor);
+            InverseA0 = inverseA0Q16;
+            var floatInverseA0 = inverseA0Q16 / (float)AudioConstants.FixedPoint.Scale;
+            var poleCount = _filterModel.PoleCounts[dir];
+            if (poleCount == 0)
             {
                 return 0;
             }
 
-            InitFirstPair(dir, envelopeFactor);
-            CascadeRemainingPairs(dir, pairCount, envelopeFactor);
-            return ApplyGainAndConvert(dir, pairCount, floatInvA0);
+            CreateFirstSection(dir, envelopeFactor);
+            CascadeSections(dir, poleCount, envelopeFactor);
+            return ScaleAndConvertCoefficients(dir, poleCount, floatInverseA0);
         }
 
-        private int ComputeInverseA0(float envelopeFactor)
+        private int ComputeInverseA0Q16(float envelopeFactor)
         {
-            var unityGain0 = _filter.Unity[0];
-            var unityGain1 = _filter.Unity[1];
-            var interpolatedGain = Interpolate(unityGain0, unityGain1, envelopeFactor);
-            var gainDb = interpolatedGain * 0.0030517578f;
+            var unityGainStart = _filterModel.UnityGain[0];
+            var unityGainEnd = _filterModel.UnityGain[1];
+            var interpGain = Interpolate(unityGainStart, unityGainEnd, envelopeFactor);
+            var gainDb = interpGain * 0.0030517578f;
             var floatInvA0 = (float)Math.Pow(0.1, gainDb / 20.0);
             return (int)(floatInvA0 * AudioConstants.FixedPoint.Scale);
         }
 
-        private void InitFirstPair(int dir, float envelopeFactor)
+        private void CreateFirstSection(int dir, float envelopeFactor)
         {
-            var amp = GetAmplitude(_filter, dir, 0, envelopeFactor);
-            var phase = CalculatePhase(_filter, dir, 0, envelopeFactor);
+            var amplitude = GetAmplitude(_filterModel, dir, 0, envelopeFactor);
+            var phase = CalculatePhase(_filterModel, dir, 0, envelopeFactor);
             var cosPhase = (float)Math.Cos(phase);
-            _floatCoefs[dir, 0] = -2.0f * amp * cosPhase;
-            _floatCoefs[dir, 1] = amp * amp;
+            _sosCoefficients[dir, 0] = -2.0f * amplitude * cosPhase;
+            _sosCoefficients[dir, 1] = amplitude * amplitude;
         }
 
-        private void CascadeRemainingPairs(int dir, int pairCount, float envelopeFactor)
+        private void CascadeSections(int dir, int poleCount, float envelopeFactor)
         {
-            for (var pairIndex = 1; pairIndex < pairCount; pairIndex++)
+            for (var section = 1; section < poleCount; section++)
             {
-                var ampP = GetAmplitude(_filter, dir, pairIndex, envelopeFactor);
-                var phaseP = CalculatePhase(_filter, dir, pairIndex, envelopeFactor);
+                var ampP = GetAmplitude(_filterModel, dir, section, envelopeFactor);
+                var phaseP = CalculatePhase(_filterModel, dir, section, envelopeFactor);
                 var cosPhaseP = (float)Math.Cos(phaseP);
                 var term1 = -2.0f * ampP * cosPhaseP;
                 var term2 = ampP * ampP;
 
-                _floatCoefs[dir, pairIndex * 2 + 1] = _floatCoefs[dir, pairIndex * 2 - 1] * term2;
-                _floatCoefs[dir, pairIndex * 2] = _floatCoefs[dir, pairIndex * 2 - 1] * term1 + _floatCoefs[dir, pairIndex * 2 - 2] * term2;
+                _sosCoefficients[dir, section * 2 + 1] = _sosCoefficients[dir, section * 2 - 1] * term2;
+                _sosCoefficients[dir, section * 2] = _sosCoefficients[dir, section * 2 - 1] * term1 + _sosCoefficients[dir, section * 2 - 2] * term2;
 
-                for (var coeffIndex = pairIndex * 2 - 1; coeffIndex >= 2; coeffIndex--)
+                for (var coeffIndex = section * 2 - 1; coeffIndex >= 2; coeffIndex--)
                 {
-                    _floatCoefs[dir, coeffIndex] += _floatCoefs[dir, coeffIndex - 1] * term1 + _floatCoefs[dir, coeffIndex - 2] * term2;
+                    _sosCoefficients[dir, coeffIndex] += _sosCoefficients[dir, coeffIndex - 1] * term1 + _sosCoefficients[dir, coeffIndex - 2] * term2;
                 }
 
-                _floatCoefs[dir, 1] += _floatCoefs[dir, 0] * term1 + term2;
-                _floatCoefs[dir, 0] += term1;
+                _sosCoefficients[dir, 1] += _sosCoefficients[dir, 0] * term1 + term2;
+                _sosCoefficients[dir, 0] += term1;
             }
         }
 
-        private int ApplyGainAndConvert(int dir, int pairCount, float floatInvA0)
+        private int ScaleAndConvertCoefficients(int dir, int poleCount, float floatInverseA0)
         {
-            var iCoef = dir == 0 ? Feedforward : Feedback;
-            var coefCount = pairCount * 2;
+            var targetCoeffs = dir == 0 ? Feedforward : Feedback;
+            var coefficientCount = poleCount * 2;
 
             if (dir == 0)
             {
-                for (var i = 0; i < coefCount; i++)
+                for (var i = 0; i < coefficientCount; i++)
                 {
-                    _floatCoefs[0, i] *= floatInvA0;
+                    _sosCoefficients[0, i] *= floatInverseA0;
                 }
             }
 
-            for (var i = 0; i < coefCount; i++)
+            for (var i = 0; i < coefficientCount; i++)
             {
-                iCoef[i] = (int)(_floatCoefs[dir, i] * AudioConstants.FixedPoint.Scale);
+                targetCoeffs[i] = (int)(_sosCoefficients[dir, i] * AudioConstants.FixedPoint.Scale);
             }
 
-            return coefCount;
+            return coefficientCount;
         }
     }
 }
