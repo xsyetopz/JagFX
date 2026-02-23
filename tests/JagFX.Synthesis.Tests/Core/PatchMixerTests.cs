@@ -41,7 +41,7 @@ public class PatchMixerTests
     {
         var emptyFile = new Patch(
             voices: [],
-            loop: new Loop(0, 0)
+            loop: new LoopSegment(0, 0)
         );
         var audio = PatchMixer.Synthesize(emptyFile, 1);
         Assert.Equal(0, audio.Length);
