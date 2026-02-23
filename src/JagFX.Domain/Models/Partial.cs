@@ -1,7 +1,5 @@
 using JagFX.Core.Types;
-
 namespace JagFX.Domain.Models;
-
 public enum Waveform
 {
     Off = 0,
@@ -11,7 +9,7 @@ public enum Waveform
     Noise = 4
 }
 
-public record class Oscillator(Percent Amplitude, int PitchOffset, Milliseconds Delay);
+public record class Partial(Percent Amplitude, int PitchOffsetSemitones, Milliseconds Delay);
 
 public static class WaveformExtensions
 {
