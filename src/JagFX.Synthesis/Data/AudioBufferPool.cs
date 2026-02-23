@@ -1,6 +1,4 @@
 using JagFX.Core.Constants;
-using JagFX.Domain;
-using JagFX.Synthesis.Data;
 using System.Collections.Concurrent;
 
 namespace JagFX.Synthesis.Data;
