@@ -1,13 +1,14 @@
 using System.Collections.Immutable;
+
 namespace JagFX.Domain.Models;
 
 public record Patch(
     ImmutableList<Voice?> Voices,
-    Loop Loop,
+    LoopSegment Loop,
     ImmutableList<string> ValidationWarnings = default!
 )
 {
-    public Patch(ImmutableList<Voice?> voices, Loop loop, IEnumerable<string>? warnings = null)
+    public Patch(ImmutableList<Voice?> voices, LoopSegment loop, IEnumerable<string>? warnings = null)
         : this(voices, loop, warnings?.ToImmutableList() ?? ImmutableList<string>.Empty)
     {
     }
