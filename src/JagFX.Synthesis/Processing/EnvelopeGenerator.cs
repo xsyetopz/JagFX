@@ -1,5 +1,4 @@
 using JagFX.Core.Constants;
-using JagFX.Domain;
 using JagFX.Domain.Models;
 
 namespace JagFX.Synthesis.Processing;
