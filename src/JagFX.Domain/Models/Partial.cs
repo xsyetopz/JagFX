@@ -1,5 +1,6 @@
 using JagFX.Core.Types;
 namespace JagFX.Domain.Models;
+
 public enum Waveform
 {
     Off = 0,
