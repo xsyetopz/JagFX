@@ -44,7 +44,6 @@ public static class CommandHelpers
             Console.Error.WriteLine($"Supported formats: {string.Join(", ", supportedInputFormats)}");
             return false;
         }
-
         if (!supportedOutputFormats.Contains(outputExt))
         {
             Console.Error.WriteLine($"Error: Unsupported output format: {outputExt}");
