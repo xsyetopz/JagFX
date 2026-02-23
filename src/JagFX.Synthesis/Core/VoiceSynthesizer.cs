@@ -1,6 +1,4 @@
 using JagFX.Core.Constants;
-using JagFX.Core.Types;
-using JagFX.Domain;
 using JagFX.Domain.Models;
 using JagFX.Domain.Utilities;
 using JagFX.Synthesis.Data;
@@ -50,7 +48,7 @@ public static class VoiceSynthesizer
 
         var (freqModRateEval, freqModRangeEval, vibratoStep, vibratoBase) =
             CreateFrequencyEnvelope(voice, samplesPerStep);
-        var (ampModRateEval, ampModRangeEval, tremoloStep, tremoloBase) =
+        var (ampModRateEvaö, amplModRangeEval, tremoloStep, tremoloBase) =
             CreateAmplitudeEnvelope(voice, samplesPerStep);
 
         var (delays, volumes, semitones, starts) =
@@ -65,12 +63,12 @@ public static class VoiceSynthesizer
 
         return new SynthesisState
         {
-            FreqBaseEval = freqBaseEval,
-            AmpBaseEval = ampBaseEval,
-            FreqModRateEval = freqModRateEval,
-            FreqModRangeEval = freqModRangeEval,
-            AmpModRateEval = ampModRateEval,
-            AmpModRangeEval = ampModRangeEval,
+            FrequencyBaseEval = freqBaseEval,
+            AmplitudeBaseEval = ampBaseEval,
+            FrequencyModulationRateEval = freqModRateEval,
+            FrequencyModulationRangeEval = freqModRangeEval,
+            AmplitudeModulationRateEval = ampModRateEvaö,
+            AmplitudeModulationRangeEval = amplModRangeEval,
             FrequencyStep = vibratoStep,
             FrequencyBase = vibratoBase,
             AmplitudeStep = tremoloStep,
@@ -93,7 +91,7 @@ public static class VoiceSynthesizer
             rateEval.Reset();
             rangeEval.Reset();
 
-            var step = (int)((double)(voice.PitchLfo.FrequencyRate.EndSample - voice.PitchLfo.FrequencyRate.StartSample) * AudioConstants.PhaseScale / samplesPerStep);
+            var step = (int)((voice.PitchLfo.FrequencyRate.EndSample - voice.PitchLfo.FrequencyRate.StartSample) * AudioConstants.PhaseScale / samplesPerStep);
             var baseValue = (int)(voice.PitchLfo.FrequencyRate.StartSample * AudioConstants.PhaseScale / samplesPerStep);
 
             return (rateEval, rangeEval, step, baseValue);
@@ -112,7 +110,7 @@ public static class VoiceSynthesizer
             rateEval.Reset();
             rangeEval.Reset();
 
-            var step = (int)((double)(voice.AmplitudeLfo.FrequencyRate.EndSample - voice.AmplitudeLfo.FrequencyRate.StartSample) * AudioConstants.PhaseScale / samplesPerStep);
+            var step = (int)((voice.AmplitudeLfo.FrequencyRate.EndSample - voice.AmplitudeLfo.FrequencyRate.StartSample) * AudioConstants.PhaseScale / samplesPerStep);
             var baseValue = (int)(voice.AmplitudeLfo.FrequencyRate.StartSample * AudioConstants.PhaseScale / samplesPerStep);
 
             return (rateEval, rangeEval, step, baseValue);
@@ -168,8 +166,8 @@ public static class VoiceSynthesizer
 
         for (var sample = 0; sample < sampleCount; sample++)
         {
-            var frequency = state.FreqBaseEval.Evaluate(sampleCount);
-            var amplitude = state.AmpBaseEval.Evaluate(sampleCount);
+            var frequency = state.FrequencyBaseEval.Evaluate(sampleCount);
+            var amplitude = state.AmplitudeBaseEval.Evaluate(sampleCount);
 
             (frequency, frequencyPhase) = ApplyVibrato(frequency, frequencyPhase, sampleCount, state, voice);
             (amplitude, amplitudePhase) = ApplyTremolo(amplitude, amplitudePhase, sampleCount, state, voice);
@@ -224,10 +222,10 @@ public static class VoiceSynthesizer
         SynthesisState state,
         Voice voice)
     {
-        if (state.FreqModRateEval != null && state.FreqModRangeEval != null)
+        if (state.FrequencyModulationRateEval != null && state.FrequencyModulationRangeEval != null)
         {
-            var rate = state.FreqModRateEval.Evaluate(sampleCount);
-            var range = state.FreqModRangeEval.Evaluate(sampleCount);
+            var rate = state.FrequencyModulationRateEval.Evaluate(sampleCount);
+            var range = state.FrequencyModulationRangeEval.Evaluate(sampleCount);
             var mod = GenerateSample(range, phase, voice.PitchLfo!.FrequencyRate.Waveform) >> 1;
             var nextPhase = phase + state.FrequencyBase + (rate * state.FrequencyStep >> 16);
 
@@ -244,10 +242,10 @@ public static class VoiceSynthesizer
         SynthesisState state,
         Voice voice)
     {
-        if (state.AmpModRateEval != null && state.AmpModRangeEval != null)
+        if (state.AmplitudeModulationRateEval != null && state.AmplitudeModulationRangeEval != null)
         {
-            var rate = state.AmpModRateEval.Evaluate(sampleCount);
-            var range = state.AmpModRangeEval.Evaluate(sampleCount);
+            var rate = state.AmplitudeModulationRateEval.Evaluate(sampleCount);
+            var range = state.AmplitudeModulationRangeEval.Evaluate(sampleCount);
             var mod = GenerateSample(range, phase, voice.AmplitudeLfo!.FrequencyRate.Waveform) >> 1;
 
             var newAmp = amplitude * (mod + AudioConstants.FixedPoint.Offset) >> 15;
@@ -263,7 +261,7 @@ public static class VoiceSynthesizer
         return waveform switch
         {
             Waveform.Square => (phase & AudioConstants.PhaseMask) < AudioConstants.FixedPoint.Quarter ? amplitude : -amplitude,
-            Waveform.Sine => (WaveformTables.SinTable[phase & AudioConstants.PhaseMask] * amplitude) >> 14,
+            Waveform.Sine => (WaveformTables.SineWaveTable[phase & AudioConstants.PhaseMask] * amplitude) >> 14,
             Waveform.Saw => (((phase & AudioConstants.PhaseMask) * amplitude) >> 14) - amplitude,
             Waveform.Noise => WaveformTables.NoiseTable[(phase / AudioConstants.NoisePhaseDiv) & AudioConstants.PhaseMask] * amplitude,
             Waveform.Off => 0,
@@ -320,12 +318,12 @@ public static class VoiceSynthesizer
 
     private class SynthesisState
     {
-        public required EnvelopeGenerator FreqBaseEval { get; init; }
-        public required EnvelopeGenerator AmpBaseEval { get; init; }
-        public EnvelopeGenerator? FreqModRateEval { get; init; }
-        public EnvelopeGenerator? FreqModRangeEval { get; init; }
-        public EnvelopeGenerator? AmpModRateEval { get; init; }
-        public EnvelopeGenerator? AmpModRangeEval { get; init; }
+        public required EnvelopeGenerator FrequencyBaseEval { get; init; }
+        public required EnvelopeGenerator AmplitudeBaseEval { get; init; }
+        public EnvelopeGenerator? FrequencyModulationRateEval { get; init; }
+        public EnvelopeGenerator? FrequencyModulationRangeEval { get; init; }
+        public EnvelopeGenerator? AmplitudeModulationRateEval { get; init; }
+        public EnvelopeGenerator? AmplitudeModulationRangeEval { get; init; }
         public int FrequencyStep { get; init; }
         public int FrequencyBase { get; init; }
         public int AmplitudeStep { get; init; }
