@@ -1,6 +1,5 @@
 using JagFX.Core.Constants;
-using JagFX.Domain;
-using JagFX.Io;
+using JagFX.Io.Buffers;
 using System.CommandLine;
 
 namespace JagFX.Cli.Commands;
@@ -256,6 +255,7 @@ public class InspectCommand : Command
     private class InspectorContext(byte[] data)
     {
         public BinaryBuffer Buffer { get; } = new(data);
+
         public byte ReadByte(string mnemonic, string comment)
         {
             var value = (byte)ReadAndPrint(1, mnemonic, comment, Buffer.ReadUInt8);
@@ -263,37 +263,34 @@ public class InspectCommand : Command
         }
 
         public int ReadSmart(string mnemonic, string comment)
-        {
-            var startPos = Buffer.Position;
-            var value = Buffer.ReadSmart();
-            var len = Buffer.Position - startPos;
-            var bytes = Buffer.Data.Skip(startPos).Take(len).ToArray();
-            PrintLine(startPos, bytes, mnemonic, comment.Length > 0 ? $"{comment}={value}" : value.ToString());
-            return value;
-        }
+            => ReadVariableLength(() => Buffer.ReadSmart(), mnemonic, comment);
 
         public int ReadUSmart(string mnemonic, string comment)
-        {
-            var startPos = Buffer.Position;
-            var value = Buffer.ReadUSmart();
-            var len = Buffer.Position - startPos;
-            var bytes = Buffer.Data.Skip(startPos).Take(len).ToArray();
-            PrintLine(startPos, bytes, mnemonic, comment.Length > 0 ? $"{comment}={value}" : value.ToString());
-            return value;
-        }
+            => ReadVariableLength(() => Buffer.ReadUSmart(), mnemonic, comment);
+
 
         public int ReadInt32(string mnemonic, string comment)
-            => ReadAndPrint(4, mnemonic, comment, Buffer.ReadInt32BE);
+            => ReadAndPrint(4, mnemonic, comment, Buffer.ReadInt32BigEndian);
 
         public int ReadUInt16(string mnemonic, string comment)
-            => ReadAndPrint(2, mnemonic, comment, Buffer.ReadUInt16BE);
+            => ReadAndPrint(2, mnemonic, comment, Buffer.ReadUInt16BigEndian);
+
+        private int ReadVariableLength(Func<int> readFunc, string mnemonic, string comment)
+        {
+            var startPosition = Buffer.Position;
+            var value = readFunc();
+            var lengthFromStart = Buffer.Position - startPosition;
+            var bytes = Buffer.Data.Skip(startPosition).Take(lengthFromStart).ToArray();
+            PrintLine(startPosition, bytes, mnemonic, comment.Length > 0 ? $"{comment}={value}" : value.ToString());
+            return value;
+        }
 
         private int ReadAndPrint(int byteCount, string mnemonic, string comment, Func<int> readFunc)
         {
-            var startPos = Buffer.Position;
+            var startPosition = Buffer.Position;
             var value = readFunc();
-            var bytes = Buffer.Data.Skip(startPos).Take(byteCount).ToArray();
-            PrintLine(startPos, bytes, mnemonic, comment.Length > 0 ? $"{comment}={value}" : value.ToString());
+            var bytes = Buffer.Data.Skip(startPosition).Take(byteCount).ToArray();
+            PrintLine(startPosition, bytes, mnemonic, comment.Length > 0 ? $"{comment}={value}" : value.ToString());
             return value;
         }
 
@@ -306,9 +303,9 @@ public class InspectCommand : Command
         {
             var hex = bytes.Length > 0 ? string.Join(" ", bytes.Select(b => b.ToString("X2"))) : "";
             if (hex.Length > 18) hex = hex[..15] + "...";
-            var mnem = mnemonic.PadRight(10);
+            var paddedMnemonic = mnemonic.PadRight(10);
             var comma = comment.Length > 0 && mnemonic.Length > 0 ? ", " : "";
-            Console.WriteLine($"{pos:X4}: {hex,-18} {mnem}{comma}{comment}");
+            Console.WriteLine($"{pos:X4}: {hex,-18} {paddedMnemonic}{comma}{comment}");
         }
     }
 }
