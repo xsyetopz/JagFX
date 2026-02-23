@@ -13,8 +13,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JagFX.Io", "src\JagFX.Io\Ja
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JagFX.Synthesis", "src\JagFX.Synthesis\JagFX.Synthesis.csproj", "{05A6452C-C05C-40DF-A555-B9C1856600D2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JagFX.Application", "src\JagFX.Application\JagFX.Application.csproj", "{B5C6D7E8-G9H0-1234-IJKL-MN5678901234}"
-EndProject
 
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JavaRandom", "libs\JavaRandom\JavaRandom.csproj", "{A1B2C3D4-E5F6-7890-ABCD-EF1234567891}"
 EndProject
