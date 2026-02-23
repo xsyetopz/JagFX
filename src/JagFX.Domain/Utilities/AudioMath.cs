@@ -31,10 +31,10 @@ public static class AudioMath
         return Math.Max(min, Math.Min(max, value));
     }
 
-    public static void ClipInt16(int[] buffer, int len = -1)
+    public static void ClipInt16(int[] buffer, int length = -1)
     {
-        var end = len < 0 ? buffer.Length : len;
-        for (var i = 0; i < end; i++)
+        var bufferEnd = length < 0 ? buffer.Length : length;
+        for (var i = 0; i < bufferEnd; i++)
         {
             if (buffer[i] < short.MinValue)
                 buffer[i] = short.MinValue;
@@ -43,10 +43,10 @@ public static class AudioMath
         }
     }
 
-    public static void ClipToByte(int[] buffer, int len = -1)
+    public static void ClipToByte(int[] buffer, int length = -1)
     {
-        var end = len < 0 ? buffer.Length : len;
-        for (var i = 0; i < end; i++)
+        var bufferEnd = length < 0 ? buffer.Length : length;
+        for (var i = 0; i < bufferEnd; i++)
         {
             var sample = buffer[i];
             if ((sample + byte.MinValue & -byte.MaxValue - 1) != 0)
@@ -70,22 +70,22 @@ public static class AudioMath
         return outMin + (value - inMin) / (inMax - inMin) * (outMax - outMin);
     }
 
-    public static double DbToLinear(double dB)
+    public static double DecibelToLinear(double decibel)
     {
-        return Math.Exp(dB / DecibelDivisor * Log10);
+        return Math.Exp(decibel / DecibelDivisor * Log10);
     }
 
-    public static double LinearToDb(double linear)
+    public static double LinearToDecibel(double linear)
     {
         return DecibelDivisor * Math.Log10(linear);
     }
 
-    public static double Convert(double value, UnitType from, UnitType to)
+    public static double Convert(double value, UnitType sourceUnit, UnitType targetUnit)
     {
-        if (from == to)
+        if (sourceUnit == targetUnit)
             return value;
 
-        var normalized = from switch
+        var normalized = sourceUnit switch
         {
             UnitType.Raw16 => value / AudioConstants.FixedPoint.Scale,
             UnitType.Percent => value / PercentScale,
@@ -94,7 +94,7 @@ public static class AudioMath
             _ => value
         };
 
-        return to switch
+        return targetUnit switch
         {
             UnitType.Raw16 => normalized * AudioConstants.FixedPoint.Scale,
             UnitType.Percent => normalized * PercentScale,
