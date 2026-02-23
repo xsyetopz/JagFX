@@ -1,5 +1,4 @@
 using JagFX.Domain.Models;
-using JagFX.Io;
 using JagFX.TestData;
 using Xunit;
 
@@ -42,7 +41,7 @@ public class SynthFileWriterTests
     {
         var emptyFile = new Patch(
             voices: [],
-            loop: new Loop(100, 200)
+            loop: new LoopSegment(100, 200)
         );
         var written = SynthFileWriter.Write(emptyFile);
         Assert.Equal(14, written.Length);
