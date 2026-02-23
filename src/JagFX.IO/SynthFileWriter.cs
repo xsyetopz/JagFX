@@ -1,15 +1,17 @@
 using JagFX.Core.Constants;
-using JagFX.Domain;
 using JagFX.Domain.Models;
+using JagFX.Io.Buffers;
 using System.Collections.Immutable;
 
 namespace JagFX.Io;
 
 public static class SynthFileWriter
 {
+    private static readonly int BufferSize = 4096;
+
     public static byte[] Write(Patch patch)
     {
-        var buffer = new BinaryBuffer(4096);
+        var buffer = new BinaryBuffer(BufferSize);
 
         WriteVoices(buffer, patch.Voices);
         WriteLoop(buffer, patch.Loop);
@@ -50,11 +52,11 @@ public static class SynthFileWriter
 
         WritePartials(buffer, voice.Partials);
 
-        buffer.WriteUSmart((ushort)voice.Echo.DelayMilliseconds);
-        buffer.WriteUSmart((ushort)voice.Echo.MixPercent);
+        buffer.WriteUSmart16((ushort)voice.Echo.DelayMilliseconds);
+        buffer.WriteUSmart16((ushort)voice.Echo.MixPercent);
 
-        buffer.WriteUInt16BE(voice.DurationSamples);
-        buffer.WriteUInt16BE(voice.StartSample);
+        buffer.WriteUInt16BigEndian(voice.DurationSamples);
+        buffer.WriteUInt16BigEndian(voice.StartSample);
 
         if (voice.Filter != null)
         {
@@ -65,14 +67,14 @@ public static class SynthFileWriter
     private static void WriteEnvelope(BinaryBuffer buffer, Envelope envelope)
     {
         buffer.WriteUInt8((int)envelope.Waveform);
-        buffer.WriteInt32BE(envelope.StartSample);
-        buffer.WriteInt32BE(envelope.EndSample);
+        buffer.WriteInt32BigEndian(envelope.StartSample);
+        buffer.WriteInt32BigEndian(envelope.EndSample);
         buffer.WriteUInt8(envelope.Segments.Count);
 
         foreach (var segment in envelope.Segments)
         {
-            buffer.WriteUInt16BE(segment.DurationSamples);
-            buffer.WriteUInt16BE(segment.PeakLevel);
+            buffer.WriteUInt16BigEndian(segment.DurationSamples);
+            buffer.WriteUInt16BigEndian(segment.PeakLevel);
         }
     }
 
@@ -106,11 +108,11 @@ public static class SynthFileWriter
     {
         foreach (var partial in partials)
         {
-            buffer.WriteUSmart((ushort)partial.Amplitude.Value);
-            buffer.WriteSmart((short)partial.PitchOffsetSemitones);
-            buffer.WriteUSmart((ushort)partial.Delay.Value);
+            buffer.WriteUSmart16((ushort)partial.Amplitude.Value);
+            buffer.WriteSmart16((short)partial.PitchOffsetSemitones);
+            buffer.WriteUSmart16((ushort)partial.Delay.Value);
         }
-        buffer.WriteUSmart(0);
+        buffer.WriteUSmart16(0);
     }
 
     private static void WriteFilter(BinaryBuffer buffer, Filter filter)
@@ -121,8 +123,8 @@ public static class SynthFileWriter
         var packedPoles = (poleCounts[0] << 4) | poleCounts[1];
         buffer.WriteUInt8(packedPoles);
 
-        buffer.WriteUInt16BE(unityGain[0]);
-        buffer.WriteUInt16BE(unityGain[1]);
+        buffer.WriteUInt16BigEndian(unityGain[0]);
+        buffer.WriteUInt16BigEndian(unityGain[1]);
 
         var modulationMask = CalculateModulationMask(filter);
         buffer.WriteUInt8(modulationMask);
@@ -147,8 +149,8 @@ public static class SynthFileWriter
             var poles = poleCounts[channel];
             for (var p = 0; p < poles; p++)
             {
-                buffer.WriteUInt16BE(polePhase[channel][phase][p]);
-                buffer.WriteUInt16BE(poleMagnitude[channel][phase][p]);
+                buffer.WriteUInt16BigEndian(polePhase[channel][phase][p]);
+                buffer.WriteUInt16BigEndian(poleMagnitude[channel][phase][p]);
             }
         }
     }
@@ -159,15 +161,15 @@ public static class SynthFileWriter
 
         foreach (var segment in envelope.Segments)
         {
-            buffer.WriteUInt16BE(segment.DurationSamples);
-            buffer.WriteUInt16BE(segment.PeakLevel);
+            buffer.WriteUInt16BigEndian(segment.DurationSamples);
+            buffer.WriteUInt16BigEndian(segment.PeakLevel);
         }
     }
 
-    private static void WriteLoop(BinaryBuffer buffer, Loop loop)
+    private static void WriteLoop(BinaryBuffer buffer, LoopSegment loop)
     {
-        buffer.WriteUInt16BE(loop.BeginSample);
-        buffer.WriteUInt16BE(loop.EndSample);
+        buffer.WriteUInt16BigEndian(loop.BeginSample);
+        buffer.WriteUInt16BigEndian(loop.EndSample);
     }
 
     private static int CalculateModulationMask(Filter filter)
