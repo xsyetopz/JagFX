@@ -151,7 +151,7 @@ public static class AudioFilter
         var mag1 = filter.PoleMagnitude[direction][1][pole];
         var interpolatedMag = Interpolate(mag0, mag1, factor);
         var dbValue = interpolatedMag * 0.0015258789f;
-        return 1.0f - (float)AudioMath.DbToLinear(-dbValue);
+        return 1.0f - (float)AudioMath.DecibelToLinear(-dbValue);
     }
 
     private static float CalculatePhase(Filter filter, int dir, int pole, float factor)
