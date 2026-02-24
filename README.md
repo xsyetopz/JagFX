@@ -47,7 +47,7 @@ dotnet run --project JagFX.CLI --framework net8.0 -- input.synth output.wav 4
 dotnet run --project JagFX.CLI --framework net8.0 -- -i input.synth -o output.wav
 dotnet run --project JagFX.CLI --framework net8.0 -- -i input.synth -o output.wav -l 4
 
-# Inspect synth file structure
+# Inspect .synth file structure
 dotnet run --project JagFX.CLI --framework net8.0 -- inspect input.synth
 ```
 
@@ -58,16 +58,16 @@ dotnet run --project JagFX.CLI --framework net8.0 -- inspect input.synth
 Build a single executable for your platform:
 
 ```bash
-# Windows (x64)
+# Windows (Intel/AMD)
 dotnet publish -c Release -r win-x64 --self-contained -o publish/win-x64
 
-# Linux (x64)
+# Linux (Intel/AMD)
 dotnet publish -c Release -r linux-x64 --self-contained -o publish/linux-x64
 
-# macOS (x64)
+# macOS (Intel)
 dotnet publish -c Release -r osx-x64 --self-contained -o publish/osx-x64
 
-# macOS (ARM64)
+# macOS (Apple)
 dotnet publish -c Release -r osx-arm64 --self-contained -o publish/osx-arm64
 ```
 
@@ -98,3 +98,15 @@ This project is licensed under MIT License. See [LICENSE](LICENSE) file for more
 [Lost City](https://github.com/LostCityRS) - For having different client versions of `.synth` files
 
 [OpenOSRS](https://github.com/open-osrs/runelite/tree/master/runescape-client) - For decompiled and partially deobfuscated files related to `.synth` format and IIR filter
+
+--
+
+## Star History
+
+<a href="https://www.star-history.com/#xsyetopz/JagFX&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=xsyetopz/JagFX&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=xsyetopz/JagFX&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=xsyetopz/JagFX&type=date&legend=top-left" />
+ </picture>
+</a>
