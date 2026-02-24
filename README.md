@@ -4,11 +4,11 @@
   <img
     src="assets/370_cow_death.png"
     alt="Cow Death"
-    onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/xsyetopz/jagfx-scala/main/assets/370_cow_death.png';"
+    onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/xsyetopz/JagFX/main/assets/370_cow_death.png';"
   >
 </p>
 
-Cross-platform editor for Jagex Audio Synthesis (`.synth`) files. Create, edit, visualize, and export older/newer OldSchool RuneScape sound effects.
+Cross-platform editor for Jagex Audio Synthesis (`.synth`) files. Create, edit, visualize, and export OldSchool RuneScape sound effects.
 
 ## Features
 
@@ -21,33 +21,48 @@ Cross-platform editor for Jagex Audio Synthesis (`.synth`) files. Create, edit, 
 | **Echo** | Configurable echo delay and mix level per voice |
 | **Export** | Save as `.synth` or export to `.wav` (8-bit or 16-bit) |
 
+## Installation
+
+Requires .NET 8.0 SDK or later.
+
+```bash
+# clone this repository
+git clone https://github.com/xsyetopz/JagFX.git
+cd jagfx-scala
+
+# build everything (incl. external-ish libs)
+dotnet build
+```
+
 ## Quick Start
 
 ```bash
-# Build solution
-dotnet build
-
-# Run CLI
+# run CLI application
 dotnet run --project JagFX.CLI --framework net8.0
 
-# Run tests
+# run XUnit tests
 dotnet test
 ```
 
-## CLI Usage
+## Usage
 
-The CLI supports both positional and flag-based arguments (but not mixed):
+### Converting .synth to .wav
 
 ```bash
-# Positional arguments
+# positional args
 dotnet run --project JagFX.CLI --framework net8.0 -- input.synth output.wav
+
+# specify loop count (optional)
 dotnet run --project JagFX.CLI --framework net8.0 -- input.synth output.wav 4
 
-# Flag arguments
+# flag args
 dotnet run --project JagFX.CLI --framework net8.0 -- -i input.synth -o output.wav
 dotnet run --project JagFX.CLI --framework net8.0 -- -i input.synth -o output.wav -l 4
+```
 
-# Inspect .synth file structure
+### Inspecting .synth files
+
+```bash
 dotnet run --project JagFX.CLI --framework net8.0 -- inspect input.synth
 ```
 
@@ -67,7 +82,7 @@ dotnet publish -c Release -r linux-x64 --self-contained -o publish/linux-x64
 # macOS (Intel)
 dotnet publish -c Release -r osx-x64 --self-contained -o publish/osx-x64
 
-# macOS (Apple)
+# macOS (Apple Silicon)
 dotnet publish -c Release -r osx-arm64 --self-contained -o publish/osx-arm64
 ```
 
@@ -77,36 +92,22 @@ dotnet publish -c Release -r osx-arm64 --self-contained -o publish/osx-arm64
 dotnet publish -c Release -o publish
 ```
 
-## Requirements
-
-- .NET 8.0 SDK or later
-
 ## Examples
 
 ### `ice_cast.synth` and `ice_barrage_impact.synth`
 
 <https://github.com/user-attachments/assets/b0564501-5d82-4239-8883-b32ab746e7dc>
 
+## Contributing
+
+Contributions welcome. Feel free to open issues or submit pull requests.
+
 ## License
 
-This project is licensed under MIT License. See [LICENSE](LICENSE) file for more details.
+MIT - see [LICENSE](LICENSE) file for details.
 
----
+## Acknowledgments
 
-## Special Thanks
+[Lost City](https://github.com/LostCityRS) - Different client versions of `.synth` files
 
-[Lost City](https://github.com/LostCityRS) - For having different client versions of `.synth` files
-
-[OpenOSRS](https://github.com/open-osrs/runelite/tree/master/runescape-client) - For decompiled and partially deobfuscated files related to `.synth` format and IIR filter
-
---
-
-## Star History
-
-<a href="https://www.star-history.com/#xsyetopz/JagFX&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=xsyetopz/JagFX&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=xsyetopz/JagFX&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=xsyetopz/JagFX&type=date&legend=top-left" />
- </picture>
-</a>
+[OpenOSRS](https://github.com/open-osrs/runelite/tree/master/runescape-client) - Decompiled and partially deobfuscated files related to `.synth` format and IIR filter
