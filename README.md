@@ -38,7 +38,7 @@ dotnet build
 
 ```bash
 # run CLI application
-dotnet run --project JagFX.CLI --framework net8.0
+dotnet run --project src/JagFX.Cli --framework net8.0
 
 # run XUnit tests
 dotnet test
@@ -50,20 +50,20 @@ dotnet test
 
 ```bash
 # positional args
-dotnet run --project JagFX.CLI --framework net8.0 -- input.synth output.wav
+dotnet run --project src/JagFX.Cli --framework net8.0 -- input.synth output.wav
 
 # specify loop count (optional)
-dotnet run --project JagFX.CLI --framework net8.0 -- input.synth output.wav 4
+dotnet run --project src/JagFX.Cli --framework net8.0 -- input.synth output.wav 4
 
 # flag args
-dotnet run --project JagFX.CLI --framework net8.0 -- -i input.synth -o output.wav
-dotnet run --project JagFX.CLI --framework net8.0 -- -i input.synth -o output.wav -l 4
+dotnet run --project src/JagFX.Cli --framework net8.0 -- -i input.synth -o output.wav
+dotnet run --project src/JagFX.Cli --framework net8.0 -- -i input.synth -o output.wav -l 4
 ```
 
 ### Inspecting .synth files
 
 ```bash
-dotnet run --project JagFX.CLI --framework net8.0 -- inspect input.synth
+dotnet run --project src/JagFX.Cli --framework net8.0 -- inspect input.synth
 ```
 
 ## Building for Distribution
