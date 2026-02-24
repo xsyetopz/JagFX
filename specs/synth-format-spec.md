@@ -21,8 +21,8 @@ Binary format for synthesized sound effects used in OldSchool RuneScape. Contain
 | `u8` | `1` byte | Unsigned 8-bit integer |
 | `u16` | `2` bytes | Unsigned 16-bit integer (big-endian) |
 | `s32` | `4` bytes | Signed 32-bit integer (big-endian) |
-| `smart` | `1-2` bytes | Signed variable-length integer. Values `-64` to `63`: encoded as`val + 64` in `1` byte. Values outside this range: 2-byte encoding |
-| `usmart` | `1-2` bytes | Unsigned variable-length integer. Values 0`-127`: encoded as`val` in `1` byte. Values `128-65535`: 2-byte encoding with high bit set |
+| `smart` | `1-2` bytes | Signed variable-length integer. Values `-64` to `63`: encoded as `val + 64` in `1` byte. Values outside this range: 2-byte encoding. |
+| `usmart` | `1-2` bytes | Unsigned variable-length integer. Values `0`-`127`: encoded as `val` in `1` byte. Values `128`-`65535`: 2-byte encoding with high bit set. |
 
 ---
 
@@ -47,7 +47,10 @@ Parser detects format automatically and applies compatibility patches.
 Each voice begins with **marker byte**:
 
 - `0x00`: Empty slot (consume `1` byte, advance to next)
-- `!= 0x00`: Voice present (marker = Waveform ID of Pitch Envelope)
+- `1`-`4`: Voice present (marker = Waveform ID of Pitch Envelope's waveform)
+- Any other value: Invalid marker - treat as empty, skip `1` byte, continue
+
+**Minimum size**: Voice occupies at least `30` bytes. If fewer bytes remain, voice slot is treated as empty.
 
 ### Voice Fields
 
@@ -58,9 +61,9 @@ Each voice begins with **marker byte**:
 | **Vibrato LFO** | Optional Pair | Pitch modulation (Rate + Depth) |
 | **Tremolo LFO** | Optional Pair | Amplitude modulation (Rate + Depth) |
 | **Gate Envelopes** | Optional Pair | Silence + Duration control |
-| **Oscillators** | Oscillator[] | Additive synthesis sources (0x00 terminated) |
-| **Feedback Amount** | usmart | Echo feedback amount |
-| **Feedback Mix** | usmart | Echo dry/wet balance |
+| **Oscillators** | Oscillator[] | Additive synthesis sources (amplitude-`0` terminated, max `10`) |
+| **Echo Delay** | usmart | Echo feedback buffer delay (ms) |
+| **Echo Mix** | usmart | Echo dry/wet balance (`0`-`100`%) |
 | **Duration** | u16 | Total voice duration (ms) |
 | **Start Time** | u16 | Delay before voice starts (ms) |
 | **Filter** | Filter | Optional IIR filter (see below) |
@@ -91,63 +94,69 @@ Peek next byte:
 | **Duration** | u16 | Time to reach peak (ms) |
 | **Peak** | u16 | Target value at segment end |
 
-**Note**: S`egment.Peak`(`0-65535`) maps to progress between`Start` and `End` values.
+**Note**: `Segment.Peak` (`0`-`65535`) maps to linear interpolation progress between `Start` and `End` values.
+
+**Envelope synthesis**: If envelope has zero segments but `Start != End`, parser synthesises implicit segment spanning full voice duration with `peak = End`.
 
 ---
 
 ## Oscillator Structure
 
-Read until `0x00` terminator or max 10 oscillators:
+Read up to `10` oscillators. Each entry begins with amplitude field:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| **Amplitude** | smart | Relative volume |
+| **Amplitude** | usmart | Relative volume (percentage) |
 | **Pitch Offset** | smart | Fine pitch adjustment (decicents) |
-| **Delay** | smart | Time before oscillator starts (ms) |
+| **Delay** | usmart | Time before oscillator starts (ms) |
 
-**Termination**: First byte of `0x00` indicates end of oscillator list.
+**Termination**: When decoded `Amplitude` value equals `0`, stop reading oscillators. Because `0` encodes as `0x00` in `usmart` format, this is equivalent to first byte being `0x00`.
 
 ---
 
 ## Filter Structure
 
-IIR filter with configurable poles. Format supports up to `15` pole pairs per channel (packed into `4` bits), though typical implementations use `-4` pairs.
+IIR filter with configurable poles. Format supports up to `15` pole pairs per channel (packed into `4` bits), though typical files use `1`-`4` pairs.
+
+**Detection**: Peek next byte before reading:
+
+- `0x00`: No filter, consume `1` byte and skip.
+- `1`-`4` AND remaining buffer is large enough AND bytes `1`-`8` look like plausible envelope start/end (`s32` in range `±10,000,000`) with valid segment count (byte `9` ≤ `15`): treat as next voice marker, not filter.
+- Otherwise: filter is present.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| **Channel Config** | u8 | Packed: `Count0 = byte >> 4`, `Count1 = byte & 0x0F` |
+| **Channel Config** | u8 | Packed: `Count0 = byte >> 4`, `Count1 = byte & 0x0F`. If `0x00`, no filter. |
 | **Unity Gain Ch0** | u16 | Gain for channel `0` |
 | **Unity Gain Ch1** | u16 | Gain for channel `1` |
-| **Modulation Mask** | u8 | Bit flags: `bit (ch*4+p)` indicates modulated pole |
+| **Modulation Mask** | u8 | Bit flags: `bit (ch*4 + p)` set means pole `p` of channel `ch` has distinct phase-1 coefficients. Covers at most `4` poles per channel (bits `0`-`3` = ch0, bits `4`-`7` = ch1). |
 
-### Pole Data
+### Phase-0 Coefficients (Baseline)
 
-For each channel with `Count > 0`, read `Count` pairs:
+For each channel (`0`, then `1`) with `Count > 0`, read `Count` pairs:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| **Frequency** | u16 | Pole center frequency (Hz) |
+| **Frequency** | u16 | Pole center frequency |
 | **Magnitude** | u16 | Pole magnitude (resonance) |
 
-### Pole Modulation
+### Phase-1 Coefficients (Modulated Poles)
 
-If `Modulation Mask != 0`, for each modulated pole:
+For each channel, for each pole: if corresponding `Modulation Mask` bit is set, read new pair; otherwise pole's phase-1 values are copies of its phase-0 values (not stored in file).
 
 | Field | Type | Description |
 |-------|------|-------------|
-| **Frequency Modulation** | u16 | Frequency modulation amount |
-| **Magnitude Modulation** | u16 | Magnitude modulation amount |
+| **Frequency** | u16 | Phase-1 pole frequency |
+| **Magnitude** | u16 | Phase-1 pole magnitude |
 
 ### Filter Envelope
 
-Read **only if** `Modulation Mask != 0`:
+Read **only if** `Modulation Mask != 0` **or** `Unity Gain Ch0 != Unity Gain Ch1`:
 
 | Field | Type | Description |
 |-------|------|-------------|
 | **Segment Count** | u8 | Number of segments |
 | **Segments** | Segment[] | Filter coefficient modulation over time |
-
-**Note**: If `Channel Config == 0`, filter is absent.
 
 ---
 
@@ -163,16 +172,14 @@ Voice 0:
 ├── Tremolo: none
 ├── Gate Envelopes (present: 5+4 segments)
 ├── 4 Oscillators (vol: 70, 150, 1024, 7602)
-├── Echo (delay=24329, mix=66)
+├── Echo (delay=24329ms, mix=66%)
 ├── Duration=36610ms, Start=0ms
 └── Filter (15 pairs per channel!)
-    ├── Channel Config: 0xFF (15 pairs × 2 channels)
+    ├── Channel Config: 0xFF (Count0=15, Count1=15)
     ├── Unity Gains: 65535, 65535
-    ├── Modulation Mask: 0xFF (all 30 poles modulated)
-    ├── 30 Phase-0 coefficients (freq+mag)
-    ├── 30 Phase-1 coefficients (freq+mag)
-    ├── 30 Frequency modulation values
-    ├── 30 Magnitude modulation values
+    ├── Modulation Mask: 0xFF (poles 0-3 of ch0 + poles 0-3 of ch1 = 8 modulated)
+    ├── Phase-0 coefficients: 30 pairs (freq+mag for all 30 poles)
+    ├── Phase-1 coefficients: 8 pairs (only for 8 modulated poles)
     └── Filter Envelope (255 segments)
 
 Voices 1-9: Empty (0x00 markers)
@@ -192,10 +199,12 @@ Optional 4-byte footer (may be truncated):
 | **Loop Start** | u16 | Sample index where loop begins |
 | **Loop End** | u16 | Sample index where loop ends |
 
+**Active condition**: Loop is active only when `LoopStart < LoopEnd`.
+
 **Truncation Handling**:
 
-- If file ends before Loop: loop disabled `(0, 0)`
-- If truncated during Voice: remaining voices are empty (null)
+- If fewer than `4` bytes remain for loop footer: loop disabled `(0, 0)`
+- If truncated mid-voice: remaining voice slots are treated as empty (null)
 
 ---
 
@@ -241,12 +250,43 @@ flowchart TD
 | Constant | Value | Description |
 |----------|-------|-------------|
 | SampleRate | `22050` | Audio sample rate (Hz) |
+| AudioChannelCount | `1` | Mono output |
+| BitsPerSample | `8` | Legacy audio bit depth |
 | MaxVoices | `10` | Maximum concurrent voices |
 | MaxOscillators | `10` | Maximum oscillators per voice |
-| MaxFilterPairs | `15` | Maximum pole pairs in current implementations |
-| FilterUpdateRate | `256` | Samples between filter coefficient updates |
-| FixedPoint.Scale | `65536` | 16.16 fixed-point multiplier |
-| FixedPoint.Offset | `32768` | Fixed-point offset |
+| MaxFilterPairs | `15` | Maximum pole pairs per channel |
+| FilterUpdateRate | `256` | Samples between filter coefficient updates (`byte.MaxValue + 1`) |
+| PhaseMask | `0x7FFF` | 15-bit oscillator phase mask |
+| PhaseScale | `32.768` | Phase increment scale factor |
+| NoisePhaseDiv | `2607` | Noise channel phase divisor |
+| MaxBufferSize | `1,048,576` | Maximum input file size (1 MB) |
+| FixedPoint.Scale | `65536` | 16.16 fixed-point multiplier (`1 << 16`) |
+| FixedPoint.Offset | `32768` | Fixed-point rounding offset (`1 << 15`) |
+| FixedPoint.Quarter | `16384` | Quarter fixed-point unit (`1 << 14`) |
+
+---
+
+## Parsing Notes
+
+### Truncation Safety
+
+`_truncated` flag is set permanently on first read that would exceed buffer. Subsequent reads return `0`. Parser emits warning with byte offset where truncation was detected.
+
+### Ambiguous Filter Detection
+
+First byte of filter header (`Channel Config`) can collide with voice marker (`1`-`4`). Parser resolves ambiguity by peeking ahead:
+
+1. Treat byte as filter header candidate.
+2. Read `5` bytes ahead and reconstruct as `s32` (big-endian). If value is within `±10,000,000` **and** byte at offset `9` is `≤ 15`, sequence looks like valid envelope - interpret byte as **next voice marker**.
+3. Otherwise, treat it as filter header.
+
+### Synthetic Envelope Segments
+
+If envelope has zero segments but `Start != End`, parser creates implicit single segment covering full voice duration so that envelope interpolation behaves correctly at render time.
+
+### Voice Slot Validity
+
+Voice slot is only attempted when remaining buffer contains at least `30` bytes. If fewer bytes remain and marker is non-zero, slot is discarded and subsequent slots are null.
 
 ---
 
