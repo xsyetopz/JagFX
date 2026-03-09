@@ -1,6 +1,6 @@
 namespace JagFX.Domain.Models;
 
-public record LoopSegment(int BeginSample, int EndSample)
+public record LoopSegment(int BeginMs, int EndMs)
 {
-    public bool IsActive => BeginSample < EndSample;
+    public bool IsActive => BeginMs < EndMs;
 }
