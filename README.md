@@ -14,11 +14,11 @@ Cross-platform editor for Jagex Audio Synthesis (`.synth`) files. Create, edit, 
 
 | Category | Description |
 |----------|----------|
-| **Envelopes** | Pitch, Volume, Vibrato (Rate/Depth), Tremolo (Rate/Depth), Gate (Silence/Duration) |
+| **Envelopes** | Pitch, Volume, Vibrato (Rate/Depth), Tremolo (Rate/Depth), Gap Off/On (gating) |
 | **Partials** | 10 additive partials with volume, decicent offset, and time delay |
 | **Filter** | IIR filter with pole/zero editor, frequency response visualisation |
 | **Modulation** | FM (vibrato) and AM (tremolo) with envelope-controlled rate/depth |
-| **Echo** | Configurable echo delay and mix level per voice |
+| **Echo** | Configurable echo delay and feedback level per voice |
 | **Export** | Save as `.synth` or export to `.wav` (8-bit or 16-bit) |
 
 ## Installation
