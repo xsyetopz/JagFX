@@ -6,5 +6,5 @@ public record Filter(
     ImmutableArray<int> UnityGain,
     ImmutableArray<ImmutableArray<ImmutableArray<int>>> PolePhase,
     ImmutableArray<ImmutableArray<ImmutableArray<int>>> PoleMagnitude,
-    Envelope? CutoffEnvelope
+    Envelope? ModulationEnvelope
 );
