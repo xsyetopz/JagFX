@@ -6,11 +6,11 @@ public record class Voice(
     Envelope AmplitudeEnvelope,
     LowFrequencyOscillator? PitchLfo,
     LowFrequencyOscillator? AmplitudeLfo,
-    Envelope? GateSilenceEnvelope,
-    Envelope? GateDurationEnvelope,
+    Envelope? GapOffEnvelope,
+    Envelope? GapOnEnvelope,
     ImmutableList<Partial> Partials,
     Echo Echo,
-    int DurationSamples,
-    int StartSample,
+    int DurationMs,
+    int OffsetMs,
     Filter? Filter = null
 );
