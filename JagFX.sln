@@ -1,4 +1,4 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -13,12 +13,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JagFX.Io", "src\JagFX.Io\Ja
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JagFX.Synthesis", "src\JagFX.Synthesis\JagFX.Synthesis.csproj", "{05A6452C-C05C-40DF-A555-B9C1856600D2}"
 EndProject
-
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JavaRandom", "libs\JavaRandom\JavaRandom.csproj", "{A1B2C3D4-E5F6-7890-ABCD-EF1234567891}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartInt", "libs\SmartInt\SmartInt.csproj", "{3CFF2272-A74F-493D-A189-16BB5F9AE22D}"
 EndProject
-
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JagFX.IO.Tests", "tests\JagFX.IO.Tests\JagFX.IO.Tests.csproj", "{E30AF335-253C-4F3E-9F9C-CDD41D454FD2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JagFX.Synthesis.Tests", "tests\JagFX.Synthesis.Tests\JagFX.Synthesis.Tests.csproj", "{901D87BC-0B29-4C2F-B44D-EBD1D179D0EC}"
@@ -29,7 +27,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartInt.Tests", "libs\Smar
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "libs", "libs", "{B1EB69F6-FC36-443B-B5BE-AB2D21891C82}"
 EndProject
-
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{CB84E977-02EF-4003-A8FA-21185E2464FA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JagFX.Desktop", "src\JagFX.Desktop\JagFX.Desktop.csproj", "{DFCC227D-23BE-4954-85E3-F7AFEC4BFEA4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -87,10 +88,15 @@ Global
 		{BC2F1A79-8C67-48B9-B138-DB87D6E8B2F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BC2F1A79-8C67-48B9-B138-DB87D6E8B2F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BC2F1A79-8C67-48B9-B138-DB87D6E8B2F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DFCC227D-23BE-4954-85E3-F7AFEC4BFEA4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DFCC227D-23BE-4954-85E3-F7AFEC4BFEA4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DFCC227D-23BE-4954-85E3-F7AFEC4BFEA4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DFCC227D-23BE-4954-85E3-F7AFEC4BFEA4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{A1B2C3D4-E5F6-7890-ABCD-EF1234567891} = {B1EB69F6-FC36-443B-B5BE-AB2D21891C82}
 		{3CFF2272-A74F-493D-A189-16BB5F9AE22D} = {B1EB69F6-FC36-443B-B5BE-AB2D21891C82}
 		{BC2F1A79-8C67-48B9-B138-DB87D6E8B2F9} = {B1EB69F6-FC36-443B-B5BE-AB2D21891C82}
+		{DFCC227D-23BE-4954-85E3-F7AFEC4BFEA4} = {CB84E977-02EF-4003-A8FA-21185E2464FA}
 	EndGlobalSection
 EndGlobal
