@@ -17,8 +17,8 @@ public class SynthFileReaderTests
         var result = SynthFileReader.Read(TestResources.CowDeath);
         Assert.NotNull(result);
         Assert.Single(result.ActiveVoices);
-        Assert.Equal(0, result.Loop.BeginSample);
-        Assert.Equal(0, result.Loop.EndSample);
+        Assert.Equal(0, result.Loop.BeginMs);
+        Assert.Equal(0, result.Loop.EndMs);
     }
 
     [Fact]
