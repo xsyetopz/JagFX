@@ -80,15 +80,17 @@ public class KnobControl : Control
     private Point _lastPointerPos;
     private bool _isDragging;
 
-    private const double StartAngleDeg = 225.0;
+    private const double StartAngleDeg = 135.0;
     private const double SweepDeg = 270.0;
-    private const double LabelHeight = 12.0;
-    private const double ValueHeight = 11.0;
+
+    public static event Action<string>? HintChanged;
+
+    public static void RaiseHint(string hint) => HintChanged?.Invoke(hint);
 
     protected override Size MeasureOverride(Size availableSize)
     {
-        var w = double.IsInfinity(availableSize.Width) ? 52 : Math.Min(52, availableSize.Width);
-        var h = double.IsInfinity(availableSize.Height) ? 60 : Math.Min(60, availableSize.Height);
+        var w = double.IsInfinity(availableSize.Width) ? 44 : Math.Min(44, availableSize.Width);
+        var h = double.IsInfinity(availableSize.Height) ? 32 : Math.Min(32, availableSize.Height);
         return new Size(w, h);
     }
 
@@ -97,19 +99,12 @@ public class KnobControl : Control
         var w = Bounds.Width;
         var h = Bounds.Height;
         var cx = w / 2.0;
-        var bottomSpace = LabelHeight + ValueHeight;
-        var cy = (h - bottomSpace) / 2.0;
+        var cy = h / 2.0;
         var r = Math.Min(cx - 3, cy - 2);
         if (r < 6) r = 6;
 
         var dimmed = !IsEffectivelyEnabled;
-        var arcBrush = dimmed ? new SolidColorBrush(Color.Parse("#1a3344")) : ThemeColors.AccentBrush;
-        var textBrush = dimmed
-            ? new SolidColorBrush(Color.Parse("#555555"))
-            : new SolidColorBrush(Color.Parse("#f0f0f0"));
-        var labelBrush = dimmed
-            ? new SolidColorBrush(Color.Parse("#444444"))
-            : new SolidColorBrush(Color.Parse("#888888"));
+        var arcBrush = dimmed ? new SolidColorBrush(Color.Parse("#222222")) : ThemeColors.AccentBrush;
 
         // Track arc background
         DrawArc(context, cx, cy, r + 2, StartAngleDeg, SweepDeg,
@@ -140,31 +135,19 @@ public class KnobControl : Control
         context.DrawLine(new Pen(arcBrush, 2),
             new Point(lineStartX, lineStartY), new Point(lineEndX, lineEndY));
 
-        // Value text (below knob)
-        var valueText = Value.ToString(FormatString);
-        if (!string.IsNullOrEmpty(Unit))
-            valueText += Unit;
-        var vtFt = new FormattedText(
-            valueText,
-            System.Globalization.CultureInfo.CurrentCulture,
-            FlowDirection.LeftToRight,
-            Typeface.Default,
-            9,
-            textBrush);
-        context.DrawText(vtFt, new Point(cx - vtFt.Width / 2, h - bottomSpace + 1));
-
-        // Label text (bottom)
-        var label = Label;
-        if (!string.IsNullOrEmpty(label))
+        // Draw label in the dead zone below the knob arc
+        if (!string.IsNullOrEmpty(Label))
         {
-            var ft = new FormattedText(
-                label,
-                System.Globalization.CultureInfo.CurrentCulture,
+            var labelText = new FormattedText(
+                Label,
+                System.Globalization.CultureInfo.InvariantCulture,
                 FlowDirection.LeftToRight,
-                Typeface.Default,
-                8,
-                labelBrush);
-            context.DrawText(ft, new Point(cx - ft.Width / 2, h - LabelHeight + 1));
+                new Typeface("Consolas, Monaco, Courier New, monospace"),
+                7,
+                new SolidColorBrush(Color.Parse("#666666")));
+            var labelX = cx - labelText.Width / 2;
+            var labelY = h - labelText.Height;
+            context.DrawText(labelText, new Point(labelX, labelY));
         }
     }
 
@@ -190,6 +173,23 @@ public class KnobControl : Control
         }
 
         context.DrawGeometry(null, pen, geometry);
+    }
+
+    private string FormatHint() =>
+        $"{Label}: {Value.ToString(FormatString)}{Unit}";
+
+    protected override void OnPointerEntered(PointerEventArgs e)
+    {
+        base.OnPointerEntered(e);
+        if (IsEffectivelyEnabled)
+            HintChanged?.Invoke(FormatHint());
+    }
+
+    protected override void OnPointerExited(PointerEventArgs e)
+    {
+        base.OnPointerExited(e);
+        if (!_isDragging)
+            HintChanged?.Invoke("");
     }
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
@@ -252,6 +252,7 @@ public class KnobControl : Control
         var sensitivity = range / 100.0;
         Value = Math.Clamp(Value + deltaY * sensitivity, Minimum, Maximum);
         _lastPointerPos = pos;
+        HintChanged?.Invoke(FormatHint());
         e.Handled = true;
     }
 
@@ -260,6 +261,7 @@ public class KnobControl : Control
         base.OnPointerReleased(e);
         _isDragging = false;
         e.Pointer.Capture(null);
+        HintChanged?.Invoke("");
         e.Handled = true;
     }
 
