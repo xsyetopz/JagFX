@@ -29,7 +29,8 @@ public static class FileDialogService
             SuggestedFileName = suggestedName ?? "untitled.synth",
             FileTypeChoices =
             [
-                new FilePickerFileType("Synth Files") { Patterns = ["*.synth"] }
+                new FilePickerFileType("Synth Files") { Patterns = ["*.synth"] },
+                new FilePickerFileType("WAV Files") { Patterns = ["*.wav"] }
             ]
         });
 

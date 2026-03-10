@@ -9,15 +9,40 @@ public class AudioPlaybackService : IDisposable
     private Process? _playbackProcess;
     private string? _tempWavPath;
 
+    public event Action? PlaybackFinished;
+
     public bool IsPlaying => _playbackProcess is { HasExited: false };
 
-    public void Play(AudioBuffer buffer)
+    public async Task PlayAsync(AudioBuffer buffer)
     {
         Stop();
 
         _tempWavPath = Path.Combine(Path.GetTempPath(), $"jagfx_{Guid.NewGuid():N}.wav");
-        WaveFileWriter.WriteToPath(buffer.ToUBytes(), _tempWavPath);
-        _playbackProcess = Process.Start(new ProcessStartInfo(_tempWavPath) { UseShellExecute = true });
+        await Task.Run(() => WaveFileWriter.WriteToPath(buffer.ToBytes16LE(), _tempWavPath, bitsPerSample: 16));
+        _playbackProcess = StartAudioProcess(_tempWavPath);
+
+        if (_playbackProcess is not null)
+        {
+            var process = _playbackProcess;
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await process.WaitForExitAsync();
+                    PlaybackFinished?.Invoke();
+                }
+                catch { /* process may have been killed */ }
+            });
+        }
+    }
+
+    private static Process? StartAudioProcess(string path)
+    {
+        if (OperatingSystem.IsMacOS())
+            return Process.Start("afplay", path);
+        if (OperatingSystem.IsLinux())
+            return Process.Start("aplay", path);
+        return Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
     }
 
     public void Stop()
