@@ -1,10 +1,10 @@
-# JagFX -- Jagex Synth Editor
+# JagFx -- Jagex Synth Editor
 
 <p align="left">
   <img
     src="assets/370_cow_death.png"
     alt="Cow Death"
-    onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/xsyetopz/JagFX/main/assets/370_cow_death.png';"
+    onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/xsyetopz/JagFx/main/assets/370_cow_death.png';"
   >
 </p>
 
@@ -48,12 +48,12 @@ Cross-platform editor for Jagex Audio Synthesis (`.synth`) files -- the sound fo
 ```mermaid
 graph TD
     subgraph src
-        JagFX_Domain["JagFX.Domain<br/><sub>immutable domain model<br/>(Patch, Voice, Envelope, Filter, ...)</sub>"]
-        JagFX_Core["JagFX.Core<br/><sub>shared utilities and binary buffer helpers</sub>"]
-        JagFX_Io["JagFX.Io<br/><sub>.synth file reader/writer</sub>"]
-        JagFX_Synth["JagFX.Synthesis<br/><sub>DSP engine:<br/>renders Patch → PCM audio buffer</sub>"]
-        JagFX_Desktop["JagFX.Desktop<br/><sub>Avalonia desktop GUI (MVVM)</sub>"]
-        JagFX_Cli["JagFX.Cli<br/><sub>command-line converter and inspector</sub>"]
+        JagFX_Domain["JagFx.Domain<br/><sub>immutable domain model<br/>(Patch, Voice, Envelope, Filter, ...)</sub>"]
+        JagFX_Core["JagFx.Core<br/><sub>shared utilities and binary buffer helpers</sub>"]
+        JagFX_Io["JagFx.Io<br/><sub>.synth file reader/writer</sub>"]
+        JagFX_Synth["JagFx.Synthesis<br/><sub>DSP engine:<br/>renders Patch → PCM audio buffer</sub>"]
+        JagFX_Desktop["JagFx.Desktop<br/><sub>Avalonia desktop GUI (MVVM)</sub>"]
+        JagFX_Cli["JagFx.Cli<br/><sub>command-line converter and inspector</sub>"]
     end
 
     JagFX_Desktop --> JagFX_Domain
@@ -75,10 +75,10 @@ graph TD
     JagFX_Domain --> JagFX_Core
 ```
 <!--
-- JagFX.Domain depends on JagFX.Core
-- JagFX.Io depends on JagFX.Domain & JagFX.Core
-- JagFX.Synthesis depends on JagFX.Domain & JagFX.Core
-- JagFX.Desktop and JagFX.Cli both depend on JagFX.Domain, JagFX.Core, JagFX.Io, and JagFX.Synthesis
+- JagFx.Domain depends on JagFx.Core
+- JagFx.Io depends on JagFx.Domain & JagFx.Core
+- JagFx.Synthesis depends on JagFx.Domain & JagFx.Core
+- JagFx.Desktop and JagFx.Cli both depend on JagFx.Domain, JagFx.Core, JagFx.Io, and JagFx.Synthesis
 -->
 
 ---
@@ -92,7 +92,7 @@ graph TD
 ## Getting Started
 
 ```bash
-git clone https://github.com/xsyetopz/JagFX.git
+git clone https://github.com/xsyetopz/JagFx.git
 cd jagfx-scala
 
 dotnet build       # build all projects
@@ -104,7 +104,7 @@ dotnet test        # run tests
 ## Desktop GUI
 
 ```bash
-dotnet run --project src/JagFX.Desktop
+dotnet run --project src/JagFx.Desktop
 ```
 
 ### Layout
@@ -157,20 +157,20 @@ dotnet run --project src/JagFX.Desktop
 
 ```bash
 # positional arguments
-dotnet run --project src/JagFX.Cli --framework net8.0 -- input.synth output.wav
+dotnet run --project src/JagFx.Cli --framework net8.0 -- input.synth output.wav
 
 # with loop count
-dotnet run --project src/JagFX.Cli --framework net8.0 -- input.synth output.wav 4
+dotnet run --project src/JagFx.Cli --framework net8.0 -- input.synth output.wav 4
 
 # named flags
-dotnet run --project src/JagFX.Cli --framework net8.0 -- -i input.synth -o output.wav
-dotnet run --project src/JagFX.Cli --framework net8.0 -- -i input.synth -o output.wav -l 4
+dotnet run --project src/JagFx.Cli --framework net8.0 -- -i input.synth -o output.wav
+dotnet run --project src/JagFx.Cli --framework net8.0 -- -i input.synth -o output.wav -l 4
 ```
 
 ### Inspect a `.synth` file
 
 ```bash
-dotnet run --project src/JagFX.Cli --framework net8.0 -- inspect input.synth
+dotnet run --project src/JagFx.Cli --framework net8.0 -- inspect input.synth
 ```
 
 ---
