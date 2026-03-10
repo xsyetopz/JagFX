@@ -16,6 +16,7 @@
 #   4. Xcode Command Line Tools installed (codesign, hdiutil, xcrun).
 
 set -euo pipefail
+trap 'echo -e "${RED}Script failed at line $LINENO${RESET}" >&2' ERR
 
 # -- Colours ------------------------------------------------------------------
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
@@ -76,9 +77,18 @@ command -v xcrun    >/dev/null || die "xcrun not found (install Xcode CLT)"
 
 [[ -f "$ENTITLEMENTS" ]] || die "Entitlements not found: $ENTITLEMENTS"
 
-# Verify the signing certificate exists in the keychain
-security find-identity -v -p codesigning 2>/dev/null | grep -qF "$APPLE_SIGNING_IDENTITY" \
+CERT_LINE=$(security find-identity -v -p codesigning 2>/dev/null \
+    | grep -F "$APPLE_SIGNING_IDENTITY" | head -1)
+[[ -n "$CERT_LINE" ]] \
     || die "Signing certificate not found in keychain (check APPLE_SIGNING_IDENTITY in .env)"
+CERT_SHA=$(awk '{print $2}' <<< "$CERT_LINE")
+[[ "$CERT_SHA" =~ ^[0-9A-Fa-f]{40}$ ]] \
+    || die "Could not parse certificate SHA1 from keychain output"
+
+# Verify the Apple intermediate certificate is present (needed for full chain)
+security find-certificate -c "Developer ID Certification Authority" >/dev/null 2>&1 \
+    || warn "Apple 'Developer ID Certification Authority' intermediate cert not found - install from Apple PKI if signing fails"
+
 ok "All checks passed"
 
 # -- Build ---------------------------------------------------------------------
@@ -97,56 +107,34 @@ ok "Published to $PUBLISH_DIR"
 [[ -d "$APP_BUNDLE" ]] || die ".app bundle not found at $APP_BUNDLE -- did the BundleMacApp target run?"
 ok ".app bundle created"
 
+# Cleanup on exit
+trap 'rm -rf "${STAGING_DIR:-}"' EXIT
+
 # -- Code sign ----------------------------------------------------------------
-step "Unlocking keychain"
-# codesign needs the keychain unlocked AND apple-tool:/apple: partition access
-# on the private key. Without set-key-partition-list, codesign gets
-# errSecInternalComponent even when the keychain is unlocked.
-# Read password once; unset immediately after use.
-if [[ -z "${KEYCHAIN_PASSWORD:-}" ]]; then
-    read -rsp "Keychain password: " KEYCHAIN_PASSWORD
-    echo
-    _clear_kp=true
-fi
-
-KEYCHAIN="$HOME/Library/Keychains/login.keychain-db"
-security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN" \
-    || die "Could not unlock keychain"
-security set-key-partition-list -S apple-tool:,apple: -s \
-    -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" 2>/dev/null \
-    || die "Could not set key partition list — check your keychain password"
-
-[[ "${_clear_kp:-}" == "true" ]] && unset KEYCHAIN_PASSWORD _clear_kp
-ok "Keychain ready"
-
 step "Code signing"
-
-# Filter signing identity out of codesign output so it never appears in the terminal.
-# Errors and warnings are still shown -- only lines containing the identity are dropped.
-_sign() {
-    codesign "$@" 2>&1 | grep -vF "$APPLE_SIGNING_IDENTITY" || return "${PIPESTATUS[0]}"
-}
 
 # Sign inside-out: native dylibs first, then the bundle.
 # --deep is avoided because it re-signs already-signed third-party dylibs
 # in a single pass, causing errSecInternalComponent on libs like libSkiaSharp.
-while IFS= read -r -d '' lib; do
-    _sign --force --sign "$APPLE_SIGNING_IDENTITY" --timestamp "$lib" || \
-        warn "Could not sign $(basename "$lib") -- continuing"
-done < <(find "$APP_BUNDLE" -name "*.dylib" -print0)
+while IFS= read -r -d '' bin; do
+    codesign --force --sign "$CERT_SHA" --timestamp "$bin" || \
+        warn "Could not sign $(basename "$bin") -- continuing"
+done < <(find "$APP_BUNDLE/Contents/MacOS" -type f -print0)
 
 # Sign the bundle itself (no --deep -- sub-components are already signed above)
-_sign \
+if ! codesign \
     --force \
     --options runtime \
     --entitlements "$ENTITLEMENTS" \
-    --sign "$APPLE_SIGNING_IDENTITY" \
+    --sign "$CERT_SHA" \
     --timestamp \
-    "$APP_BUNDLE"
+    "$APP_BUNDLE" 2>&1; then
+    die "Bundle signing failed (see codesign output above)"
+fi
 ok "Signed"
 
 # Verify (output suppressed -- codesign --display prints the identity)
-codesign --verify --deep --strict "$APP_BUNDLE" 2>/dev/null \
+codesign --verify --deep --strict "$APP_BUNDLE" \
     && ok "Signature verified" \
     || die "Signature verification failed"
 
@@ -156,7 +144,6 @@ rm -f "$DMG_PATH"
 
 # Staging directory for DMG contents
 STAGING_DIR="$(mktemp -d)"
-trap 'rm -rf "$STAGING_DIR"' EXIT
 
 cp -R "$APP_BUNDLE" "$STAGING_DIR/"
 ln -s /Applications "$STAGING_DIR/Applications"
@@ -174,7 +161,7 @@ ok "DMG created: $DMG_PATH"
 step "Signing DMG"
 codesign \
     --force \
-    --sign "$APPLE_SIGNING_IDENTITY" \
+    --sign "$CERT_SHA" \
     --timestamp \
     "$DMG_PATH" 2>/dev/null
 ok "DMG signed"
