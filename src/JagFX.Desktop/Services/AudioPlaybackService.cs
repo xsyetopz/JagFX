@@ -45,6 +45,34 @@ public class AudioPlaybackService : IDisposable
         return Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
     }
 
+    public void ReplayFromExistingFile()
+    {
+        if (_tempWavPath is null) return;
+
+        if (_playbackProcess is { HasExited: false })
+        {
+            try { _playbackProcess.Kill(); }
+            catch { /* process may have exited */ }
+        }
+
+        _playbackProcess?.Dispose();
+        _playbackProcess = StartAudioProcess(_tempWavPath);
+
+        if (_playbackProcess is not null)
+        {
+            var process = _playbackProcess;
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await process.WaitForExitAsync();
+                    PlaybackFinished?.Invoke();
+                }
+                catch { /* process may have been killed */ }
+            });
+        }
+    }
+
     public void Stop()
     {
         if (_playbackProcess is { HasExited: false })
