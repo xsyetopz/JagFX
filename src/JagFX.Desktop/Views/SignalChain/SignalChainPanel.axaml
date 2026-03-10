@@ -1,0 +1,14 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:JagFX.Desktop.ViewModels"
+             x:Class="JagFX.Desktop.Views.SignalChain.SignalChainPanel"
+             x:DataType="vm:MainViewModel">
+
+    <Border Background="{StaticResource SurfacePanelBrush}">
+        <Grid x:Name="MatrixGrid"
+              RowDefinitions="*,*,*"
+              ColumnDefinitions="*,*,*,0"
+              Margin="1" />
+    </Border>
+
+</UserControl>
