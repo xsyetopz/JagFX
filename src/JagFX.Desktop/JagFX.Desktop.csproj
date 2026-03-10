@@ -48,7 +48,7 @@
 
       publish/osx-arm64/
         JagFx.Desktop           (single-file binary)
-        JagFx.app/              (bundle -- placed inside the arch dir, not above it)
+        JagFx.app/              (bundle, placed inside the arch dir)
           Contents/
             MacOS/
               JagFx.Desktop
@@ -77,7 +77,7 @@
 
     <!-- Copy all publish output (binary + any loose native dylibs) into MacOS/ -->
     <ItemGroup>
-      <_BundleFiles Include="$(PublishDir)**\*" Exclude="$(PublishDir)**\*.pdb" />
+      <_BundleFiles Include="$(PublishDir)**/*" Exclude="$(PublishDir)**/*.pdb" />
     </ItemGroup>
     <Copy SourceFiles="@(_BundleFiles)"
           DestinationFiles="@(_BundleFiles->'$(_MacOSDir)%(RecursiveDir)%(Filename)%(Extension)')" />
