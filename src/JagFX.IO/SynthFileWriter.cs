@@ -62,6 +62,10 @@ public static class SynthFileWriter
         {
             WriteFilter(buffer, voice.Filter);
         }
+        else
+        {
+            buffer.WriteUInt8(0);
+        }
     }
 
     private static void WriteEnvelope(BinaryBuffer buffer, Envelope envelope)
@@ -129,8 +133,8 @@ public static class SynthFileWriter
         var modulationMask = CalculateModulationMask(filter);
         buffer.WriteUInt8(modulationMask);
 
-        WriteFilterCoefficients(buffer, filter, 0);
-        WriteFilterCoefficients(buffer, filter, 1);
+        WriteFilterPhase0Coefficients(buffer, filter);
+        WriteFilterPhase1Coefficients(buffer, filter, modulationMask);
 
         if (filter.ModulationEnvelope != null)
         {
@@ -138,19 +142,31 @@ public static class SynthFileWriter
         }
     }
 
-    private static void WriteFilterCoefficients(BinaryBuffer buffer, Filter filter, int phase)
+    private static void WriteFilterPhase0Coefficients(BinaryBuffer buffer, Filter filter)
     {
-        var poleCounts = filter.PoleCounts;
-        var polePhase = filter.PolePhase;
-        var poleMagnitude = filter.PoleMagnitude;
-
         for (var channel = 0; channel < 2; channel++)
         {
-            var poles = poleCounts[channel];
+            var poles = filter.PoleCounts[channel];
             for (var pole = 0; pole < poles; pole++)
             {
-                buffer.WriteUInt16BigEndian(polePhase[channel][phase][pole]);
-                buffer.WriteUInt16BigEndian(poleMagnitude[channel][phase][pole]);
+                buffer.WriteUInt16BigEndian(filter.PolePhase[channel][0][pole]);
+                buffer.WriteUInt16BigEndian(filter.PoleMagnitude[channel][0][pole]);
+            }
+        }
+    }
+
+    private static void WriteFilterPhase1Coefficients(BinaryBuffer buffer, Filter filter, int modulationMask)
+    {
+        for (var channel = 0; channel < 2; channel++)
+        {
+            var poles = filter.PoleCounts[channel];
+            for (var pole = 0; pole < poles; pole++)
+            {
+                if ((modulationMask & (1 << (channel * 4 + pole))) != 0)
+                {
+                    buffer.WriteUInt16BigEndian(filter.PolePhase[channel][1][pole]);
+                    buffer.WriteUInt16BigEndian(filter.PoleMagnitude[channel][1][pole]);
+                }
             }
         }
     }
