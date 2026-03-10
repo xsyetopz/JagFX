@@ -16,18 +16,18 @@ public partial class SignalChainPanel : UserControl
     private MainViewModel? _subscribedVm;
     private PatchViewModel? _subscribedPatch;
 
-    private abstract record SlotBase(string Title, Border Container);
-    private sealed record EnvelopeSlot(string Title, Border Container, EnvelopeCanvas Canvas) : SlotBase(Title, Container);
-    private sealed record SpecialSlot(string Title, Border Container, Control Canvas) : SlotBase(Title, Container);
+    private abstract record SlotBase(SignalChainSlot Slot, Border Container);
+    private sealed record EnvelopeSlot(SignalChainSlot Slot, Border Container, EnvelopeCanvas Canvas) : SlotBase(Slot, Container);
+    private sealed record SpecialSlot(SignalChainSlot Slot, Border Container, Control Canvas) : SlotBase(Slot, Container);
 
     private readonly List<SlotBase> _slots = [];
 
-    // 3×4 matrix layout: [row][col] = (title, type)
-    private static readonly (string Title, SlotType Type)[,] Matrix =
+    // 3×4 matrix layout: [row][col] = (slot, type)
+    private static readonly (SignalChainSlot Slot, SlotType Type)[,] Matrix =
     {
-        { ("PITCH", SlotType.Envelope), ("V.RATE", SlotType.Envelope), ("V.DEPTH", SlotType.Envelope), ("P/Z", SlotType.PoleZero) },
-        { ("VOLUME", SlotType.Envelope), ("T.RATE", SlotType.Envelope), ("T.DEPTH", SlotType.Envelope), ("FILTER", SlotType.Envelope) },
-        { ("GAP OFF", SlotType.Envelope), ("GAP ON", SlotType.Envelope), ("OUT", SlotType.Waveform), ("BODE", SlotType.Bode) },
+        { (SignalChainSlot.Pitch, SlotType.Envelope), (SignalChainSlot.VibratoRate, SlotType.Envelope), (SignalChainSlot.VibratoDepth, SlotType.Envelope), (SignalChainSlot.PoleZero, SlotType.PoleZero) },
+        { (SignalChainSlot.Volume, SlotType.Envelope), (SignalChainSlot.TremoloRate, SlotType.Envelope), (SignalChainSlot.TremoloDepth, SlotType.Envelope), (SignalChainSlot.Filter, SlotType.Envelope) },
+        { (SignalChainSlot.GapOff, SlotType.Envelope), (SignalChainSlot.GapOn, SlotType.Envelope), (SignalChainSlot.Output, SlotType.Waveform), (SignalChainSlot.Bode, SlotType.Bode) },
     };
 
     private enum SlotType { Envelope, PoleZero, Waveform, Bode }
@@ -50,12 +50,12 @@ public partial class SignalChainPanel : UserControl
         {
             for (var col = 0; col < 4; col++)
             {
-                var (title, slotType) = Matrix[row, col];
-                var color = GetSlotColor(title, slotType);
+                var (slot, slotType) = Matrix[row, col];
+                var color = slot.DefaultColor();
 
                 var titleBlock = new TextBlock
                 {
-                    Text = title,
+                    Text = slot.DisplayName(),
                     FontSize = 10,
                     FontWeight = FontWeight.Bold,
                     Foreground = new SolidColorBrush(Color.Parse(color)),
@@ -64,60 +64,40 @@ public partial class SignalChainPanel : UserControl
                     TextTrimming = TextTrimming.CharacterEllipsis,
                 };
 
-                Control canvas;
-                SlotBase slot;
+                var canvas = CreateSlotCanvas(slotType, color);
+                if (canvas is null) continue;
 
-                switch (slotType)
+                switch (canvas)
                 {
-                    case SlotType.Envelope:
-                        {
-                            var envCanvas = new EnvelopeCanvas
-                            {
-                                IsThumbnail = false,
-                                LineColor = new SolidColorBrush(Color.Parse(color)),
-                            };
-                            canvas = envCanvas;
-                            var container = WrapInCell(titleBlock, canvas, row, col, title, slotType);
-                            slot = new EnvelopeSlot(title, container, envCanvas);
-                            break;
-                        }
-                    case SlotType.PoleZero:
-                        {
-                            var pzc = new PoleZeroCanvas();
-                            _pzCanvas = pzc;
-                            canvas = pzc;
-                            var container = WrapInCell(titleBlock, canvas, row, col, title, slotType);
-                            slot = new SpecialSlot(title, container, pzc);
-                            break;
-                        }
-                    case SlotType.Waveform:
-                        {
-                            var wc = new WaveformCanvas();
-                            _outCanvas = wc;
-                            canvas = wc;
-                            var container = WrapInCell(titleBlock, canvas, row, col, title, slotType);
-                            slot = new SpecialSlot(title, container, wc);
-                            break;
-                        }
-                    case SlotType.Bode:
-                        {
-                            var frc = new FrequencyResponseCanvas();
-                            _bodeCanvas = frc;
-                            canvas = frc;
-                            var container = WrapInCell(titleBlock, canvas, row, col, title, slotType);
-                            slot = new SpecialSlot(title, container, frc);
-                            break;
-                        }
-                    default:
-                        continue;
+                    case PoleZeroCanvas pzc: _pzCanvas = pzc; break;
+                    case WaveformCanvas wc: _outCanvas = wc; break;
+                    case FrequencyResponseCanvas frc: _bodeCanvas = frc; break;
                 }
 
-                _slots.Add(slot);
+                var container = WrapInCell(titleBlock, canvas, row, col, slot, slotType);
+                SlotBase slotRecord = canvas is EnvelopeCanvas ec
+                    ? new EnvelopeSlot(slot, container, ec)
+                    : new SpecialSlot(slot, container, canvas);
+
+                _slots.Add(slotRecord);
             }
         }
     }
 
-    private Border WrapInCell(TextBlock titleBlock, Control canvas, int row, int col, string title, SlotType slotType)
+    private Control? CreateSlotCanvas(SlotType slotType, string color) => slotType switch
+    {
+        SlotType.Envelope => new EnvelopeCanvas
+        {
+            IsThumbnail = false,
+            LineColor = new SolidColorBrush(Color.Parse(color)),
+        },
+        SlotType.PoleZero => new PoleZeroCanvas(),
+        SlotType.Waveform => new WaveformCanvas(),
+        SlotType.Bode => new FrequencyResponseCanvas(),
+        _ => null,
+    };
+
+    private Border WrapInCell(TextBlock titleBlock, Control canvas, int row, int col, SignalChainSlot slot, SlotType slotType)
     {
         var innerGrid = new Grid();
         innerGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
@@ -132,7 +112,7 @@ public partial class SignalChainPanel : UserControl
         Grid.SetColumn(titleBlock, 0);
         headerGrid.Children.Add(titleBlock);
 
-        var toolbar = CreateToolbar(canvas, title, slotType);
+        var toolbar = CreateToolbar(canvas, slot, slotType);
         toolbar.Margin = new Thickness(0);
         toolbar.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right;
         Grid.SetColumn(toolbar, 1);
@@ -157,7 +137,7 @@ public partial class SignalChainPanel : UserControl
         container.PointerPressed += (_, _) =>
         {
             if (_subscribedVm is not null)
-                _subscribedVm.SelectEnvelope(title);
+                _subscribedVm.SelectEnvelope(slot);
         };
 
         Grid.SetRow(container, row);
@@ -169,7 +149,7 @@ public partial class SignalChainPanel : UserControl
 
     #region Toolbar creation
 
-    private StackPanel CreateToolbar(Control canvas, string title, SlotType slotType)
+    private StackPanel CreateToolbar(Control canvas, SignalChainSlot slot, SlotType slotType)
     {
         var toolbar = new StackPanel
         {
@@ -188,14 +168,14 @@ public partial class SignalChainPanel : UserControl
         // Envelope cells get [S] solo button
         if (slotType == SlotType.Envelope)
         {
-            var soloBtn = CreateSoloButton(title);
+            var soloBtn = CreateSoloButton(slot);
             toolbar.Children.Add(soloBtn);
         }
 
         // All except P/Z and BODE get M..▼ dropdown
         if (slotType != SlotType.PoleZero && slotType != SlotType.Bode)
         {
-            var modeBtn = CreateModeDropdown(title, slotType);
+            var modeBtn = CreateModeDropdown(slot, slotType);
             toolbar.Children.Add(modeBtn);
         }
 
@@ -282,7 +262,7 @@ public partial class SignalChainPanel : UserControl
         }
     }
 
-    private ToggleButton CreateSoloButton(string title)
+    private ToggleButton CreateSoloButton(SignalChainSlot slot)
     {
         var btn = new ToggleButton
         {
@@ -304,21 +284,21 @@ public partial class SignalChainPanel : UserControl
 
                 _activeSoloButton = toggled;
                 if (_subscribedVm is not null)
-                    _subscribedVm.SoloedEnvelope = title;
+                    _subscribedVm.SoloedSlot = slot;
             }
             else
             {
                 if (_activeSoloButton == toggled)
                     _activeSoloButton = null;
                 if (_subscribedVm is not null)
-                    _subscribedVm.SoloedEnvelope = null;
+                    _subscribedVm.SoloedSlot = null;
             }
         };
 
         return btn;
     }
 
-    private Button CreateModeDropdown(string title, SlotType slotType)
+    private Button CreateModeDropdown(SignalChainSlot slot, SlotType slotType)
     {
         var btn = new Button
         {
@@ -351,7 +331,7 @@ public partial class SignalChainPanel : UserControl
                     var wf = wfValue;
                     item.Click += (_, _) =>
                     {
-                        var env = FindEnvelopeForTitle(title);
+                        var env = FindEnvelopeForSlot(slot);
                         if (env is not null)
                             env.Waveform = wf;
                     };
@@ -361,7 +341,7 @@ public partial class SignalChainPanel : UserControl
                 // Update check marks based on current waveform
                 menu.Opening += (_, _) =>
                 {
-                    var env = FindEnvelopeForTitle(title);
+                    var env = FindEnvelopeForSlot(slot);
                     if (env is null) return;
                     for (var i = 0; i < menu.Items.Count; i++)
                     {
@@ -392,23 +372,16 @@ public partial class SignalChainPanel : UserControl
         return btn;
     }
 
-    private EnvelopeViewModel? FindEnvelopeForTitle(string title)
+    private EnvelopeViewModel? FindEnvelopeForSlot(SignalChainSlot slot)
     {
         if (_subscribedVm is null) return null;
         var voice = _subscribedVm.Patch.SelectedVoice;
-        var entry = MainViewModel.SignalChain.FirstOrDefault(e => e.Title == title);
+        var entry = MainViewModel.SignalChain.FirstOrDefault(e => e.Slot == slot);
         return entry.Getter?.Invoke(voice);
     }
 
     #endregion
 
-    private static string GetSlotColor(string title, SlotType type) => type switch
-    {
-        SlotType.PoleZero => "#0072B2",
-        SlotType.Waveform => "#009E73",
-        SlotType.Bode => "#0072B2",
-        _ => MainViewModel.SignalChain.FirstOrDefault(e => e.Title == title).Color ?? "#009E73",
-    };
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
@@ -425,7 +398,7 @@ public partial class SignalChainPanel : UserControl
             vm.PropertyChanged += OnVmPropertyChanged;
             SubscribePatch(vm);
             BindAll(vm);
-            UpdateSelection(vm.SelectedEnvelopeTitle);
+            UpdateSelection(vm.SelectedSlot);
             UpdateGridMode(vm.GridMode);
         }
         else
@@ -459,8 +432,8 @@ public partial class SignalChainPanel : UserControl
     {
         if (_subscribedVm is null) return;
 
-        if (e.PropertyName == nameof(MainViewModel.SelectedEnvelopeTitle))
-            UpdateSelection(_subscribedVm.SelectedEnvelopeTitle);
+        if (e.PropertyName == nameof(MainViewModel.SelectedSlot))
+            UpdateSelection(_subscribedVm.SelectedSlot);
         if (e.PropertyName == nameof(MainViewModel.OutputSamples) && _outCanvas is not null)
             _outCanvas.Samples = _subscribedVm.OutputSamples;
         if (e.PropertyName == nameof(MainViewModel.PlaybackPosition) && _outCanvas is not null)
@@ -478,7 +451,7 @@ public partial class SignalChainPanel : UserControl
         {
             if (slot is EnvelopeSlot envSlot)
             {
-                var entry = MainViewModel.SignalChain.FirstOrDefault(e => e.Title == envSlot.Title);
+                var entry = MainViewModel.SignalChain.FirstOrDefault(e => e.Slot == envSlot.Slot);
                 if (entry.Getter is null) continue;
                 var envelope = entry.Getter(voice);
                 envSlot.Canvas.Envelope = envelope;
@@ -535,18 +508,18 @@ public partial class SignalChainPanel : UserControl
         slot.Container.Opacity = envelope.IsEmpty ? 0.35 : 1.0;
     }
 
-    private void UpdateSelection(string title)
+    private void UpdateSelection(SignalChainSlot selectedSlot)
     {
         foreach (var slot in _slots)
         {
-            var selected = slot.Title == title;
+            var selected = slot.Slot == selectedSlot;
             slot.Container.BorderBrush = SolidColorBrush.Parse(selected ? "#009E73" : "#272727");
             slot.Container.BorderThickness = new Thickness(1.5, 0.5, 0.5, 0.5);
         }
     }
 
     // Column 3 cells (filter-related)
-    private static readonly HashSet<string> FilterCells = ["P/Z", "FILTER", "BODE"];
+    private static readonly HashSet<SignalChainSlot> FilterCells = [SignalChainSlot.PoleZero, SignalChainSlot.Filter, SignalChainSlot.Bode];
 
     private void UpdateGridMode(GridMode mode)
     {
@@ -559,7 +532,7 @@ public partial class SignalChainPanel : UserControl
                 // 3×3: cols 0-2 equal, col 3 = 0
                 foreach (var slot in _slots)
                 {
-                    if (FilterCells.Contains(slot.Title))
+                    if (FilterCells.Contains(slot.Slot))
                         slot.Container.Width = double.NaN;
                 }
                 for (var i = 0; i < 3; i++)
@@ -582,7 +555,7 @@ public partial class SignalChainPanel : UserControl
                 MatrixGrid.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center;
                 foreach (var slot in _slots)
                 {
-                    if (FilterCells.Contains(slot.Title))
+                    if (FilterCells.Contains(slot.Slot))
                         slot.Container.Width = 300;
                 }
                 break;
@@ -591,7 +564,7 @@ public partial class SignalChainPanel : UserControl
                 // Full 3×4 — equal columns
                 foreach (var slot in _slots)
                 {
-                    if (FilterCells.Contains(slot.Title))
+                    if (FilterCells.Contains(slot.Slot))
                         slot.Container.Width = double.NaN;
                 }
                 colDefs[0].Width = new GridLength(1, GridUnitType.Star);
