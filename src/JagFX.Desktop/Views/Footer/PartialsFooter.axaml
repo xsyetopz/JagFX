@@ -1,0 +1,165 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:JagFX.Desktop.ViewModels"
+             xmlns:conv="using:JagFX.Desktop.Converters"
+             xmlns:controls="using:JagFX.Desktop.Controls"
+             x:Class="JagFX.Desktop.Views.Footer.PartialsFooter"
+             x:DataType="vm:MainViewModel">
+
+    <UserControl.Resources>
+        <conv:RawToPercentConverter x:Key="RawToPercentConverter" />
+
+        <DataTemplate x:Key="PartialCellTemplate" x:DataType="vm:PartialViewModel">
+            <Border BorderBrush="{StaticResource BorderDefaultBrush}" BorderThickness="1"
+                    CornerRadius="2" Margin="1,2" Padding="2">
+                <StackPanel Spacing="1">
+                    <TextBlock Text="{Binding DisplayIndex, StringFormat='P{0}'}"
+                               FontSize="8" FontWeight="Bold"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               HorizontalAlignment="Center" />
+                    <Grid ColumnDefinitions="*,*,*">
+                        <controls:KnobControl Grid.Column="0"
+                                              Value="{Binding PitchOffsetSemitones}"
+                                              Minimum="-128" Maximum="127"
+                                              Label="PIT" Step="1" FormatString="F0" Unit="st"
+                                              Height="56"
+                                              IsEnabled="{Binding IsActive}" />
+                        <controls:KnobControl Grid.Column="1"
+                                              Value="{Binding Amplitude, Converter={StaticResource RawToPercentConverter}}"
+                                              Minimum="0" Maximum="100"
+                                              Label="VOL" Step="0.5" FormatString="F1" Unit="%"
+                                              Height="56" />
+                        <controls:KnobControl Grid.Column="2"
+                                              Value="{Binding DelayMs}"
+                                              Minimum="0" Maximum="65535"
+                                              Label="DEL" Step="10" FormatString="F0" Unit="ms"
+                                              Height="56"
+                                              IsEnabled="{Binding IsActive}" />
+                    </Grid>
+                    <ProgressBar Height="3" Minimum="0" Maximum="1"
+                                 Value="{Binding AmplitudeFraction}"
+                                 Foreground="{StaticResource BorderAccentBrush}"
+                                 Background="{StaticResource SurfaceBaseBrush}" />
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Border Background="{StaticResource SurfaceFooterBrush}" BorderBrush="{StaticResource BorderDefaultBrush}" BorderThickness="0,1,0,0">
+        <DockPanel LastChildFill="True">
+            <!-- Header row with voice strip, bank toggle, and mode buttons -->
+            <Border DockPanel.Dock="Top" Background="{StaticResource SurfaceCellHeaderBrush}"
+                    Padding="4,3" Height="28">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <!-- Left: Voice strip + ONE/ALL -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="1" VerticalAlignment="Center">
+                        <ItemsControl ItemsSource="{Binding Patch.Voices}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="1" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:VoiceViewModel">
+                                    <Button Theme="{StaticResource JagVoiceButton}"
+                                            Content="{Binding DisplayIndex}"
+                                            Command="{Binding DataContext.SelectVoiceCommand,
+                                                RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding Index}"
+                                            Classes.enabled="{Binding IsEnabled}"
+                                            Classes.selected="{Binding IsSelected}"
+                                            Width="20" Height="20" FontSize="9" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Border Width="1" Height="16" Background="{StaticResource BorderDefaultBrush}" Margin="2,0" />
+                        <Button x:Name="BtnOne" Theme="{StaticResource JagVoiceButton}" Content="ONE" MinWidth="28" Height="18"
+                                FontSize="8" ToolTip.Tip="Play selected voice only (V)"
+                                Classes.selected="{Binding PlaySingleVoice}" />
+                        <Button x:Name="BtnAll" Theme="{StaticResource JagVoiceButton}" Content="ALL" MinWidth="28" Height="18"
+                                FontSize="8" ToolTip.Tip="Play all voices (V)"
+                                Classes.selected="{Binding !PlaySingleVoice}" />
+                        <Border Width="1" Height="16" Background="{StaticResource BorderDefaultBrush}" Margin="2,0" />
+                        <Button x:Name="BtnLoop" Theme="{StaticResource JagVoiceButton}" Content="LOOP" MinWidth="32" Height="18"
+                                FontSize="8" ToolTip.Tip="Loop playback"
+                                Classes.selected="{Binding IsLooping}" />
+                        <Button x:Name="BtnTrue" Theme="{StaticResource JagVoiceButton}" Content="TRUE" MinWidth="32" Height="18"
+                                FontSize="8" ToolTip.Tip="Auto-render waveform on edit"
+                                Classes.selected="{Binding TrueWaveEnabled}" />
+                        <Border Width="1" Height="16" Background="{StaticResource BorderDefaultBrush}" Margin="2,0" />
+                        <Button x:Name="BtnCopy" Theme="{StaticResource JagVoiceButton}" Content="CPY" MinWidth="28" Height="18"
+                                FontSize="8" ToolTip.Tip="Copy voice to another slot"
+                                Classes.selected="{Binding IsCopyMode}" />
+                        <Button x:Name="BtnReset" Theme="{StaticResource JagVoiceButton}" Content="RST" MinWidth="28" Height="18"
+                                FontSize="8" ToolTip.Tip="Reset voice to defaults" />
+                    </StackPanel>
+
+                    <!-- Center: Partials label + bank toggle -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                                HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock Text="PARTIALS" FontSize="9" FontWeight="Bold"
+                                   Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                        <StackPanel Orientation="Horizontal" Spacing="1">
+                            <ToggleButton Theme="{StaticResource JagVoiceToggle}"
+                                          x:Name="Bank1Toggle"
+                                          Content="1-5" IsChecked="True"
+                                          FontSize="8" Padding="3,1" MinHeight="14" MinWidth="24" />
+                            <ToggleButton Theme="{StaticResource JagVoiceToggle}"
+                                          x:Name="Bank2Toggle"
+                                          Content="6-10"
+                                          FontSize="8" Padding="3,1" MinHeight="14" MinWidth="24" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Right: Grid mode -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="1" VerticalAlignment="Center">
+                        <Button x:Name="BtnMain" Theme="{StaticResource JagVoiceButton}" Content="MAIN" MinWidth="32" Height="18"
+                                FontSize="8" ToolTip.Tip="Show main envelopes (M)"
+                                Classes.selected="{Binding IsMainMode}" />
+                        <Button x:Name="BtnFilt" Theme="{StaticResource JagVoiceButton}" Content="FILT" MinWidth="32" Height="18"
+                                FontSize="8" ToolTip.Tip="Show filter (F)"
+                                Classes.selected="{Binding IsFilterMode}" />
+                        <Button x:Name="BtnBoth" Theme="{StaticResource JagVoiceButton}" Content="BOTH" MinWidth="32" Height="18"
+                                FontSize="8" ToolTip.Tip="Show all (B)"
+                                Classes.selected="{Binding IsBothMode}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Partials + Echo in a proportional grid -->
+            <Grid x:Name="PartialsGrid" ColumnDefinitions="3*,3*,3*,3*,3*,2*">
+                <ContentControl x:Name="Slot0" Grid.Column="0"
+                                ContentTemplate="{StaticResource PartialCellTemplate}" />
+                <ContentControl x:Name="Slot1" Grid.Column="1"
+                                ContentTemplate="{StaticResource PartialCellTemplate}" />
+                <ContentControl x:Name="Slot2" Grid.Column="2"
+                                ContentTemplate="{StaticResource PartialCellTemplate}" />
+                <ContentControl x:Name="Slot3" Grid.Column="3"
+                                ContentTemplate="{StaticResource PartialCellTemplate}" />
+                <ContentControl x:Name="Slot4" Grid.Column="4"
+                                ContentTemplate="{StaticResource PartialCellTemplate}" />
+
+                <!-- Echo cell -->
+                <Border Grid.Column="5" BorderBrush="{StaticResource BorderDefaultBrush}" BorderThickness="1"
+                        CornerRadius="2" Margin="1,2" Padding="2">
+                    <StackPanel Spacing="1">
+                        <TextBlock Text="ECHO" FontSize="8" FontWeight="Bold"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   HorizontalAlignment="Center" />
+                        <Grid ColumnDefinitions="*,*">
+                            <controls:KnobControl Grid.Column="0"
+                                                  Value="{Binding Patch.SelectedVoice.EchoDelay}" Minimum="0" Maximum="500"
+                                                  Label="DELAY" Step="5" FormatString="F0" Unit="ms"
+                                                  Height="56" />
+                            <controls:KnobControl Grid.Column="1"
+                                                  Value="{Binding Patch.SelectedVoice.EchoFeedback}" Minimum="0" Maximum="100"
+                                                  Label="FDBK" Step="1" FormatString="F0" Unit="%"
+                                                  Height="56" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </DockPanel>
+    </Border>
+
+</UserControl>
