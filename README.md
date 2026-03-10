@@ -69,10 +69,11 @@ dotnet run --project src/JagFX.Desktop
 **Workflow**
 
 1. Open a `.synth` file (`Ctrl+O` or drag-and-drop).
-2. Select a voice from the header strip (buttons 1–10).
-3. Click a rack cell (PITCH, VOLUME, V.RATE, …) to inspect its envelope in the panel on the right.
-4. Edit segment breakpoints by dragging them on the envelope canvas, or adjust values numerically.
-5. Press `Space` to preview, `Ctrl+S` to save, `Ctrl+E` to export as WAV.
+2. Select a voice from the header strip (buttons 1–6); inactive voices are dimmed, active ones are at full brightness, selected is highlighted with an accent border.
+3. Click a signal chain cell (PITCH, VOLUME, V.RATE, …) to inspect its envelope in the panel on the right. Use the MODE dropdown on each cell to choose the waveform (Off / Square / Sine / Saw / Noise).
+4. Edit segment breakpoints by dragging them on the envelope canvas, or adjust START/END/DUR/LVL values with the knobs.
+5. Enable **TRUE** in the header to see the rendered waveform update live as you edit.
+6. Press `Space` to preview, `Ctrl+S` to save, `Ctrl+E` to export as WAV.
 
 ## Usage
 
