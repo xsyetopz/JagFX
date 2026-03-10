@@ -99,14 +99,22 @@ ok ".app bundle created"
 
 # ── Code sign ────────────────────────────────────────────────────────────────
 step "Code signing"
+
+# Sign inside-out: native dylibs first, then the bundle.
+# --deep is avoided because it re-signs already-signed third-party dylibs
+# in a single pass, causing errSecInternalComponent on libs like libSkiaSharp.
+while IFS= read -r -d '' lib; do
+    codesign --force --sign "$APPLE_SIGNING_IDENTITY" --timestamp "$lib" 2>/dev/null
+done < <(find "$APP_BUNDLE" -name "*.dylib" -print0)
+
+# Sign the bundle itself (no --deep — sub-components are already signed above)
 codesign \
-    --deep \
     --force \
     --options runtime \
     --entitlements "$ENTITLEMENTS" \
     --sign "$APPLE_SIGNING_IDENTITY" \
     --timestamp \
-    "$APP_BUNDLE" 2>&1 | grep -v "replacing existing signature" || true
+    "$APP_BUNDLE" 2>/dev/null
 ok "Signed"
 
 # Verify signature (output suppressed — contains identity)
