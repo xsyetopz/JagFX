@@ -10,6 +10,7 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceInclude Source="avares://JagFX.Desktop/Themes/Colors.axaml" />
+                <ResourceInclude Source="avares://JagFX.Desktop/Themes/Icons.axaml" />
                 <ResourceInclude Source="avares://JagFX.Desktop/Themes/Controls.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
