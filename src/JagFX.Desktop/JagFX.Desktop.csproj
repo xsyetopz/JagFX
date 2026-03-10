@@ -11,10 +11,20 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
-  <!-- macOS: produce a single self-contained binary so the .app bundle contains one file -->
-  <PropertyGroup Condition="$(RuntimeIdentifier.StartsWith('osx'))">
+  <!--
+    Any RID publish → single file with native libs embedded.
+    Avalonia bundles SkiaSharp and other native dylibs/so/dlls;
+    IncludeNativeLibrariesForSelfExtract packs them into the executable
+    so the output is truly one file on all platforms.
+    PublishSingleFile only fires during `dotnet publish`, not `dotnet build`.
+  -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
     <PublishSingleFile>true</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+  </PropertyGroup>
+
+  <!-- macOS: also force SelfContained so the script does not need the flag -->
+  <PropertyGroup Condition="$(RuntimeIdentifier.StartsWith('osx'))">
     <SelfContained>true</SelfContained>
   </PropertyGroup>
 
@@ -60,7 +70,12 @@
 
     <MakeDir Directories="$(_MacOSDir);$(_ResourcesDir)" />
 
-    <Copy SourceFiles="$(_Binary)" DestinationFolder="$(_MacOSDir)" />
+    <!-- Copy all publish output (binary + any loose native dylibs) into MacOS/ -->
+    <ItemGroup>
+      <_BundleFiles Include="$(PublishDir)**\*" Exclude="$(PublishDir)**\*.pdb" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_BundleFiles)"
+          DestinationFiles="@(_BundleFiles->'$(_MacOSDir)%(RecursiveDir)%(Filename)%(Extension)')" />
 
     <Exec Command="chmod +x '$(_MacOSDir)$(AssemblyName)'" />
 
