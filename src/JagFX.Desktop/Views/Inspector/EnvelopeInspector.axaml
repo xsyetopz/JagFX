@@ -25,10 +25,10 @@
                 <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
                     <controls:KnobControl Value="{Binding SelectedEnvelope.StartValue, Converter={StaticResource RawToPercentConverter}, TargetNullValue=0, FallbackValue=0}"
                                           Minimum="-100" Maximum="100" Label="START" Step="0.5"
-                                          FormatString="F1" Unit="%" Height="56" />
+                                          FormatString="F1" Unit="%" Height="32" />
                     <controls:KnobControl Value="{Binding SelectedEnvelope.EndValue, Converter={StaticResource RawToPercentConverter}, TargetNullValue=0, FallbackValue=0}"
                                           Minimum="-100" Maximum="100" Label="END" Step="0.5"
-                                          FormatString="F1" Unit="%" Height="56" />
+                                          FormatString="F1" Unit="%" Height="32" />
                 </StackPanel>
             </Border>
 
@@ -44,11 +44,11 @@
                                 <controls:KnobControl Grid.Column="1"
                                                       Value="{Binding Duration, Converter={StaticResource RawToPercentConverter}, TargetNullValue=0, FallbackValue=0}"
                                                       Minimum="0" Maximum="100" Label="DUR" Step="0.5"
-                                                      FormatString="F1" Unit="%" Height="50" />
+                                                      FormatString="F1" Unit="%" Height="32" />
                                 <controls:KnobControl Grid.Column="2"
                                                       Value="{Binding TargetLevel, Converter={StaticResource RawToPercentConverter}, TargetNullValue=0, FallbackValue=0}"
                                                       Minimum="0" Maximum="100" Label="LVL" Step="0.5"
-                                                      FormatString="F1" Unit="%" Height="50" />
+                                                      FormatString="F1" Unit="%" Height="32" />
                                 <Button Grid.Column="3" Theme="{StaticResource JagToolButton}"
                                         Padding="2,0" MinWidth="14" MinHeight="14"
                                         Command="{Binding DataContext.SelectedEnvelope.RemoveSegmentCommand,

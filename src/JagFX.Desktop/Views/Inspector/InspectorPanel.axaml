@@ -23,7 +23,7 @@
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="DUR"
                                    Foreground="{StaticResource TextSecondaryBrush}" FontSize="9"
                                    VerticalAlignment="Center" Margin="0,0,4,0" />
-                        <NumericUpDown Grid.Row="0" Grid.Column="1" Width="80"
+                        <NumericUpDown Grid.Row="0" Grid.Column="1" Width="64"
                                        Value="{Binding Patch.SelectedVoice.DurationMs, TargetNullValue=0, FallbackValue=0}"
                                        Minimum="0" Maximum="65535" />
                         <TextBlock Grid.Row="0" Grid.Column="2" Text="ms" FontSize="8"
@@ -32,35 +32,8 @@
                         <TextBlock Grid.Row="1" Grid.Column="0" Text="OFS"
                                    Foreground="{StaticResource TextSecondaryBrush}" FontSize="9"
                                    VerticalAlignment="Center" Margin="0,2,4,0" />
-                        <NumericUpDown Grid.Row="1" Grid.Column="1" Width="80"
+                        <NumericUpDown Grid.Row="1" Grid.Column="1" Width="64"
                                        Value="{Binding Patch.SelectedVoice.OffsetMs, TargetNullValue=0, FallbackValue=0}"
-                                       Minimum="0" Maximum="65535" Margin="0,2,0,0" />
-                        <TextBlock Grid.Row="1" Grid.Column="2" Text="ms" FontSize="8"
-                                   Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="2,2,0,0" />
-                    </Grid>
-                </Border>
-
-                <!-- Loop Parameters -->
-                <Border Background="{StaticResource SurfaceCellHeaderBrush}" Padding="6,3"
-                        BorderBrush="{StaticResource BorderDefaultBrush}" BorderThickness="0,1,0,1">
-                    <TextBlock Text="LOOP" FontSize="9" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" />
-                </Border>
-                <Border Padding="4,4">
-                    <Grid ColumnDefinitions="Auto,Auto,Auto" RowDefinitions="Auto,Auto">
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="BEGIN"
-                                   Foreground="{StaticResource TextSecondaryBrush}" FontSize="9"
-                                   VerticalAlignment="Center" Margin="0,0,4,0" />
-                        <NumericUpDown Grid.Row="0" Grid.Column="1" Width="80"
-                                       Value="{Binding Patch.LoopBegin, TargetNullValue=0, FallbackValue=0}"
-                                       Minimum="0" Maximum="65535" />
-                        <TextBlock Grid.Row="0" Grid.Column="2" Text="ms" FontSize="8"
-                                   Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="2,0,0,0" />
-
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="END"
-                                   Foreground="{StaticResource TextSecondaryBrush}" FontSize="9"
-                                   VerticalAlignment="Center" Margin="0,2,4,0" />
-                        <NumericUpDown Grid.Row="1" Grid.Column="1" Width="80"
-                                       Value="{Binding Patch.LoopEnd, TargetNullValue=0, FallbackValue=0}"
                                        Minimum="0" Maximum="65535" Margin="0,2,0,0" />
                         <TextBlock Grid.Row="1" Grid.Column="2" Text="ms" FontSize="8"
                                    Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="2,2,0,0" />

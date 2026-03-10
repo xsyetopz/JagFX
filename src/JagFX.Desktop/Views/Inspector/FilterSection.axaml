@@ -37,10 +37,10 @@
                             Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
                     <controls:KnobControl Value="{Binding UnityGain0, Converter={StaticResource RawToPercentConverter}, TargetNullValue=0, FallbackValue=0}"
                                           Minimum="0" Maximum="100" Label="GAIN 0" Step="0.5"
-                                          FormatString="F1" Unit="%" Height="56" />
+                                          FormatString="F1" Unit="%" Height="32" />
                     <controls:KnobControl Value="{Binding UnityGain1, Converter={StaticResource RawToPercentConverter}, TargetNullValue=0, FallbackValue=0}"
                                           Minimum="0" Maximum="100" Label="GAIN 1" Step="0.5"
-                                          FormatString="F1" Unit="%" Height="56" />
+                                          FormatString="F1" Unit="%" Height="32" />
                 </StackPanel>
             </Grid>
         </Border>
