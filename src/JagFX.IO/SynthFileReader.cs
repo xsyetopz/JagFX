@@ -222,51 +222,30 @@ public static class SynthFileReader
             var frequencies = new int[2, 2, AudioConstants.MaxFilterPairs];
             var magnitudes = new int[2, 2, AudioConstants.MaxFilterPairs];
 
-            ReadFilterPhase0Coefficients(frequencies, magnitudes, poleCount0, poleCount1);
-            ReadFilterPhase1Coefficients(frequencies, magnitudes, poleCount0, poleCount1, modulationMask);
+            for (var phase = 0; phase < 2; phase++)
+            {
+                for (var channel = 0; channel < 2; channel++)
+                {
+                    var poles = channel == 0 ? poleCount0 : poleCount1;
+                    var maxPoles = Math.Min(poles, AudioConstants.MaxFilterPairs);
+                    for (var p = 0; p < maxPoles; p++)
+                    {
+                        if (phase == 1 && (modulationMask & (1 << (channel * 4 + p))) == 0)
+                        {
+                            frequencies[channel, 1, p] = frequencies[channel, 0, p];
+                            magnitudes[channel, 1, p] = magnitudes[channel, 0, p];
+                            continue;
+                        }
+
+                        if (_buf.Remaining < 2) return (frequencies, magnitudes);
+                        frequencies[channel, phase, p] = _buf.ReadUInt16BigEndian();
+                        if (_buf.Remaining < 2) return (frequencies, magnitudes);
+                        magnitudes[channel, phase, p] = _buf.ReadUInt16BigEndian();
+                    }
+                }
+            }
 
             return (frequencies, magnitudes);
-        }
-
-        private void ReadFilterPhase0Coefficients(
-            int[,,] frequencies, int[,,] magnitudes, int poleCount0, int poleCount1)
-        {
-            for (var channel = 0; channel < 2; channel++)
-            {
-                var poles = channel == 0 ? poleCount0 : poleCount1;
-                var maxPoles = Math.Min(poles, AudioConstants.MaxFilterPairs);
-                for (var p = 0; p < maxPoles; p++)
-                {
-                    if (_buf.Remaining < 2) return;
-                    frequencies[channel, 0, p] = _buf.ReadUInt16BigEndian();
-                    if (_buf.Remaining < 2) return;
-                    magnitudes[channel, 0, p] = _buf.ReadUInt16BigEndian();
-                }
-            }
-        }
-
-        private void ReadFilterPhase1Coefficients(
-            int[,,] frequencies, int[,,] magnitudes, int poleCount0, int poleCount1, int modulationMask)
-        {
-            for (var channel = 0; channel < 2; channel++)
-            {
-                var poles = channel == 0 ? poleCount0 : poleCount1;
-                var maxPoles = Math.Min(poles, AudioConstants.MaxFilterPairs);
-                for (var p = 0; p < maxPoles; p++)
-                {
-                    if ((modulationMask & (1 << (channel * 4 + p))) != 0)
-                    {
-                        if (_buf.Remaining < 2) return;
-                        frequencies[channel, 1, p] = _buf.ReadUInt16BigEndian();
-                        if (_buf.Remaining < 2) return;
-                        magnitudes[channel, 1, p] = _buf.ReadUInt16BigEndian();
-                    }
-                    else
-                    {
-                        CopyPhase0ToPhase1(frequencies, magnitudes, channel, p);
-                    }
-                }
-            }
         }
 
         private Envelope ReadEnvelopeSegments()
@@ -321,12 +300,6 @@ public static class SynthFileReader
         private static bool IsValidWaveform(int waveformId)
         {
             return waveformId >= MinWaveformId && waveformId <= MaxWaveformId;
-        }
-
-        private static void CopyPhase0ToPhase1(int[,,] frequencies, int[,,] magnitudes, int channel, int p)
-        {
-            frequencies[channel, 1, p] = frequencies[channel, 0, p];
-            magnitudes[channel, 1, p] = magnitudes[channel, 0, p];
         }
 
         private static Filter BuildFilter(
