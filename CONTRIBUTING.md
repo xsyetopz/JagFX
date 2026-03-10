@@ -26,7 +26,7 @@ This guide keeps expectations clear and simple so you can move fast without gues
 
 ### Naming
 
-Domain model field names follow DSP conventions — see `specs/synth-format-spec.md` for the authoritative reference. In particular:
+Domain model field names follow DSP conventions -- see `specs/synth-format-spec.md` for the authoritative reference. In particular:
 
 - Envelope boundary fields are `StartValue` / `EndValue` (not "samples").
 - Segment fields are `Duration` / `TargetLevel`.
