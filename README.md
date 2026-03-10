@@ -177,36 +177,49 @@ dotnet run --project src/JagFx.Cli --framework net8.0 -- inspect input.synth
 
 ## Building for Distribution
 
-Publish the Desktop project directly — not the solution — because library
-projects are multi-targeted and cannot be published at solution level.
+Use the `Makefile` targets — they wrap the correct `dotnet publish` invocations
+so you don't have to remember the flags.
 
-### macOS — .app bundle (Apple Silicon / Intel)
+### Quick reference
 
-The publish step automatically creates a `JagFx.app` bundle alongside the
-output directory. Copy it to `/Applications` or distribute it directly.
+| Target | Output |
+|--------|--------|
+| `make publish-macos-arm64` | `publish/osx-arm64/JagFx.app` — unsigned .app (Apple Silicon) |
+| `make publish-macos-x64` | `publish/osx-x64/JagFx.app` — unsigned .app (Intel) |
+| `make publish-windows` | `publish/win-x64/JagFx.Desktop.exe` — single executable |
+| `make publish-linux` | `publish/linux-x64/JagFx.Desktop` — single executable |
+| `make release-macos-arm64` | `publish/JagFx-2.0.0-osx-arm64.dmg` — signed, notarized |
+| `make release-macos-x64` | `publish/JagFx-2.0.0-osx-x64.dmg` — signed, notarized |
+| `make release-macos` | both DMGs in one command |
+
+### macOS — unsigned (dev / testing)
 
 ```bash
-# Apple Silicon
-dotnet publish src/JagFx.Desktop -c Release -r osx-arm64 -o publish/osx-arm64
-# → publish/JagFx.app
+make publish-macos-arm64   # Apple Silicon → publish/osx-arm64/JagFx.app
+make publish-macos-x64     # Intel         → publish/osx-x64/JagFx.app
+```
 
-# Intel
-dotnet publish src/JagFx.Desktop -c Release -r osx-x64 -o publish/osx-x64
-# → publish/JagFx.app
+### macOS — signed + notarized DMG
+
+Requires `.env` (copy from `.env.example`) and a one-time keychain setup —
+see the notarization section above.
+
+```bash
+make release-macos-arm64   # → publish/JagFx-2.0.0-osx-arm64.dmg
+make release-macos-x64     # → publish/JagFx-2.0.0-osx-x64.dmg
+make release-macos         # both arches
 ```
 
 ### Windows — single `.exe`
 
 ```bash
-dotnet publish src/JagFx.Desktop -c Release -r win-x64 --self-contained -o publish/win-x64
-# → publish/win-x64/JagFx.Desktop.exe
+make publish-windows   # → publish/win-x64/JagFx.Desktop.exe
 ```
 
 ### Linux — single binary
 
 ```bash
-dotnet publish src/JagFx.Desktop -c Release -r linux-x64 --self-contained -o publish/linux-x64
-# → publish/linux-x64/JagFx.Desktop
+make publish-linux   # → publish/linux-x64/JagFx.Desktop
 ```
 
 All native libraries (SkiaSharp, HarfBuzz, etc.) are embedded in the executable
