@@ -177,26 +177,29 @@ dotnet run --project src/JagFx.Cli --framework net8.0 -- inspect input.synth
 
 ## Building for Distribution
 
+Publish the Desktop project directly — not the solution — because library
+projects are multi-targeted and cannot be published at solution level.
+
 ### Self-Contained Executable
 
 ```bash
 # Windows (x64)
-dotnet publish -c Release -r win-x64 --self-contained -o publish/win-x64
+dotnet publish src/JagFx.Desktop -c Release -r win-x64 --self-contained -o publish/win-x64
 
 # Linux (x64)
-dotnet publish -c Release -r linux-x64 --self-contained -o publish/linux-x64
+dotnet publish src/JagFx.Desktop -c Release -r linux-x64 --self-contained -o publish/linux-x64
 
 # macOS (Intel)
-dotnet publish -c Release -r osx-x64 --self-contained -o publish/osx-x64
+dotnet publish src/JagFx.Desktop -c Release -r osx-x64 --self-contained -o publish/osx-x64
 
 # macOS (Apple Silicon)
-dotnet publish -c Release -r osx-arm64 --self-contained -o publish/osx-arm64
+dotnet publish src/JagFx.Desktop -c Release -r osx-arm64 --self-contained -o publish/osx-arm64
 ```
 
 ### Framework-Dependent
 
 ```bash
-dotnet publish -c Release -o publish
+dotnet publish src/JagFx.Desktop -c Release -o publish
 ```
 
 ---
