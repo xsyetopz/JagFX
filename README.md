@@ -1,4 +1,4 @@
-# JagFX — Jagex Synth Editor
+# JagFX -- Jagex Synth Editor
 
 <p align="left">
   <img
@@ -8,7 +8,7 @@
   >
 </p>
 
-Cross-platform editor for Jagex Audio Synthesis (`.synth`) files — the sound format used by OldSchool RuneScape. Open, edit, visualize, and export OSRS sound effects.
+Cross-platform editor for Jagex Audio Synthesis (`.synth`) files -- the sound format used by OldSchool RuneScape. Open, edit, visualize, and export OSRS sound effects.
 
 ---
 
@@ -34,7 +34,7 @@ Cross-platform editor for Jagex Audio Synthesis (`.synth`) files — the sound f
 |----------|-------------|
 | **Signal Chain** | Per-voice signal chain with 9 envelope slots: Pitch, Volume, Vibrato Rate/Depth, Tremolo Rate/Depth, Gap Off/On, Filter |
 | **Envelopes** | Multi-segment envelopes with configurable waveform (Off, Square, Sine, Saw, Noise), start/end values, and draggable breakpoints |
-| **Partials** | 10 additive partials per voice — volume, decicent offset, and time delay |
+| **Partials** | 10 additive partials per voice -- volume, decicent offset, and time delay |
 | **Filter** | IIR filter with interactive pole/zero editor and real-time frequency response visualization |
 | **Modulation** | FM vibrato and AM tremolo with envelope-driven rate and depth |
 | **Echo** | Configurable echo delay and feedback level per voice |
@@ -45,15 +45,41 @@ Cross-platform editor for Jagex Audio Synthesis (`.synth`) files — the sound f
 
 ## Project Structure
 
+```mermaid
+graph TD
+    subgraph src
+        JagFX_Domain["JagFX.Domain<br/><sub>immutable domain model<br/>(Patch, Voice, Envelope, Filter, ...)</sub>"]
+        JagFX_Core["JagFX.Core<br/><sub>shared utilities and binary buffer helpers</sub>"]
+        JagFX_Io["JagFX.Io<br/><sub>.synth file reader/writer</sub>"]
+        JagFX_Synth["JagFX.Synthesis<br/><sub>DSP engine:<br/>renders Patch → PCM audio buffer</sub>"]
+        JagFX_Desktop["JagFX.Desktop<br/><sub>Avalonia desktop GUI (MVVM)</sub>"]
+        JagFX_Cli["JagFX.Cli<br/><sub>command-line converter and inspector</sub>"]
+    end
+
+    JagFX_Desktop --> JagFX_Domain
+    JagFX_Desktop --> JagFX_Core
+    JagFX_Desktop --> JagFX_Io
+    JagFX_Desktop --> JagFX_Synth
+
+    JagFX_Cli --> JagFX_Domain
+    JagFX_Cli --> JagFX_Core
+    JagFX_Cli --> JagFX_Io
+    JagFX_Cli --> JagFX_Synth
+
+    JagFX_Synth --> JagFX_Domain
+    JagFX_Synth --> JagFX_Core
+
+    JagFX_Io --> JagFX_Domain
+    JagFX_Io --> JagFX_Core
+
+    JagFX_Domain --> JagFX_Core
 ```
-src/
-├── JagFX.Domain      — immutable domain model (Patch, Voice, Envelope, Filter, …)
-├── JagFX.Core        — shared utilities and binary buffer helpers
-├── JagFX.Io          — .synth file reader/writer
-├── JagFX.Synthesis   — DSP engine: renders Patch → PCM audio buffer
-├── JagFX.Desktop     — Avalonia desktop GUI (MVVM)
-└── JagFX.Cli         — command-line converter and inspector
-```
+<!--
+- JagFX.Domain depends on JagFX.Core
+- JagFX.Io depends on JagFX.Domain & JagFX.Core
+- JagFX.Synthesis depends on JagFX.Domain & JagFX.Core
+- JagFX.Desktop and JagFX.Cli both depend on JagFX.Domain, JagFX.Core, JagFX.Io, and JagFX.Synthesis
+-->
 
 ---
 
@@ -83,32 +109,32 @@ dotnet run --project src/JagFX.Desktop
 
 ### Layout
 
-```
+```text
 ┌─────────────────────────────────────────────────────┐
-│  Header Bar  — patch name, navigation, file, transport │
+│  Header Bar  -- patch name, nav, file, transport    │
 ├──────────────┬──────────────────────────────────────┤
 │              │                                      │
 │  Inspector   │        Signal Chain Matrix           │
 │  Panel       │  (voices × envelope slots)           │
 │              │                                      │
 ├──────────────┴──────────────────────────────────────┤
-│  Partials Footer  — 10 additive partials per voice  │
+│  Partials Footer -- 10 additive partials per voice  │
 └─────────────────────────────────────────────────────┘
 ```
 
-- **Header bar** — patch navigation (◀/▶), open, save, play/stop, TRUE wave toggle.
-- **Signal chain matrix** — rows are envelope slots (PITCH, VOLUME, V.RATE, …), columns are voices (1–6). Each cell shows a thumbnail canvas and a MODE dropdown for waveform selection.
-- **Inspector panel** — editing controls for the selected envelope: START/END knobs, segment list (DUR/LVL per segment), filter editor, echo knobs.
-- **Partials footer** — 10 additive partials for the selected voice with volume, decicent offset, and delay.
+- **Header bar** -- patch navigation (◀/▶), open, save, play/stop, TRUE wave toggle.
+- **Signal chain matrix** -- rows are envelope slots (PITCH, VOLUME, V.RATE, ...), columns are voices (1–6). Each cell shows a thumbnail canvas and a MODE dropdown for waveform selection.
+- **Inspector panel** -- editing controls for the selected envelope: START/END knobs, segment list (DUR/LVL per segment), filter editor, echo knobs.
+- **Partials footer** -- 10 additive partials for the selected voice with volume, decicent offset, and delay.
 
 ### Workflow
 
 1. Open a `.synth` file (`Ctrl+O` or drag-and-drop).
 2. Select a voice column (1–6); inactive voices are dimmed, active ones are at full brightness, selected has an accent border.
-3. Click a signal chain cell (PITCH, VOLUME, …) to open it in the inspector.
+3. Click a signal chain cell (PITCH, VOLUME, ...) to open it in the inspector.
 4. Use the **MODE** dropdown on a cell to set the envelope waveform (Off / Square / Sine / Saw / Noise).
 5. Drag breakpoints on the envelope canvas or adjust START/END/DUR/LVL with the knobs.
-6. Enable **TRUE** in the header — the waveform canvas updates live as you edit.
+6. Enable **TRUE** in the header -- the waveform canvas updates live as you edit.
 7. `Space` to preview playback, `Ctrl+S` to save, `Ctrl+Shift+S` to save as / export WAV.
 
 ### Keyboard Shortcuts
@@ -175,14 +201,6 @@ dotnet publish -c Release -o publish
 
 ---
 
-## Examples
-
-### `ice_cast.synth` and `ice_barrage_impact.synth`
-
-<https://github.com/user-attachments/assets/b0564501-5d82-4239-8883-b32ab746e7dc>
-
----
-
 ## Contributing
 
 Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow, coding guidelines, and pull request checklist.
@@ -191,12 +209,12 @@ Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the workfl
 
 ## License
 
-MIT — see [LICENSE](LICENSE) for details.
+MIT -- see [LICENSE](LICENSE) for details.
 
 ---
 
 ## Acknowledgments
 
-[Lost City](https://github.com/LostCityRS) — different client versions of `.synth` files
+[Lost City](https://github.com/LostCityRS) -- different client versions of `.synth` files
 
-[OpenOSRS](https://github.com/open-osrs/runelite/tree/master/runescape-client) — decompiled and partially deobfuscated files related to the `.synth` format and IIR filter
+[OpenOSRS](https://github.com/open-osrs/runelite/tree/master/runescape-client) -- decompiled and partially deobfuscated files related to the `.synth` format and IIR filter
