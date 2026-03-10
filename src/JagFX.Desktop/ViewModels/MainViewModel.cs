@@ -49,7 +49,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private string _selectedEnvelopeTitle = "";
 
     [ObservableProperty]
-    private string _selectedEnvelopeColor = "#44BB77";
+    private string _selectedEnvelopeColor = "#009E73";
 
     [ObservableProperty]
     private float[]? _outputSamples;
@@ -67,10 +67,16 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private bool _isLooping;
 
     [ObservableProperty]
+    private int _loopCount;
+
+    [ObservableProperty]
     private bool _trueWaveEnabled = true;
 
     [ObservableProperty]
     private bool _isCopyMode;
+
+    [ObservableProperty]
+    private string _statusHint = "";
 
     public Func<Task>? RequestOpenDialog { get; set; }
     public Func<Task>? RequestSaveAsDialog { get; set; }
@@ -118,14 +124,31 @@ public partial class MainViewModel : ObservableObject, IDisposable
             }
         };
         _playback.PlaybackFinished += OnPlaybackFinished;
+        KnobControl.HintChanged += OnHintChanged;
         SubscribeVoiceChanges(Patch.SelectedVoice);
     }
+
+    private void OnHintChanged(string hint) => StatusHint = hint;
 
     partial void OnPatchNameChanged(string value) => OnPropertyChanged(nameof(WindowTitle));
     partial void OnIsDirtyChanged(bool value) => OnPropertyChanged(nameof(WindowTitle));
     partial void OnFilePathChanged(string? value) => OnPropertyChanged(nameof(WindowTitle));
 
+    private int EffectiveLoopCount => IsLooping ? (LoopCount == 0 ? 50 : LoopCount) : 1;
+
     partial void OnPlaySingleVoiceChanged(bool value)
+    {
+        _cachedBuffer = null;
+        ScheduleRerender();
+    }
+
+    partial void OnIsLoopingChanged(bool value)
+    {
+        _cachedBuffer = null;
+        ScheduleRerender();
+    }
+
+    partial void OnLoopCountChanged(int value)
     {
         _cachedBuffer = null;
         ScheduleRerender();
@@ -179,7 +202,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             if (SoloedEnvelope is not null)
                 model = ApplySolo(model, voiceFilter >= 0 ? voiceFilter : Patch.SelectedVoiceIndex);
 
-            var buffer = await SynthesisService.RenderAsync(model, voiceFilter: voiceFilter, ct: cts.Token);
+            var buffer = await SynthesisService.RenderAsync(model, loopCount: EffectiveLoopCount, voiceFilter: voiceFilter, ct: cts.Token);
             if (cts.Token.IsCancellationRequested) return;
             _cachedBuffer = buffer;
             if (buffer.Length > 0)
@@ -383,15 +406,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     public static readonly (string Title, string Color, Func<VoiceViewModel, EnvelopeViewModel> Getter)[] SignalChain =
     [
-        ("PITCH",   "#44BB77", v => v.Pitch),
-        ("V.RATE",  "#44BB77", v => v.VibratoRate),
-        ("V.DEPTH", "#44BB77", v => v.VibratoDepth),
-        ("VOLUME",  "#44BB77", v => v.Volume),
-        ("T.RATE",  "#44BB77", v => v.TremoloRate),
-        ("T.DEPTH", "#44BB77", v => v.TremoloDepth),
-        ("GAP OFF", "#44BB77", v => v.GapOff),
-        ("GAP ON",  "#44BB77", v => v.GapOn),
-        ("FILTER",  "#8888d4", v => v.FilterEnvelope),
+        ("PITCH",   "#009E73", v => v.Pitch),
+        ("V.RATE",  "#009E73", v => v.VibratoRate),
+        ("V.DEPTH", "#009E73", v => v.VibratoDepth),
+        ("VOLUME",  "#009E73", v => v.Volume),
+        ("T.RATE",  "#009E73", v => v.TremoloRate),
+        ("T.DEPTH", "#009E73", v => v.TremoloDepth),
+        ("GAP OFF", "#009E73", v => v.GapOff),
+        ("GAP ON",  "#009E73", v => v.GapOn),
+        ("FILTER",  "#0072B2", v => v.FilterEnvelope),
     ];
 
     public void SelectEnvelope(string title)
@@ -447,7 +470,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             var model = Patch.ToModel();
             var voiceFilter = PlaySingleVoice ? Patch.SelectedVoiceIndex : -1;
-            buffer = await SynthesisService.RenderAsync(model, voiceFilter: voiceFilter);
+            buffer = await SynthesisService.RenderAsync(model, loopCount: EffectiveLoopCount, voiceFilter: voiceFilter);
             _cachedBuffer = buffer;
             if (buffer.Length > 0)
             {
@@ -491,7 +514,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         PlaybackPosition = Math.Clamp(elapsed / _playbackDuration, 0, 1);
         if (PlaybackPosition >= 1.0)
         {
-            if (IsLooping && _cachedBuffer is { Length: > 0 })
+            if (IsLooping && LoopCount == 0 && _cachedBuffer is { Length: > 0 })
             {
                 PlaybackPosition = 0;
                 _playbackStart = DateTime.UtcNow;
@@ -519,9 +542,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         Dispatcher.UIThread.Post(() =>
         {
-            if (IsLooping && !_stoppingManually && _cachedBuffer is { Length: > 0 })
+            if (IsLooping && LoopCount == 0 && !_stoppingManually && _cachedBuffer is { Length: > 0 })
             {
-                _ = _playback.PlayAsync(_cachedBuffer);
+                _playback.ReplayFromExistingFile();
                 _playbackStart = DateTime.UtcNow;
                 return;
             }
@@ -540,6 +563,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _renderCts?.Cancel();
         _renderCts?.Dispose();
         _playback.Dispose();
+        KnobControl.HintChanged -= OnHintChanged;
         UnsubscribeVoiceChanges();
         GC.SuppressFinalize(this);
     }
