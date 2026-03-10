@@ -3,26 +3,30 @@
         xmlns:vm="using:JagFX.Desktop.ViewModels"
         xmlns:header="using:JagFX.Desktop.Views.Header"
         xmlns:inspector="using:JagFX.Desktop.Views.Inspector"
-        xmlns:rack="using:JagFX.Desktop.Views.Rack"
+        xmlns:signalchain="using:JagFX.Desktop.Views.SignalChain"
+        xmlns:footer="using:JagFX.Desktop.Views.Footer"
         x:Class="JagFX.Desktop.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="{Binding WindowTitle}"
-        Width="1280" Height="800"
-        MinWidth="1024" MinHeight="700"
-        Background="#0c0c0c"
+        Width="1400" Height="800"
+        MinWidth="800" MinHeight="600"
+        Background="{StaticResource SurfaceBaseBrush}"
         WindowStartupLocation="CenterScreen">
 
     <DockPanel LastChildFill="True">
         <!-- Header Bar -->
         <header:HeaderBar DockPanel.Dock="Top" DataContext="{Binding}" />
 
-        <!-- Main content area -->
-        <Grid ColumnDefinitions="180,*">
-            <!-- Left Inspector Panel -->
+        <!-- Partials Footer -->
+        <footer:PartialsFooter DockPanel.Dock="Bottom" DataContext="{Binding}" />
+
+        <!-- Main content area: Inspector left, Matrix right -->
+        <Grid ColumnDefinitions="160,*">
+            <!-- Left: Inspector Panel -->
             <inspector:InspectorPanel Grid.Column="0" DataContext="{Binding}" />
 
-            <!-- Envelope Rack -->
-            <rack:EnvelopeRack Grid.Column="1" DataContext="{Binding}" />
+            <!-- Right: Full-screen Signal Chain Matrix -->
+            <signalchain:SignalChainPanel Grid.Column="1" DataContext="{Binding}" />
         </Grid>
     </DockPanel>
 

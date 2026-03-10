@@ -12,6 +12,12 @@ public partial class MainWindow : Window
         InitializeComponent();
         KeyDown += OnWindowKeyDown;
         DataContextChanged += OnDataContextChanged;
+        Closing += OnWindowClosing;
+    }
+
+    private void OnWindowClosing(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        (DataContext as MainViewModel)?.Dispose();
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -27,29 +33,29 @@ public partial class MainWindow : Window
         vm.RequestSaveAsDialog = async () =>
         {
             var path = await FileDialogService.SaveSynthFileAsync(this, vm.PatchName);
-            if (path is not null) vm.SaveToPath(path);
+            if (path is null) return;
+
+            if (path.EndsWith(".wav", StringComparison.OrdinalIgnoreCase))
+                await vm.ExportToPathAsync(path);
+            else
+                vm.SaveToPath(path);
         };
 
-        vm.RequestExportDialog = async () =>
-        {
-            var path = await FileDialogService.SaveWavFileAsync(this, vm.PatchName);
-            if (path is not null) await vm.ExportToPathAsync(path);
-        };
+        // Select first envelope by default
+        vm.SelectEnvelope("PITCH");
     }
 
     private void OnWindowKeyDown(object? sender, KeyEventArgs e)
     {
         if (DataContext is not MainViewModel vm) return;
 
+        // Don't handle shortcuts when a text input is focused
+        if (FocusManager?.GetFocusedElement() is TextBox or NumericUpDown) return;
+
         switch (e.Key)
         {
             case Key.Space:
                 vm.TogglePlayCommand.Execute(null);
-                e.Handled = true;
-                break;
-
-            case Key.S when e.KeyModifiers == (KeyModifiers.Control | KeyModifiers.Shift):
-                vm.SaveAsCommand.Execute(null);
                 e.Handled = true;
                 break;
 
@@ -63,8 +69,18 @@ public partial class MainWindow : Window
                 e.Handled = true;
                 break;
 
-            case Key.E when e.KeyModifiers.HasFlag(KeyModifiers.Control):
-                vm.ExportCommand.Execute(null);
+            case Key.V when e.KeyModifiers == KeyModifiers.None:
+                vm.PlaySingleVoice = !vm.PlaySingleVoice;
+                e.Handled = true;
+                break;
+
+            case Key.Up:
+                vm.SelectEnvelopeByOffset(-1);
+                e.Handled = true;
+                break;
+
+            case Key.Down:
+                vm.SelectEnvelopeByOffset(1);
                 e.Handled = true;
                 break;
         }
