@@ -59,6 +59,25 @@
                     ToolTip.Tip="Stop">
                 <PathIcon Data="{StaticResource IconStop}" Width="14" Height="14" />
             </Button>
+
+            <!-- Separator -->
+            <Border Width="1" Height="20" Background="{StaticResource BorderDefaultBrush}" Margin="2,0" />
+
+            <!-- Loop group -->
+            <Button x:Name="BtnLoop" Theme="{StaticResource JagVoiceButton}" Content="LOOP" MinWidth="32" Height="18"
+                    FontSize="8" ToolTip.Tip="Loop playback"
+                    Classes.selected="{Binding IsLooping}" />
+            <TextBlock Text="CNT" FontSize="8" Foreground="{StaticResource TextSecondaryBrush}"
+                       VerticalAlignment="Center" Margin="4,0,2,0" />
+            <NumericUpDown Value="{Binding LoopCount}" Minimum="0" Maximum="999" Width="48" />
+            <TextBlock Text="BGN" FontSize="8" Foreground="{StaticResource TextSecondaryBrush}"
+                       VerticalAlignment="Center" Margin="4,0,2,0" />
+            <NumericUpDown Value="{Binding Patch.LoopBegin, TargetNullValue=0, FallbackValue=0}"
+                           Minimum="0" Maximum="65535" Width="56" />
+            <TextBlock Text="END" FontSize="8" Foreground="{StaticResource TextSecondaryBrush}"
+                       VerticalAlignment="Center" Margin="4,0,2,0" />
+            <NumericUpDown Value="{Binding Patch.LoopEnd, TargetNullValue=0, FallbackValue=0}"
+                           Minimum="0" Maximum="65535" Width="56" />
         </StackPanel>
     </Border>
 
