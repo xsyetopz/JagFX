@@ -20,7 +20,16 @@ public class EnvelopeCanvas : Control
     public static readonly StyledProperty<bool> IsSelectedProperty =
         AvaloniaProperty.Register<EnvelopeCanvas, bool>(nameof(IsSelected));
 
+    public static readonly StyledProperty<bool> IsThumbnailProperty =
+        AvaloniaProperty.Register<EnvelopeCanvas, bool>(nameof(IsThumbnail));
+
+    public static readonly StyledProperty<int> ZoomLevelProperty =
+        AvaloniaProperty.Register<EnvelopeCanvas, int>(nameof(ZoomLevel), 1);
+
     private int _dragIndex = -1;
+    private double _dragMinLevel;
+    private double _dragRange;
+    private double _dragTotalDuration;
     private EnvelopeViewModel? _subscribedEnvelope;
 
     public EnvelopeViewModel? Envelope
@@ -41,9 +50,21 @@ public class EnvelopeCanvas : Control
         set => SetValue(IsSelectedProperty, value);
     }
 
+    public bool IsThumbnail
+    {
+        get => GetValue(IsThumbnailProperty);
+        set => SetValue(IsThumbnailProperty, value);
+    }
+
+    public int ZoomLevel
+    {
+        get => GetValue(ZoomLevelProperty);
+        set => SetValue(ZoomLevelProperty, value);
+    }
+
     static EnvelopeCanvas()
     {
-        AffectsRender<EnvelopeCanvas>(EnvelopeProperty, LineColorProperty, IsSelectedProperty);
+        AffectsRender<EnvelopeCanvas>(EnvelopeProperty, LineColorProperty, IsSelectedProperty, IsThumbnailProperty, ZoomLevelProperty);
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -104,28 +125,37 @@ public class EnvelopeCanvas : Control
         context.FillRectangle(ThemeColors.CanvasBackgroundBrush, new Rect(0, 0, w, h));
 
         if (IsSelected)
-            context.DrawRectangle(null, ThemeColors.AccentPen2, new Rect(1, 1, w - 2, h - 2));
+            context.DrawRectangle(null, ThemeColors.AccentPen1, new Rect(0.5, 0.5, w - 1, h - 1));
 
-        DrawGrid(context, w, h);
+        using var clip = context.PushClip(new Rect(0, 0, w, h));
+
+        DrawGrid(context, w, h, ZoomLevel);
 
         var env = Envelope;
         if (env is null || env.Segments.Count == 0) return;
 
-        var geometry = EnvelopeGeometry.Compute(env, w, h);
+        var geometry = EnvelopeGeometry.Compute(env, w, h, ZoomLevel);
         DrawEnvelope(context, geometry);
     }
 
-    private static void DrawGrid(DrawingContext context, double w, double h)
+    private static void DrawGrid(DrawingContext context, double w, double h, int zoomLevel)
     {
-        var midY = h / 2;
-        context.DrawLine(ThemeColors.MidPen, new Point(0, midY), new Point(w, midY));
-        context.DrawLine(ThemeColors.GridPen, new Point(0, h * 0.25), new Point(w, h * 0.25));
-        context.DrawLine(ThemeColors.GridPen, new Point(0, h * 0.75), new Point(w, h * 0.75));
-
-        for (var i = 1; i < 4; i++)
+        // Horizontal grid: scale subdivisions with zoom
+        // 1x → 4 divisions (25% steps, 3 lines), 2x → 8 (12.5%, 7 lines), 4x → 16 (6.25%, 15 lines)
+        var hDivisions = 4 * zoomLevel;
+        for (var i = 1; i < hDivisions; i++)
         {
-            var x = w * i / 4.0;
-            context.DrawLine(ThemeColors.GridPen, new Point(x, 0), new Point(x, h));
+            var y = ThemeColors.Snap(h * i / (double)hDivisions);
+            var pen = i == hDivisions / 2 ? ThemeColors.MidPen : ThemeColors.GridFaintPen;
+            context.DrawLine(pen, new Point(0, y), new Point(w, y));
+        }
+
+        // Vertical grid: scale columns with zoom
+        var vDivisions = 8 * zoomLevel;
+        for (var i = 1; i < vDivisions; i++)
+        {
+            var x = ThemeColors.Snap(w * i / (double)vDivisions);
+            context.DrawLine(ThemeColors.GridFaintPen, new Point(x, 0), new Point(x, h));
         }
     }
 
@@ -138,8 +168,12 @@ public class EnvelopeCanvas : Control
         for (var i = 0; i < points.Length - 1; i++)
             context.DrawLine(linePen, points[i], points[i + 1]);
 
+        const double s = 3;
         foreach (var pt in points)
-            context.DrawEllipse(ThemeColors.AccentBrush, null, pt, 2.5, 2.5);
+        {
+            context.DrawLine(ThemeColors.MarkerPen, new Point(pt.X - s, pt.Y - s), new Point(pt.X + s, pt.Y + s));
+            context.DrawLine(ThemeColors.MarkerPen, new Point(pt.X - s, pt.Y + s), new Point(pt.X + s, pt.Y - s));
+        }
     }
 
     #endregion
@@ -149,15 +183,24 @@ public class EnvelopeCanvas : Control
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
         base.OnPointerPressed(e);
+        if (IsThumbnail) return;
 
         var env = Envelope;
         if (env is null || env.Segments.Count == 0) return;
 
-        var geo = EnvelopeGeometry.Compute(env, Bounds.Width, Bounds.Height);
+        var geo = EnvelopeGeometry.Compute(env, Bounds.Width, Bounds.Height, ZoomLevel);
         _dragIndex = geo.HitTest(e.GetPosition(this));
 
         if (_dragIndex >= 0)
+        {
+            _dragMinLevel = Math.Min(env.StartValue, env.Segments.Min(s => s.TargetLevel));
+            _dragRange = Math.Max(env.StartValue, env.Segments.Max(s => s.TargetLevel)) - _dragMinLevel;
+            if (_dragRange <= 0) _dragRange = 1;
+            _dragTotalDuration = env.Segments.Sum(s => s.Duration);
+            if (_dragTotalDuration <= 0) _dragTotalDuration = 1;
+            e.Pointer.Capture(this);
             e.Handled = true;
+        }
     }
 
     protected override void OnPointerMoved(PointerEventArgs e)
@@ -170,7 +213,8 @@ public class EnvelopeCanvas : Control
         if (env is null || _dragIndex >= env.Segments.Count) return;
 
         var pos = e.GetPosition(this);
-        env.Segments[_dragIndex].TargetLevel = EnvelopeGeometry.YToPeakLevel(pos.Y, Bounds.Height, env);
+        env.Segments[_dragIndex].TargetLevel = EnvelopeGeometry.YToPeakLevel(pos.Y, Bounds.Height, _dragMinLevel, _dragRange);
+        EnvelopeGeometry.AdjustDuration(pos.X, Bounds.Width, _dragIndex, env, _dragTotalDuration, ZoomLevel);
         InvalidateVisual();
         e.Handled = true;
     }
@@ -178,7 +222,14 @@ public class EnvelopeCanvas : Control
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
         base.OnPointerReleased(e);
-        _dragIndex = -1;
+        if (_dragIndex >= 0)
+        {
+            e.Pointer.Capture(null);
+            _dragIndex = -1;
+            _dragMinLevel = 0;
+            _dragRange = 0;
+            _dragTotalDuration = 0;
+        }
     }
 
     #endregion
