@@ -1,0 +1,108 @@
+# JagFx
+
+> A .NET toolkit for parsing, synthesizing, and editing OSRS (OldSchool RuneScape) synthesizer instrument files (.synth). Includes a CLI, a desktop editor (Avalonia), and a JSON interchange format for programmatic patch creation.
+
+## What is a .synth file?
+
+A .synth file is a compact binary format describing a software synthesizer patch from the OSRS audio engine. Each patch contains up to 10 voices, each with:
+
+- **Frequency and amplitude envelopes** (multi-segment, with waveform modulation)
+- **Optional LFOs** for vibrato (pitch) and tremolo (amplitude)
+- **Optional gating envelopes** (rhythmic on/off patterns)
+- **Additive partials** (up to 10 oscillators per voice)
+- **Echo/delay** effect
+- **IIR pole-zero filter** with time-varying modulation
+- **Loop region** for sustained playback
+
+Audio is rendered at 22,050 Hz mono, 8-bit PCM.
+
+## JSON Interchange Format
+
+Since .synth is binary, JagFx provides a JSON interchange format for programmatic creation and inspection. The format uses:
+
+- **String waveforms**: `"off"`, `"square"`, `"sine"`, `"saw"`, `"noise"`
+- **Raw Q16 integers** for envelope start/end values (preserves round-trip fidelity)
+- **Structured filter coefficients**: `feedforward`/`feedback` channels with `baseline`/`modulated` phases
+- **Optional fields with defaults**: omitted fields get sensible defaults (no echo, no filter, no LFOs, empty partials, offset 0)
+
+### CLI Commands
+
+```bash
+# Convert .synth to JSON (inspect/edit)
+jagfx to-json <input.synth> [output.json]
+
+# Convert JSON to .synth (create/modify)
+jagfx from-json <input.json> <output.synth>
+
+# Convert .synth to .wav (listen)
+jagfx convert <input.synth> <output.wav>
+
+# Disassemble .synth (debug)
+jagfx inspect <file.synth>
+```
+
+### Minimal JSON Example
+
+A single-voice patch with just the required fields:
+
+```json
+{
+  "voices": [
+    {
+      "frequencyEnvelope": {
+        "waveform": "sine",
+        "startValue": 0,
+        "endValue": 500,
+        "segments": [
+          { "duration": 65535, "targetLevel": 32768 }
+        ]
+      },
+      "amplitudeEnvelope": {
+        "waveform": "off",
+        "startValue": 0,
+        "endValue": 100,
+        "segments": [
+          { "duration": 16384, "targetLevel": 65535 },
+          { "duration": 65535, "targetLevel": 0 }
+        ]
+      },
+      "durationMs": 500
+    }
+  ]
+}
+```
+
+### Key Concepts
+
+- **Envelope segments**: `duration` is a position within voice duration (0–65535 where 65535 = end). `targetLevel` (0–65535) maps linearly between `startValue` and `endValue`.
+- **Partials**: Each partial has `amplitude` (1–100%), `pitchOffsetSemitones`, and optional `delay` (ms).
+- **Filter**: Structured as `poleCounts` [2], `unityGain` [2], and coefficient arrays organized by channel (`feedforward`/`feedback`) and phase (`baseline`/`modulated`).
+
+## Project Structure
+
+```text
+src/
+  JagFx.Core/          # Shared types (Percent, Milliseconds, AudioConstants)
+  JagFx.Domain/        # Domain models (Patch, Voice, Envelope, Filter, etc.)
+  JagFx.Io/            # Binary reader/writer + JSON serialization
+    Json/               # SynthJsonModels, SynthJsonMapper, SynthJsonSerializer
+  JagFx.Synthesis/      # Audio rendering engine
+  JagFx.Cli/           # Command-line interface
+  JagFx.Desktop/       # Avalonia desktop editor
+specs/
+  synth-format-spec.md  # Complete binary format specification
+  synth.schema.json     # JSON Schema (draft 2020-12)
+  examples/             # Example JSON patches
+tests/
+  JagFx.Io.Tests/       # Reader/writer/JSON round-trip tests
+  JagFx.Synthesis.Tests/ # Audio rendering tests
+references/
+  synths/               # Reference .synth files for testing
+```
+
+## Links
+
+- [Binary format specification](specs/synth-format-spec.md)
+- [JSON Schema](specs/synth.schema.json)
+- [Minimal JSON example](specs/examples/minimal.json)
+- [Full JSON example (cow_death)](specs/examples/cow_death.json)
