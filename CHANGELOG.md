@@ -8,6 +8,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **JSON interchange format** -- a human-readable JSON representation of `.synth` patches for programmatic creation and inspection. Includes `SynthJsonModels` (DTOs), `SynthJsonMapper` (domain ↔ DTO), and `SynthJsonSerializer` (public API) in `JagFx.Io.Json`. Uses string waveform names (`"sine"`, `"square"`, etc.), raw Q16 integers for envelope values (round-trip safe), and structured filter coefficients (`feedforward`/`feedback` × `baseline`/`modulated`). Optional fields default to sensible values when omitted.
+
+- **CLI `to-json` command** -- `jagfx to-json <input.synth> [output.json]` converts a binary `.synth` file to the JSON interchange format. Outputs to stdout when no output path is given.
+
+- **CLI `from-json` command** -- `jagfx from-json <input.json> <output.synth>` converts a JSON patch back to binary `.synth` format.
+
+- **JSON Schema** -- `specs/synth.schema.json` (JSON Schema draft 2020-12) documents the interchange format with type constraints, required fields, and descriptions.
+
+- **Example JSON patches** -- `specs/examples/minimal.json` (hand-written single-voice, required fields only) and `specs/examples/cow_death.json` (generated via `to-json`).
+
+- **`llms.txt`** -- project description following the [llms.txt standard](https://llmstxt.org/) for LLM consumption, covering the project, `.synth` format, JSON interchange, CLI usage, and project structure.
+
+- **`CLAUDE.md`** -- project-specific instructions for Claude Code with architecture, conventions, build commands, and constraints.
+
+- **`AGENTS.md`** -- agent-oriented project context for AI coding agents with build/test commands, project layout, key patterns, and rules.
+
+- **JSON round-trip tests** -- parametrized xUnit tests covering all 15 reference `.synth` files (binary → JSON → binary), minimal JSON with defaults, filter coefficient mapping, waveform string serialization, and empty patch handling.
+
 - **Status bar** -- a thin bar at the bottom of the main window shows live knob hints (label + current value + unit) as the user hovers or drags any `KnobControl`, and clears when the pointer leaves. `KnobControl.HintChanged` is a static event wired into `MainViewModel.StatusHint`.
 
 - **Envelope canvas scroll/pan** -- `EnvelopeCanvas` and `WaveformCanvas` both support scroll-offset panning when zoomed in. Drag on the canvas background (not a breakpoint) to pan; scroll offset resets to 0 when returning to 1× zoom. Grid lines tile correctly with the scroll offset so vertical lines stay aligned.
@@ -54,28 +72,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **DSP-accurate naming refactor** -- renamed identifiers across the full solution to match what the code actually does. No behaviour changes.
 
-  | Old name | New name | Reason |
-  |----------|----------|--------|
-  | `Segment.DurationSamples` | `Segment.Duration` | Value is relative ticks, not samples |
-  | `Segment.PeakLevel` | `Segment.TargetLevel` | It is a breakpoint target, not a peak |
-  | `Envelope.StartSample` | `Envelope.StartValue` | Value is generic (not always samples) |
-  | `Envelope.EndSample` | `Envelope.EndValue` | Value is generic (not always samples) |
-  | `Voice.DurationSamples` | `Voice.DurationMs` | Value is milliseconds |
-  | `Voice.StartSample` | `Voice.OffsetMs` | Value is a time offset in milliseconds |
-  | `Voice.GateSilenceEnvelope` | `Voice.GapOffEnvelope` | Controls gate-off period |
-  | `Voice.GateDurationEnvelope` | `Voice.GapOnEnvelope` | Controls gate-on period |
-  | `LoopSegment.BeginSample` | `LoopSegment.BeginMs` | Value is milliseconds |
-  | `LoopSegment.EndSample` | `LoopSegment.EndMs` | Value is milliseconds |
-  | `LowFrequencyOscillator.FrequencyRate` | `LowFrequencyOscillator.RateEnvelope` | Carries waveform + rate; "Frequency" was redundant |
-  | `Filter.CutoffEnvelope` | `Filter.ModulationEnvelope` | Modulates coefficients, not just cutoff |
-  | `Echo.MixPercent` | `Echo.FeedbackPercent` | Controls feedback/wet amount |
-  | `PatchMixer` | `PatchRenderer` | Class synthesises and sums voices; "Mixer" was misleading |
+  | Old name                               | New name                              | Reason                                                    |
+  | -------------------------------------- | ------------------------------------- | --------------------------------------------------------- |
+  | `Segment.DurationSamples`              | `Segment.Duration`                    | Value is relative ticks, not samples                      |
+  | `Segment.PeakLevel`                    | `Segment.TargetLevel`                 | It is a breakpoint target, not a peak                     |
+  | `Envelope.StartSample`                 | `Envelope.StartValue`                 | Value is generic (not always samples)                     |
+  | `Envelope.EndSample`                   | `Envelope.EndValue`                   | Value is generic (not always samples)                     |
+  | `Voice.DurationSamples`                | `Voice.DurationMs`                    | Value is milliseconds                                     |
+  | `Voice.StartSample`                    | `Voice.OffsetMs`                      | Value is a time offset in milliseconds                    |
+  | `Voice.GateSilenceEnvelope`            | `Voice.GapOffEnvelope`                | Controls gate-off period                                  |
+  | `Voice.GateDurationEnvelope`           | `Voice.GapOnEnvelope`                 | Controls gate-on period                                   |
+  | `LoopSegment.BeginSample`              | `LoopSegment.BeginMs`                 | Value is milliseconds                                     |
+  | `LoopSegment.EndSample`                | `LoopSegment.EndMs`                   | Value is milliseconds                                     |
+  | `LowFrequencyOscillator.FrequencyRate` | `LowFrequencyOscillator.RateEnvelope` | Carries waveform + rate; "Frequency" was redundant        |
+  | `Filter.CutoffEnvelope`                | `Filter.ModulationEnvelope`           | Modulates coefficients, not just cutoff                   |
+  | `Echo.MixPercent`                      | `Echo.FeedbackPercent`                | Controls feedback/wet amount                              |
+  | `PatchMixer`                           | `PatchRenderer`                       | Class synthesises and sums voices; "Mixer" was misleading |
 
   UI labels updated to match:
 
-  | Old label | New label |
-  |-----------|-----------|
-  | `G.SIL` / `Gate Silence` | `GAP OFF` / `Gap Off` |
-  | `G.DUR` / `Gate Duration` | `GAP ON` / `Gap On` |
-  | `STO` (header bar) | `OFS` |
-  | `MIX` (echo section) | `FDBK` |
+  | Old label                 | New label             |
+  | ------------------------- | --------------------- |
+  | `G.SIL` / `Gate Silence`  | `GAP OFF` / `Gap Off` |
+  | `G.DUR` / `Gate Duration` | `GAP ON` / `Gap On`   |
+  | `STO` (header bar)        | `OFS`                 |
+  | `MIX` (echo section)      | `FDBK`                |
