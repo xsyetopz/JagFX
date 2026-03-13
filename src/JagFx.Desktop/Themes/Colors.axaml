@@ -2,56 +2,56 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- Base surface colors -->
-    <Color x:Key="SurfaceBase">#121212</Color>
-    <Color x:Key="SurfaceGraph">#101010</Color>
-    <Color x:Key="SurfaceHeader">#161616</Color>
-    <Color x:Key="SurfacePanel">#1e1e1e</Color>
-    <Color x:Key="SurfaceCell">#202020</Color>
-    <Color x:Key="SurfaceCellHeader">#222222</Color>
-    <Color x:Key="SurfaceInput">#050505</Color>
-    <Color x:Key="SurfaceFooter">#1a1a1a</Color>
+    <Color x:Key="SurfaceBase">#333333</Color>
+    <Color x:Key="SurfaceGraph">#000000</Color>
+    <Color x:Key="SurfaceHeader">#3a3a3a</Color>
+    <Color x:Key="SurfacePanel">#3c3c3c</Color>
+    <Color x:Key="SurfaceCell">#404040</Color>
+    <Color x:Key="SurfaceCellHeader">#444444</Color>
+    <Color x:Key="SurfaceInput">#2a2a2a</Color>
+    <Color x:Key="SurfaceFooter">#333333</Color>
 
     <!-- Border colors -->
-    <Color x:Key="BorderDefault">#3a3a3a</Color>
-    <Color x:Key="BorderSubtle">#272727</Color>
+    <Color x:Key="BorderDefault">#555555</Color>
+    <Color x:Key="BorderSubtle">#4a4a4a</Color>
     <Color x:Key="BorderAccent">#009E73</Color>
 
     <!-- Text colors -->
     <Color x:Key="TextPrimary">#f0f0f0</Color>
     <Color x:Key="TextSecondary">#aaaaaa</Color>
-    <Color x:Key="TextMuted">#555555</Color>
-    <Color x:Key="TextButton">#dcdcdc</Color>
+    <Color x:Key="TextMuted">#777777</Color>
+    <Color x:Key="TextButton">#ffffff</Color>
     <Color x:Key="TextAccent">#009E73</Color>
 
     <!-- Envelope line colors -->
-    <Color x:Key="LineEnvelope">#009E73</Color>
+    <Color x:Key="LineEnvelope">#F0E442</Color>
     <Color x:Key="LineFilter">#0072B2</Color>
 
     <!-- Breakpoint colors -->
-    <Color x:Key="BreakpointFill">#009E73</Color>
+    <Color x:Key="BreakpointFill">#F0E442</Color>
     <Color x:Key="BreakpointSelected">#ffffff</Color>
 
     <!-- Grid line color -->
     <Color x:Key="GridLine">#1a1a1a</Color>
-    <Color x:Key="GridMidline">#252525</Color>
+    <Color x:Key="GridMidline">#333333</Color>
 
     <!-- Button colors -->
-    <Color x:Key="ButtonDefault">#2f2f2f</Color>
-    <Color x:Key="ButtonBorder">#4c4c4c</Color>
-    <Color x:Key="ButtonHover">#383838</Color>
-    <Color x:Key="ButtonActive">#1a1a1a</Color>
+    <Color x:Key="ButtonDefault">#6a6a6a</Color>
+    <Color x:Key="ButtonBorder">#808080</Color>
+    <Color x:Key="ButtonHover">#787878</Color>
+    <Color x:Key="ButtonActive">#555555</Color>
     <Color x:Key="ButtonActiveBorder">#009E73</Color>
 
     <!-- Voice strip active/inactive -->
     <Color x:Key="VoiceActive">#009E73</Color>
-    <Color x:Key="VoiceInactive">#333333</Color>
+    <Color x:Key="VoiceInactive">#555555</Color>
 
     <!-- Voice button states -->
-    <Color x:Key="VoiceInactiveBg">#1a1a1a</Color>
-    <Color x:Key="VoiceInactiveText">#3a3a3a</Color>
-    <Color x:Key="VoiceInactiveBorder">#222222</Color>
-    <Color x:Key="VoiceEnabledBg">#222222</Color>
-    <Color x:Key="VoiceEnabledBorder">#333333</Color>
+    <Color x:Key="VoiceInactiveBg">#505050</Color>
+    <Color x:Key="VoiceInactiveText">#666666</Color>
+    <Color x:Key="VoiceInactiveBorder">#555555</Color>
+    <Color x:Key="VoiceEnabledBg">#555555</Color>
+    <Color x:Key="VoiceEnabledBorder">#666666</Color>
 
     <!-- SolidColorBrushes for direct binding -->
     <SolidColorBrush x:Key="SurfaceBaseBrush" Color="{StaticResource SurfaceBase}" />
