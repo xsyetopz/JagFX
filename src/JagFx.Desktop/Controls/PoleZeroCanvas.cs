@@ -88,10 +88,10 @@ public class PoleZeroCanvas : Control
 
                 for (var p = 0; p < poleCount && p < filter.PolePhase[channel][phase].Length; p++)
                 {
-                    var phaseAngle = filter.PolePhase[channel][phase][p] / 65536.0 * 2 * Math.PI;
-                    var magnitude = filter.PoleMagnitude[channel][phase][p] / 65536.0;
-                    var px = cx + Math.Cos(phaseAngle) * magnitude * radius;
-                    var py = cy - Math.Sin(phaseAngle) * magnitude * radius;
+                    var r = FilterResponseCalculator.RawMagnitudeToRadius(filter.PoleMagnitude[channel][phase][p]);
+                    var theta = FilterResponseCalculator.RawPhaseToAngle(filter.PolePhase[channel][phase][p]);
+                    var px = cx + Math.Cos(theta) * r * radius;
+                    var py = cy - Math.Sin(theta) * r * radius;
 
                     var dist = Math.Sqrt((pos.X - px) * (pos.X - px) + (pos.Y - py) * (pos.Y - py));
                     if (dist < bestDist)
@@ -125,15 +125,13 @@ public class PoleZeroCanvas : Control
 
         var dx = pos.X - cx;
         var dy = -(pos.Y - cy);
-        var magnitude = Math.Sqrt(dx * dx + dy * dy) / radius;
-        magnitude = Math.Clamp(magnitude, 0, 1);
-        var phaseAngle = Math.Atan2(dy, dx);
-        if (phaseAngle < 0) phaseAngle += 2 * Math.PI;
+        var r = Math.Sqrt(dx * dx + dy * dy) / radius;
+        r = Math.Clamp(r, 0, 0.9999);
+        var theta = Math.Atan2(dy, dx);
+        if (theta < 0) theta += 2 * Math.PI;
 
-        var newPhase = (int)(phaseAngle / (2 * Math.PI) * 65536);
-        var newMagnitude = (int)(magnitude * 65536);
-        newPhase = Math.Clamp(newPhase, 0, 65535);
-        newMagnitude = Math.Clamp(newMagnitude, 0, 65536);
+        var newPhase = FilterResponseCalculator.AngleToRawPhase(theta);
+        var newMagnitude = FilterResponseCalculator.RadiusToRawMagnitude(r);
 
         var (channel, phase, index) = _dragTarget.Value;
         filter.UpdatePole(channel, phase, index, newPhase, newMagnitude);
@@ -173,13 +171,13 @@ public class PoleZeroCanvas : Control
         var radius = Math.Min(cx, cy) - 8;
 
         // Unit circle
-        context.DrawEllipse(null, ThemeColors.GridFaintPen, new Point(cx, cy), radius, radius);
+        context.DrawEllipse(null, ThemeColors.UnitCirclePen, new Point(cx, cy), radius, radius);
 
         // Axes
         var snappedCx = ThemeColors.Snap(cx);
         var snappedCy = ThemeColors.Snap(cy);
-        context.DrawLine(ThemeColors.GridFaintPen, new Point(cx - radius, snappedCy), new Point(cx + radius, snappedCy));
-        context.DrawLine(ThemeColors.GridFaintPen, new Point(snappedCx, cy - radius), new Point(snappedCx, cy + radius));
+        context.DrawLine(ThemeColors.UnitCirclePen, new Point(cx - radius, snappedCy), new Point(cx + radius, snappedCy));
+        context.DrawLine(ThemeColors.UnitCirclePen, new Point(snappedCx, cy - radius), new Point(snappedCx, cy + radius));
 
         var filter = Filter;
         if (filter is null || !filter.HasFilter) return;
@@ -201,10 +199,10 @@ public class PoleZeroCanvas : Control
 
                 for (var p = 0; p < poleCount && p < filter.PolePhase[channel][phase].Length; p++)
                 {
-                    var phaseAngle = filter.PolePhase[channel][phase][p] / 65536.0 * 2 * Math.PI;
-                    var magnitude = filter.PoleMagnitude[channel][phase][p] / 65536.0;
-                    var px = cx + Math.Cos(phaseAngle) * magnitude * radius;
-                    var py = cy - Math.Sin(phaseAngle) * magnitude * radius;
+                    var r = FilterResponseCalculator.RawMagnitudeToRadius(filter.PoleMagnitude[channel][phase][p]);
+                    var theta = FilterResponseCalculator.RawPhaseToAngle(filter.PolePhase[channel][phase][p]);
+                    var px = cx + Math.Cos(theta) * r * radius;
+                    var py = cy - Math.Sin(theta) * r * radius;
 
                     if (phase == 0)
                     {
