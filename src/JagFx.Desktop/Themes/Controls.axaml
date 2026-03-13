@@ -29,11 +29,11 @@
             </ControlTemplate>
         </Setter>
         <Style Selector="^:pointerover">
-            <Setter Property="Background" Value="#383838" />
+            <Setter Property="Background" Value="#787878" />
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
         </Style>
         <Style Selector="^:pressed">
-            <Setter Property="Background" Value="#1a1a1a" />
+            <Setter Property="Background" Value="#555555" />
         </Style>
     </ControlTheme>
 
@@ -53,7 +53,8 @@
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Template">
             <ControlTemplate>
-                <Border Background="{TemplateBinding Background}"
+                <Border x:Name="Root"
+                        Background="{TemplateBinding Background}"
                         BorderBrush="{TemplateBinding BorderBrush}"
                         BorderThickness="{TemplateBinding BorderThickness}"
                         CornerRadius="{TemplateBinding CornerRadius}"
@@ -65,20 +66,23 @@
             </ControlTemplate>
         </Setter>
         <Style Selector="^:checked">
-            <Setter Property="Background" Value="#1a1a1a" />
+            <Setter Property="Background" Value="#009E73" />
             <Setter Property="BorderBrush" Value="#009E73" />
-            <Setter Property="Foreground" Value="#009E73" />
+            <Setter Property="Foreground" Value="#000000" />
+        </Style>
+        <Style Selector="^:checked /template/ Border#Root">
+            <Setter Property="BoxShadow" Value="0 0 6 0 #009E73" />
         </Style>
         <Style Selector="^:pointerover">
-            <Setter Property="Background" Value="#383838" />
+            <Setter Property="Background" Value="#787878" />
         </Style>
     </ControlTheme>
 
     <!-- Voice selection button (numbered, with enabled/selected states) -->
     <ControlTheme x:Key="JagVoiceButton" TargetType="Button">
-        <Setter Property="Background" Value="#1a1a1a" />
-        <Setter Property="Foreground" Value="#3a3a3a" />
-        <Setter Property="BorderBrush" Value="#222222" />
+        <Setter Property="Background" Value="#505050" />
+        <Setter Property="Foreground" Value="#666666" />
+        <Setter Property="BorderBrush" Value="#555555" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="MinHeight" Value="18" />
@@ -91,7 +95,8 @@
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Template">
             <ControlTemplate>
-                <Border Background="{TemplateBinding Background}"
+                <Border x:Name="Root"
+                        Background="{TemplateBinding Background}"
                         BorderBrush="{TemplateBinding BorderBrush}"
                         BorderThickness="{TemplateBinding BorderThickness}"
                         CornerRadius="{TemplateBinding CornerRadius}"
@@ -103,7 +108,7 @@
             </ControlTemplate>
         </Setter>
         <Style Selector="^:pointerover">
-            <Setter Property="Background" Value="#383838" />
+            <Setter Property="Background" Value="#787878" />
         </Style>
         <Style Selector="^.enabled">
             <Setter Property="Background" Value="{DynamicResource ButtonDefaultBrush}" />
@@ -112,10 +117,13 @@
             <Setter Property="Opacity" Value="1.0" />
         </Style>
         <Style Selector="^.selected">
-            <Setter Property="Background" Value="#1a1a1a" />
+            <Setter Property="Background" Value="#009E73" />
             <Setter Property="BorderBrush" Value="#009E73" />
-            <Setter Property="Foreground" Value="#009E73" />
+            <Setter Property="Foreground" Value="#000000" />
             <Setter Property="Opacity" Value="1.0" />
+        </Style>
+        <Style Selector="^.selected /template/ Border#Root">
+            <Setter Property="BoxShadow" Value="0 0 6 0 #009E73" />
         </Style>
     </ControlTheme>
 
@@ -135,7 +143,8 @@
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Template">
             <ControlTemplate>
-                <Border Background="{TemplateBinding Background}"
+                <Border x:Name="Root"
+                        Background="{TemplateBinding Background}"
                         BorderBrush="{TemplateBinding BorderBrush}"
                         BorderThickness="{TemplateBinding BorderThickness}"
                         CornerRadius="{TemplateBinding CornerRadius}"
@@ -147,17 +156,23 @@
             </ControlTemplate>
         </Setter>
         <Style Selector="^:checked">
-            <Setter Property="Background" Value="#1a1a1a" />
+            <Setter Property="Background" Value="#009E73" />
             <Setter Property="BorderBrush" Value="#009E73" />
-            <Setter Property="Foreground" Value="#009E73" />
+            <Setter Property="Foreground" Value="#000000" />
+        </Style>
+        <Style Selector="^:checked /template/ Border#Root">
+            <Setter Property="BoxShadow" Value="0 0 6 0 #009E73" />
         </Style>
         <Style Selector="^.solo:checked">
-            <Setter Property="Background" Value="#1a1a1a" />
+            <Setter Property="Background" Value="#E69F00" />
             <Setter Property="BorderBrush" Value="#E69F00" />
-            <Setter Property="Foreground" Value="#E69F00" />
+            <Setter Property="Foreground" Value="#000000" />
+        </Style>
+        <Style Selector="^.solo:checked /template/ Border#Root">
+            <Setter Property="BoxShadow" Value="0 0 6 0 #E69F00" />
         </Style>
         <Style Selector="^:pointerover">
-            <Setter Property="Background" Value="#383838" />
+            <Setter Property="Background" Value="#787878" />
         </Style>
     </ControlTheme>
 
@@ -189,11 +204,11 @@
             </ControlTemplate>
         </Setter>
         <Style Selector="^:pointerover">
-            <Setter Property="Background" Value="#383838" />
+            <Setter Property="Background" Value="#787878" />
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
         </Style>
         <Style Selector="^:pressed">
-            <Setter Property="Background" Value="#1a1a1a" />
+            <Setter Property="Background" Value="#555555" />
         </Style>
     </ControlTheme>
 
