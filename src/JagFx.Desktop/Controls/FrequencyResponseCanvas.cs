@@ -28,8 +28,8 @@ public class FrequencyResponseCanvas : Control
 
     private FilterViewModel? _subscribedFilter;
 
-    private const double DbMin = -40;
-    private const double DbMax = 20;
+    private const double DbMin = -80;
+    private const double DbMax = 80;
     private const double Pad = 4;
 
     static FrequencyResponseCanvas()
@@ -73,23 +73,23 @@ public class FrequencyResponseCanvas : Control
 
         var dbRange = DbMax - DbMin;
 
-        // Vertical lines at frequency decades (log scale, 20Hz–11025Hz)
-        double[] freqLines = [100, 1000, 10000];
+        // Vertical lines at frequency subdivisions (log scale, 20Hz–11025Hz)
+        double[] freqLines = [50, 100, 200, 500, 1000, 2000, 5000, 10000];
         var logMin = Math.Log10(20);
         var logMax = Math.Log10(11025);
         var logRange = logMax - logMin;
         foreach (var freq in freqLines)
         {
             var x = ThemeColors.Snap((Math.Log10(freq) - logMin) / logRange * (w - 2 * Pad) + Pad);
-            context.DrawLine(ThemeColors.GridFaintPen, new Point(x, 0), new Point(x, h));
+            context.DrawLine(ThemeColors.GridPen, new Point(x, 0), new Point(x, h));
         }
 
         // Horizontal lines at 10dB intervals
-        double[] dbLines = [-30, -20, -10, 0, 10];
+        double[] dbLines = [-70, -60, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70];
         foreach (var dB in dbLines)
         {
             var y = ThemeColors.Snap(Pad + (1 - (dB - DbMin) / dbRange) * (h - 2 * Pad));
-            var pen = dB == 0 ? ThemeColors.MidPen : ThemeColors.GridFaintPen;
+            var pen = dB == 0 ? ThemeColors.GridFaintPen : ThemeColors.GridPen;
             context.DrawLine(pen, new Point(0, y), new Point(w, y));
         }
 
@@ -98,23 +98,37 @@ public class FrequencyResponseCanvas : Control
 
         var numPoints = Math.Max((int)w, 50);
 
-        // Draw Phase-1 (dimmed, behind) then Phase-0 (full color, on top)
         var hasPhase1 = !filter.PolePhase.IsDefault
                         && !filter.PolePhase[0].IsDefault
                         && filter.PolePhase[0].Length > 1
                         && !filter.PolePhase[0][1].IsDefault;
 
+        // Layer 1 (back): intermediate envelope traces at f=0.25, 0.5, 0.75
         if (hasPhase1)
-            DrawResponseTrace(context, filter, 1, numPoints, w, h, dbRange, ThemeColors.DimmedFilterPen);
+        {
+            double[] intermediateFactors = [0.25, 0.5, 0.75];
+            foreach (var factor in intermediateFactors)
+                DrawResponseTrace(context, filter, factor, numPoints, w, h, dbRange, ThemeColors.SectionTracePen);
+        }
 
-        DrawResponseTrace(context, filter, 0, numPoints, w, h, dbRange, ThemeColors.FilterPen);
+        // Layer 2: green combined H(z) at envelope factor 1.0 (phase 1 endpoint)
+        if (hasPhase1)
+            DrawResponseTrace(context, filter, 1.0, numPoints, w, h, dbRange, ThemeColors.AccentPen1_5);
+
+        // Layer 3 (front): yellow combined H(z) at envelope factor 0.0 (phase 0 endpoint)
+        DrawResponseTrace(context, filter, 0.0, numPoints, w, h, dbRange, ThemeColors.EnvelopeLinePen);
     }
 
     private static void DrawResponseTrace(DrawingContext context, FilterViewModel filter,
-        int phaseIndex, int numPoints, double w, double h, double dbRange, IPen pen)
+        double envelopeFactor, int numPoints, double w, double h, double dbRange, IPen pen)
     {
-        var dBValues = FilterResponseCalculator.ComputeMagnitudeResponse(filter, phaseIndex, numPoints);
+        var dBValues = FilterResponseCalculator.ComputeMagnitudeResponse(filter, envelopeFactor, numPoints);
+        DrawTrace(context, dBValues, numPoints, w, h, dbRange, pen);
+    }
 
+    private static void DrawTrace(DrawingContext context, double[] dBValues,
+        int numPoints, double w, double h, double dbRange, IPen pen)
+    {
         Point? prev = null;
         for (var i = 0; i < dBValues.Length; i++)
         {
