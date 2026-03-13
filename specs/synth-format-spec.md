@@ -1,6 +1,6 @@
 # Jagex Synthesizer File Format and Engine Specification
 
-- **Version**: 2.0
+- **Version**: 2.1
 - **Origin**: OldSchool RuneScape client audio subsystem
 - **Sample Rate**: 22,050 Hz (fixed)
 - **Channels**: 1 (mono)
@@ -8,7 +8,7 @@
 
 ---
 
-## 1. Notation and Data Types
+## 1. Data Types
 
 ### 1.1 Primitive Types
 
@@ -18,67 +18,43 @@
 | `u16` | 2 bytes | Unsigned 16-bit integer, big-endian, range [0, 65535]  |
 | `s32` | 4 bytes | Signed 32-bit integer, big-endian, range [-2³¹, 2³¹-1] |
 
-### 1.2 Variable-Length Types
+### 1.2 USmart16 (Unsigned Smart Integer)
 
-#### 1.2.1 USmart16 (Unsigned Smart Integer)
+Variable-length unsigned integer, range [0, 32767].
 
-A variable-length unsigned integer encoding values in the range [0, 32767].
+$$
+\text{DecodeUSmart16}(stream) = \begin{cases} b & \text{if } b < 128 \text{ (consume 1 byte)} \\ w - 32768 & \text{otherwise (consume 2 bytes as u16)} \end{cases}
+$$
 
-**Decoding algorithm:**
-
-> **procedure** DecodeUSmart16(*stream*) \
-> &emsp; *b* ← peek first byte of *stream* \
-> &emsp; **if** *b* < 128 **then** \
-> &emsp;&emsp; consume 1 byte from *stream* \
-> &emsp;&emsp; **return** *b* \
-> &emsp; **else** \
-> &emsp;&emsp; consume 2 bytes from *stream*; interpret as *w* (u16, big-endian) \
-> &emsp;&emsp; **return** *w* − 32768
-
-**Encoding algorithm:**
-
-> **procedure** EncodeUSmart16(*v*) \
-> &emsp; **if** *v* < 128 **then** \
-> &emsp;&emsp; emit 1 byte: *v* \
-> &emsp; **else** \
-> &emsp;&emsp; emit 2 bytes: (*v* + 32768) as u16 big-endian
+$$
+\text{EncodeUSmart16}(v) = \begin{cases} \text{emit } v \text{ as 1 byte} & \text{if } v < 128 \\ \text{emit } (v + 32768) \text{ as u16} & \text{otherwise} \end{cases}
+$$
 
 | Byte Form | Byte 0 Range | Value Range |
 | --------- | ------------ | ----------- |
 | 1-byte    | 0x00–0x7F    | 0–127       |
 | 2-byte    | 0x80–0xFF    | 0–32767     |
 
-#### 1.2.2 Smart16 (Signed Smart Integer)
+### 1.3 Smart16 (Signed Smart Integer)
 
-A variable-length signed integer encoding values in the range [-32768, 16383].
+Variable-length signed integer, range [-32768, 16383].
 
-**Decoding algorithm:**
+$$
+\text{DecodeSmart16}(stream) = \begin{cases} b - 64 & \text{if } b < 128 \text{ (consume 1 byte)} \\ w - 49152 & \text{otherwise (consume 2 bytes as u16)} \end{cases}
+$$
 
-> **procedure** DecodeSmart16(*stream*) \
-> &emsp; *b* ← peek first byte of *stream* \
-> &emsp; **if** *b* < 128 **then** \
-> &emsp;&emsp; consume 1 byte from *stream* \
-> &emsp;&emsp; **return** *b* − 64 \
-> &emsp; **else** \
-> &emsp;&emsp; consume 2 bytes from *stream*; interpret as *w* (u16, big-endian) \
-> &emsp;&emsp; **return** *w* − 49152
-
-**Encoding algorithm:**
-
-> **procedure** EncodeSmart16(*v*) \
-> &emsp; **if** −64 ≤ *v* < 64 **then** \
-> &emsp;&emsp; emit 1 byte: (*v* + 64) \
-> &emsp; **else** \
-> &emsp;&emsp; emit 2 bytes: (*v* + 49152) as u16 big-endian
+$$
+\text{EncodeSmart16}(v) = \begin{cases} \text{emit } (v + 64) \text{ as 1 byte} & \text{if } -64 \le v < 64 \\ \text{emit } (v + 49152) \text{ as u16} & \text{otherwise} \end{cases}
+$$
 
 | Byte Form | Byte 0 Range | Value Range     |
 | --------- | ------------ | --------------- |
 | 1-byte    | 0x00–0x7F    | -64 to 63       |
 | 2-byte    | 0x80–0xFF    | -32768 to 16383 |
 
-### 1.3 Fixed-Point Arithmetic
+### 1.4 Fixed-Point Arithmetic
 
-The format uses Q16.16 fixed-point representation extensively:
+Q16.16 fixed-point representation used throughout:
 
 | Constant  | Value | Description                           |
 | --------- | ----- | ------------------------------------- |
@@ -153,11 +129,11 @@ Each **segment** consists of:
 | Duration     | `u16` | Time to reach target (units of 1/65536 of voice duration) |
 | Target Level | `u16` | Interpolation target (0–65535)                            |
 
-**Note**: The `TargetLevel` field represents a position in the range [0, 65535] that maps linearly between `StartValue` and `EndValue`. A value of 0 maps to `StartValue`; 65535 maps to `EndValue`.
+$\text{TargetLevel}$ maps linearly between $\text{StartValue}$ and $\text{EndValue}$: 0 → StartValue, 65535 → EndValue.
 
 #### 3.1.1 Implicit Segment Synthesis
 
-When an envelope has **zero segments** but *startValue* ≠ *endValue*, the parser synthesizes a single implicit segment with *duration* = voice duration (ms) and *targetLevel* = *endValue*. This ensures the envelope interpolates linearly from start to end over the voice's full duration.
+When an envelope has **zero segments** but $\text{startValue} \ne \text{endValue}$, the parser synthesizes a single implicit segment with $\text{duration} = \text{voiceDuration(ms)}$ and $\text{targetLevel} = \text{endValue}$.
 
 ### 3.2 Optional Envelope Pair
 
@@ -177,7 +153,7 @@ Read up to 10 partials. Each partial:
 | Pitch Offset | `smart16`  | Semitone offset in decicents  |
 | Delay        | `usmart16` | Start delay in milliseconds   |
 
-**Termination**: When the decoded `Amplitude` value equals 0, stop reading. Since `usmart16` encodes 0 as byte `0x00`, this is equivalent to encountering a zero byte.
+**Termination**: When decoded $\text{Amplitude} = 0$, stop reading (USmart16 encodes 0 as byte `0x00`).
 
 ### 3.4 Echo Parameters
 
@@ -186,7 +162,7 @@ Read up to 10 partials. Each partial:
 | Delay    | `usmart16` | Echo delay in milliseconds    |
 | Feedback | `usmart16` | Feedback gain (0–100 percent) |
 
-Echo is only active when both `Delay > 0` and `Feedback > 0`.
+Echo is only active when both $\text{Delay} > 0$ and $\text{Feedback} > 0$.
 
 ---
 
@@ -196,15 +172,15 @@ The IIR filter immediately follows the voice's duration and offset fields.
 
 ### 4.1 Filter Detection Heuristic
 
-The first byte of the filter header (pole count packing) can collide with valid voice markers (1–4), creating ambiguity when the byte starts a new voice versus a filter. The parser resolves this by peeking ahead:
+The first byte of the filter header can collide with valid voice markers (1–4). The parser resolves this by peeking ahead:
 
-1. Let `b` = peeked byte at current position.
-2. If `b == 0`: consume 1 byte, **no filter**. Return.
-3. If `b` is in [1, 4] **AND** at least 10 bytes remain in the buffer:
-   a. Reconstruct bytes at offsets 1–4 as a big-endian `s32`.
-   b. If `|s32 value| ≤ 10,000,000` **AND** byte at offset 9 is `≤ 15`:
-      → Sequence looks like a valid envelope header. Treat `b` as a **voice marker**, not a filter. Return null.
-4. Otherwise: treat `b` as the **filter header byte**. Proceed to read filter.
+1. Let $b$ = peeked byte at current position.
+2. If $b = 0$: consume 1 byte, **no filter**. Return.
+3. If $b \in [1, 4]$ **AND** at least 10 bytes remain:
+   a. Reconstruct bytes at offsets 1–4 as big-endian `s32`.
+   b. If $|\text{s32}| \le 10{,}000{,}000$ **AND** byte at offset 9 is $\le 15$:
+      → Treat $b$ as a **voice marker**, not a filter. Return null.
+4. Otherwise: treat $b$ as the **filter header byte**. Proceed to read filter.
 
 ### 4.2 Filter Header
 
@@ -215,7 +191,7 @@ The first byte of the filter header (pole count packing) can collide with valid 
 | Unity Gain Ch1  | `u16` | Gain normalization for feedback channel                      |
 | Modulation Mask | `u8`  | Bit flags for per-pole phase-1 coefficient presence          |
 
-The pole config byte packs two 4-bit pole counts. Each count specifies the number of second-order sections for that filter direction. Maximum is 15 per direction, though typical files use 1–4.
+The pole config byte packs two 4-bit pole counts (max 15 per direction, typical 1–4).
 
 **Modulation mask** layout (8 bits):
 
@@ -234,40 +210,32 @@ The pole config byte packs two 4-bit pole counts. Each count specifies the numbe
 
 Coefficients are read in two phases across both directions (ch0 then ch1):
 
-**Phase 0 (baseline):** For each direction with `poleCount > 0`, read `poleCount` pairs:
+**Phase 0 (baseline):** For each direction with $\text{poleCount} > 0$, read $\text{poleCount}$ pairs of $(\\text{frequency}, \text{magnitude})$ as `u16`.
 
-| Field     | Type  | Description       |
-| --------- | ----- | ----------------- |
-| Frequency | `u16` | Pole center phase |
-| Magnitude | `u16` | Pole magnitude    |
+**Phase 1 (modulated):** For each direction, for each pole index $p$: if bit $(d \cdot 4 + p)$ of the modulation mask is **set**, read a new pair; if **clear**, copy phase-0 values.
 
-**Phase 1 (modulated):** For each direction, for each pole index `p`:
+Read order (phases outer, directions inner):
 
-- If bit `(direction × 4 + p)` of `modulationMask` is **set**: read a new (frequency, magnitude) pair.
-- If bit is **clear**: copy phase-0 values for this pole (no bytes consumed).
+$$
+\textbf{for } \varphi \in \{0, 1\},\; d \in \{0, 1\},\; p \in [0, \text{poleCount}[d]):
+$$
 
-The read order iterates phases as the outer loop and directions as the inner loop:
-
-> **for** *φ* ∈ {0, 1} **do** \
-> &emsp; **for** *d* ∈ {0, 1} **do** \
-> &emsp;&emsp; **for** *p* ← 0 **to** poleCount[*d*] − 1 **do** \
-> &emsp;&emsp;&emsp; **if** *φ* = 1 ∧ bit (*d* · 4 + *p*) of *mask* is clear **then** \
-> &emsp;&emsp;&emsp;&emsp; freq[*d*, 1, *p*] ← freq[*d*, 0, *p*]; mag[*d*, 1, *p*] ← mag[*d*, 0, *p*] \
-> &emsp;&emsp;&emsp; **else** \
-> &emsp;&emsp;&emsp;&emsp; freq[*d*, *φ*, *p*] ← read u16; mag[*d*, *φ*, *p*] ← read u16
+$$
+\text{coeffs}[d, \varphi, p] = \begin{cases} \text{read}(\text{u16}, \text{u16}) & \text{if } \varphi = 0 \text{ or bit}(d \cdot 4 + p) \text{ set} \\ \text{coeffs}[d, 0, p] & \text{otherwise (copy baseline)} \end{cases}
+$$
 
 ### 4.4 Filter Modulation Envelope
 
-Read **only if** `modulationMask ≠ 0` **OR** `unityGainCh0 ≠ unityGainCh1`.
+Read **only if** $\text{modulationMask} \ne 0$ **OR** $\text{unityGainCh0} \ne \text{unityGainCh1}$.
 
-This is a minimal envelope containing only segments (no waveform, start, or end fields):
+Minimal envelope containing only segments (no waveform, start, or end fields):
 
 | Field            | Type      | Description                  |
 | ---------------- | --------- | ---------------------------- |
 | Segment Count    | `u8`      | Number of segments (N)       |
 | Segments[0..N-1] | Segment[] | Duration + TargetLevel pairs |
 
-The envelope is constructed with `Waveform = Off`, `StartValue = 0`, `EndValue = 0`.
+Constructed with $\text{Waveform} = \text{Off}$, $\text{StartValue} = 0$, $\text{EndValue} = 0$.
 
 ### 4.5 Truncation Safety
 
@@ -284,9 +252,7 @@ The final 4 bytes of the file form the loop footer:
 | Loop Start | `u16` | Sample position where loop begins |
 | Loop End   | `u16` | Sample position where loop ends   |
 
-**Active condition**: Loop is active only when `LoopStart < LoopEnd`.
-
-If fewer than 4 bytes remain for the loop footer, loop defaults to `(0, 0)` (inactive).
+Active when $\text{LoopStart} < \text{LoopEnd}$. If fewer than 4 bytes remain, loop defaults to $(0, 0)$.
 
 ---
 
@@ -294,61 +260,57 @@ If fewer than 4 bytes remain for the loop footer, loop defaults to `(0, 0)` (ina
 
 The `BinaryBuffer` implements a permanent truncation flag:
 
-1. On any read that would exceed the buffer length, the `_truncated` flag is set **permanently**.
-2. Subsequent reads return `0` for all types. The position still advances by the requested byte count.
-3. **Peek operations** (`Peek`, `PeekAt`) never set the truncation flag; they return `0` for out-of-bounds positions.
-4. Smart integer reads check the first byte to determine if 1 or 2 bytes are needed before checking truncation.
+1. Any read exceeding the buffer length sets `_truncated` **permanently**.
+2. Subsequent reads return `0` for all types; position still advances.
+3. **Peek operations** never set the truncation flag; they return `0` for out-of-bounds positions.
+4. Smart integer reads check the first byte to determine 1- or 2-byte form before checking truncation.
 
 ---
 
 ## 7. Waveform Table Generation
 
-All tables are computed once at initialization and reused across all synthesis operations.
+All tables are computed once at initialization.
 
 ### 7.1 Sine Table
 
 - **Size**: 32,768 entries (indexed 0–32767)
-- **Formula**: `sineTable[i] = (int)(sin(i / 5215.1903) × 16384)`
-- **Range**: [-16384, +16384] (Q14 fixed-point)
+- **Formula**: $\text{sineTable}[i] = \lfloor \sin(i / 5215.1903) \times 16384 \rfloor$
+- **Range**: $[-16384, +16384]$ (Q14 fixed-point)
 
 ### 7.2 Noise Table
 
 - **Size**: 32,768 entries
-- **RNG**: Java-compatible linear congruential generator seeded with `0`
-  - State: 48-bit, multiplier `0x5DEECE66D`, addend `0xB`, mask `(1 << 48) - 1`
-  - `nextInt()` returns `(int)(state >> 16)` after advancing state
-- **Formula**: `noiseTable[i] = (nextInt() & 2) - 1`
-- **Values**: Each entry is either `-1` or `+1`
+- **RNG**: Java-compatible LCG seeded with `0` (48-bit state, multiplier `0x5DEECE66D`, addend `0xB`)
+- **Formula**: $\text{noiseTable}[i] = (\text{nextInt}() \mathbin{\&} 2) - 1 \in \{-1, +1\}$
 
 ### 7.3 Semitone Cache
 
 - **Size**: 241 entries (indices 0–240, covering decicents -120 to +120)
-- **Ratio**: `decicentRatio = 2^(1/1200) = 1.0057929410678534`
-- **Formula**: `cache[i] = decicentRatio^(i - 120)`
-- **Fallback**: For values outside [-120, +120], computed on-the-fly as `decicentRatio^decicents`
+- **Ratio**: $r = 2^{1/1200} = 1.0057929410678534$
+- **Formula**: $\text{cache}[i] = r^{(i - 120)}$
+- **Fallback**: Values outside $[-120, +120]$ computed as $r^{\text{decicents}}$
 
 ### 7.4 Unit Circle Tables
 
-- **Size**: 65 entries each (indices 0–64, covering 0 to 2π in 64 segments)
-- **Cosine**: `xTable[i] = cos(i × 2π / 64)`
-- **Sine**: `yTable[i] = sin(i × 2π / 64)`
+- **Size**: 65 entries each (indices 0–64)
+- $\text{xTable}[i] = \cos(i \cdot 2\pi / 64)$
+- $\text{yTable}[i] = \sin(i \cdot 2\pi / 64)$
 
 ---
 
 ## 8. Waveform Generation
 
-All waveforms use a 32-bit signed phase accumulator. Let *φ* denote the raw accumulator and *A* the amplitude parameter.
+All waveforms use a 32-bit signed phase accumulator. Let $\varphi$ denote the raw accumulator and $A$ the amplitude. Define effective phase $\tilde{\varphi} = \varphi \mathbin{\&} \text{0x7FFF}$.
 
-Define the effective phase: *φ*̃ = *φ* **and** 0x7FFF
-
-> **function** GenerateSample(*A*, *φ*, *waveform*) → ℤ \
-> &emsp; *φ*̃ ← *φ* **and** 0x7FFF \
-> &emsp; **match** *waveform*: \
-> &emsp;&emsp; Off &emsp;&emsp;→ 0 \
-> &emsp;&emsp; Square → **if** *φ*̃ < 16384 **then** +*A* **else** −*A* \
-> &emsp;&emsp; Sine &emsp;→ ⌊sineTable[*φ*̃] · *A* / 2¹⁴⌋ \
-> &emsp;&emsp; Saw &emsp;&ensp;→ ⌊*φ*̃ · *A* / 2¹⁴⌋ − *A* \
-> &emsp;&emsp; Noise &ensp;→ noiseTable[⌊*φ* / 2607⌋ **and** 0x7FFF] · *A*
+$$
+\text{GenerateSample}(A, \varphi, w) = \begin{cases}
+0 & w = \text{Off} \\
++A \text{ if } \tilde{\varphi} < 16384,\; -A \text{ otherwise} & w = \text{Square} \\
+\lfloor \text{sineTable}[\tilde{\varphi}] \cdot A / 2^{14} \rfloor & w = \text{Sine} \\
+\lfloor \tilde{\varphi} \cdot A / 2^{14} \rfloor - A & w = \text{Saw} \\
+\text{noiseTable}[\lfloor \varphi / 2607 \rfloor \mathbin{\&} \text{0x7FFF}] \cdot A & w = \text{Noise}
+\end{cases}
+$$
 
 The phase accumulator wraps naturally via 32-bit integer overflow.
 
@@ -370,30 +332,41 @@ The `EnvelopeGenerator` is a state machine that evaluates multi-segment envelope
 
 ### 9.2 Evaluate (per-sample)
 
-Called once per sample with *P* = total sample count of the voice:
+Called once per sample with $P$ = total sample count:
 
-> **function** Evaluate(*P*) → ℤ \
-> &emsp; **if** |segments| = 0 **then return** *startValue* \
-> &emsp; **if** *ticks* ≥ *threshold* **then** AdvanceSegment(*P*) \
-> &emsp; *amplitude* ← *amplitude* + *delta* \
-> &emsp; *ticks* ← *ticks* + 1 \
-> &emsp; **return** ⌊(*amplitude* − *delta*) / 2¹⁵⌋
+$$
+\text{Evaluate}(P) = \begin{cases}
+\text{startValue} & \text{if } |\text{segments}| = 0 \\
+\lfloor (\text{amplitude} - \delta) / 2^{15} \rfloor & \text{otherwise}
+\end{cases}
+$$
 
-The return value uses (*amplitude* − *delta*) to yield the **previous step's value** (pre-increment).
+Before returning: if $\text{ticks} \ge \text{threshold}$ then AdvanceSegment($P$); then $\text{amplitude} \mathrel{+}= \delta$; $\text{ticks} \mathrel{+}= 1$.
+
+The return value uses $(\text{amplitude} - \delta)$ to yield the **previous step's value** (pre-increment).
 
 ### 9.3 Advance Segment
 
-> **procedure** AdvanceSegment(*P*) \
-> &emsp; *amplitude* ← segments[*position*].*targetLevel* · 2¹⁵ \
-> &emsp; *position* ← *position* + 1 \
-> &emsp; **if** *position* ≥ |segments| **then** *position* ← |segments| − 1 \
-> &emsp; *threshold* ← ⌊segments[*position*].*duration* / 65536 · *P*⌋ \
-> &emsp; **if** *threshold* > *ticks* **then** \
-> &emsp;&emsp; *delta* ← (segments[*position*].*targetLevel* · 2¹⁵ − *amplitude*) / (*threshold* − *ticks*) \
-> &emsp; **else** \
-> &emsp;&emsp; *delta* ← 0
+$$
+\text{amplitude} \leftarrow \text{segments}[\text{position}].\text{targetLevel} \cdot 2^{15}
+$$
 
-The duration normalization ⌊*d* / 65536 · *P*⌋ converts the segment's raw duration value (in units of 1/65536 of the total voice duration) into an absolute sample count.
+$$
+\text{position} \leftarrow \min(\text{position} + 1,\; |\text{segments}| - 1)
+$$
+
+$$
+\text{threshold} \leftarrow \lfloor \text{segments}[\text{position}].\text{duration} \cdot P / 65536 \rfloor
+$$
+
+$$
+\delta \leftarrow \begin{cases}
+(\text{segments}[\text{position}].\text{targetLevel} \cdot 2^{15} - \text{amplitude}) / (\text{threshold} - \text{ticks}) & \text{if threshold} > \text{ticks} \\
+0 & \text{otherwise}
+\end{cases}
+$$
+
+The duration normalization $\lfloor d / 65536 \cdot P \rfloor$ converts the segment's raw duration (in units of 1/65536 of the total voice duration) into an absolute sample count.
 
 ---
 
@@ -401,101 +374,115 @@ The duration normalization ⌊*d* / 65536 · *P*⌋ converts the segment's raw d
 
 ### 10.1 Voice Synthesis Pipeline
 
-For each voice, the synthesis pipeline proceeds:
+For each voice:
 
-> **procedure** SynthesizeVoice(*voice*) → buffer[0..*N*−1] \
-> &emsp; **Step 1.** *N* ← ⌊*voice*.*durationMs* · (*sampleRate* / 1000)⌋ \
-> &emsp; **Step 2.** **if** *N* ≤ 0 ∨ *voice*.*durationMs* < 10 **then return** empty buffer \
-> &emsp; **Step 3.** *σ* ← *N* / *voice*.*durationMs* &emsp; *(samples per millisecond)* \
-> &emsp; **Step 4.** Initialize envelope generators for frequency, amplitude, vibrato, tremolo, filter \
-> &emsp; **Step 5.** Pre-compute per-partial arrays (for each partial *p*): \
-> &emsp;&emsp; delay[*p*] ← ⌊partial.*delay* · *σ*⌋ \
-> &emsp;&emsp; volume[*p*] ← ⌊partial.*amplitude* · 2¹⁴ / 100⌋ \
-> &emsp;&emsp; semitones[*p*] ← ⌊(*f*_end − *f*_start) · 32.768 · pitchMultiplier(*offset*) / *σ*⌋ \
-> &emsp;&emsp; starts[*p*] ← ⌊*f*_start · 32.768 / *σ*⌋ \
-> &emsp; **Step 6.** **for** *n* ← 0 **to** *N* − 1 **do** \
-> &emsp;&emsp; *freq* ← frequencyEnvelope.Evaluate(*N*) \
-> &emsp;&emsp; *amp* ← amplitudeEnvelope.Evaluate(*N*) \
-> &emsp;&emsp; Apply vibrato to *freq* (§10.2) \
-> &emsp;&emsp; Apply tremolo to *amp* (§10.3) \
-> &emsp;&emsp; Render all partials additively into buffer (§10.4) \
-> &emsp; **Step 7.** Apply gating (§10.5) \
-> &emsp; **Step 8.** Apply echo (§10.6) \
-> &emsp; **Step 9.** Apply IIR filter if present (§11) \
-> &emsp; **Step 10.** Clip buffer to [−32768, +32767]
+1. $N \leftarrow \lfloor \text{durationMs} \cdot (\text{sampleRate} / 1000) \rfloor$. If $N \le 0$ or $\text{durationMs} < 10$, return empty.
+2. $\sigma \leftarrow N / \text{durationMs}$ (samples per millisecond)
+3. Initialize envelope generators for frequency, amplitude, vibrato, tremolo, filter.
+4. Pre-compute per-partial arrays (for each partial $p$):
+
+$$
+\text{delay}[p] = \lfloor \text{partial.delay} \cdot \sigma \rfloor \qquad
+\text{volume}[p] = \lfloor \text{partial.amplitude} \cdot 2^{14} / 100 \rfloor
+$$
+
+$$
+\text{semitones}[p] = \lfloor (f_\text{end} - f_\text{start}) \cdot 32.768 \cdot \text{pitchMultiplier}(\text{offset}) / \sigma \rfloor
+$$
+
+$$
+\text{starts}[p] = \lfloor f_\text{start} \cdot 32.768 / \sigma \rfloor
+$$
+
+1. Per-sample loop ($n = 0$ to $N-1$): evaluate frequency/amplitude envelopes, apply vibrato (§10.2), tremolo (§10.3), render partials (§10.4).
+2. Apply gating (§10.5), echo (§10.6), IIR filter (§11), clip to $[-32768, 32767]$.
 
 ### 10.2 Vibrato (Pitch Modulation)
 
-When a pitch LFO is present, the frequency is modulated per-sample. Let *φ*_v denote the vibrato phase accumulator.
+Pre-computed: $S_v = \lfloor (r_\text{end} - r_\text{start}) \cdot 32.768 / \sigma \rfloor$, $B_v = \lfloor r_\text{start} \cdot 32.768 / \sigma \rfloor$
 
-Pre-computed constants:
+$$
+m \leftarrow \lfloor \text{GenerateSample}(d, \varphi_v, w_\text{lfo}) / 2 \rfloor
+$$
 
-- *S*_v = ⌊(*rateEnd* − *rateStart*) · 32.768 / *σ*⌋
-- *B*_v = ⌊*rateStart* · 32.768 / *σ*⌋
+$$
+\varphi_v \leftarrow \varphi_v + B_v + \lfloor r \cdot S_v / 2^{16} \rfloor
+$$
 
-> *r* ← vibratoRateEnvelope.Evaluate(*N*) \
-> *d* ← vibratoDepthEnvelope.Evaluate(*N*) \
-> *m* ← ⌊GenerateSample(*d*, *φ*_v, *lfoWaveform*) / 2⌋ \
-> *φ*_v ← *φ*_v + *B*_v + ⌊*r* · *S*_v / 2¹⁶⌋ \
-> *freq* ← *freq* + *m*
+$$
+\text{freq} \leftarrow \text{freq} + m
+$$
+
+Where $r$ and $d$ are the vibrato rate/depth envelope evaluations for the current sample.
 
 ### 10.3 Tremolo (Amplitude Modulation)
 
-When an amplitude LFO is present, the amplitude is modulated per-sample. Let *φ*_t denote the tremolo phase accumulator.
+Pre-computed: $S_t = \lfloor (r_\text{end} - r_\text{start}) \cdot 32.768 / \sigma \rfloor$, $B_t = \lfloor r_\text{start} \cdot 32.768 / \sigma \rfloor$
 
-Pre-computed constants:
+$$
+m \leftarrow \lfloor \text{GenerateSample}(d, \varphi_t, w_\text{lfo}) / 2 \rfloor
+$$
 
-- *S*_t = ⌊(*rateEnd* − *rateStart*) · 32.768 / *σ*⌋
-- *B*_t = ⌊*rateStart* · 32.768 / *σ*⌋
+$$
+\text{amp} \leftarrow \lfloor \text{amp} \cdot (m + 32768) / 2^{15} \rfloor
+$$
 
-> *r* ← tremoloRateEnvelope.Evaluate(*N*) \
-> *d* ← tremoloDepthEnvelope.Evaluate(*N*) \
-> *m* ← ⌊GenerateSample(*d*, *φ*_t, *lfoWaveform*) / 2⌋ \
-> *amp* ← ⌊*amp* · (*m* + 32768) / 2¹⁵⌋ \
-> *φ*_t ← *φ*_t + *B*_t + ⌊*r* · *S*_t / 2¹⁶⌋
+$$
+\varphi_t \leftarrow \varphi_t + B_t + \lfloor r \cdot S_t / 2^{16} \rfloor
+$$
 
-The factor (*m* + 32768) / 2¹⁵ modulates around unity: when *m* = 0 the amplitude is unchanged.
+The factor $(m + 32768) / 2^{15}$ modulates around unity: when $m = 0$ the amplitude is unchanged.
 
 ### 10.4 Partial Rendering
 
-For each partial *p* with non-zero amplitude, where *φ*_p is partial *p*'s phase accumulator:
+For each partial $p$ with non-zero amplitude, where $\varphi_p$ is partial $p$'s phase accumulator:
 
-> *pos* ← *n* + delay[*p*] \
-> **if** 0 ≤ *pos* < *N* **then** \
-> &emsp; *a*_p ← ⌊*amp* · volume[*p*] / 2¹⁵⌋ \
-> &emsp; buffer[*pos*] ← buffer[*pos*] + GenerateSample(*a*_p, *φ*_p, *pitchWaveform*) \
-> &emsp; *φ*_p ← *φ*_p + ⌊*freq* · semitones[*p*] / 2¹⁶⌋ + starts[*p*]
+$$
+\text{pos} \leftarrow n + \text{delay}[p]
+$$
 
-Partials are mixed additively. Each partial maintains its own phase accumulator. The waveform used for all partials is the waveform ID from the voice's pitch (frequency) envelope.
+If $0 \le \text{pos} < N$:
+
+$$
+a_p \leftarrow \lfloor \text{amp} \cdot \text{volume}[p] / 2^{15} \rfloor
+$$
+
+$$
+\text{buffer}[\text{pos}] \mathrel{+}= \text{GenerateSample}(a_p, \varphi_p, w_\text{pitch})
+$$
+
+$$
+\varphi_p \leftarrow \varphi_p + \lfloor \text{freq} \cdot \text{semitones}[p] / 2^{16} \rfloor + \text{starts}[p]
+$$
+
+Partials are mixed additively. The waveform is the voice's pitch envelope waveform ID.
 
 ### 10.5 Gating
 
-When gate envelopes are present, a counter-based on/off toggle is applied. Let *s*₀, *e*₀ denote *gapOffEnvelope*'s start and end values.
+When gate envelopes are present. Let $s_0, e_0$ denote gapOffEnvelope's start and end values.
 
-> **procedure** ApplyGating(buffer, *voice*, *N*) \
-> &emsp; silenceEval ← EnvelopeGenerator(*gapOffEnvelope*); Reset \
-> &emsp; durationEval ← EnvelopeGenerator(*gapOnEnvelope*); Reset \
-> &emsp; *c* ← 0; *muted* ← **true** \
-> &emsp; **for** *n* ← 0 **to** *N* − 1 **do** \
-> &emsp;&emsp; *v*_on ← silenceEval.Evaluate(*N*) \
-> &emsp;&emsp; *v*_off ← durationEval.Evaluate(*N*) \
-> &emsp;&emsp; **if** *muted* **then** *T* ← *s*₀ + ⌊(*e*₀ − *s*₀) · *v*_on / 2⁸⌋ \
-> &emsp;&emsp; **else** *T* ← *s*₀ + ⌊(*e*₀ − *s*₀) · *v*_off / 2⁸⌋ \
-> &emsp;&emsp; *c* ← *c* + 256 \
-> &emsp;&emsp; **if** *c* ≥ *T* **then** *c* ← 0; *muted* ← ¬*muted* \
-> &emsp;&emsp; **if** *muted* **then** buffer[*n*] ← 0
+Counter $c$ starts at 0, $\text{muted} = \text{true}$. Per sample:
 
-The gate always starts in the **muted** state. The threshold computation uses the gap-off envelope's start/end values for both states, with different envelope evaluators controlling the modulation.
+$$
+T \leftarrow \begin{cases}
+s_0 + \lfloor (e_0 - s_0) \cdot v_\text{on} / 256 \rfloor & \text{if muted} \\
+s_0 + \lfloor (e_0 - s_0) \cdot v_\text{off} / 256 \rfloor & \text{otherwise}
+\end{cases}
+$$
+
+$c \mathrel{+}= 256$. If $c \ge T$: $c \leftarrow 0$, toggle muted. If muted: $\text{buffer}[n] \leftarrow 0$.
 
 ### 10.6 Echo (Feedback Delay)
 
-A single-tap feedback delay line, applied in-place:
+Single-tap feedback delay line, applied in-place:
 
-> *D* ← ⌊*delayMs* · *σ*⌋ \
-> **for** *n* ← *D* **to** *N* − 1 **do** \
-> &emsp; buffer[*n*] ← buffer[*n*] + ⌊buffer[*n* − *D*] · *feedbackPercent* / 100⌋
+$$
+D \leftarrow \lfloor \text{delayMs} \cdot \sigma \rfloor
+$$
 
-The feedback is applied as integer division by 100.
+$$
+\textbf{for } n = D \textbf{ to } N-1: \quad \text{buffer}[n] \mathrel{+}= \lfloor \text{buffer}[n - D] \cdot \text{feedbackPercent} / 100 \rfloor
+$$
 
 ---
 
@@ -505,105 +492,132 @@ The filter implements a pole-zero cascade using second-order sections (SOS) with
 
 ### 11.1 Coefficient Computation
 
-For each filter evaluation, coefficients are computed from the stored pole parameters and an interpolation factor `f ∈ [0.0, 1.0]` derived from the filter's modulation envelope.
+For each filter evaluation, coefficients are computed from stored pole parameters and an interpolation factor $f \in [0, 1]$ from the modulation envelope.
 
 #### 11.1.1 Envelope Factor
 
-> *e* ← filterEnvelope.Evaluate(*N*) \
-> *f* ← *e* / 65536
+$$
+f \leftarrow \text{filterEnvelope.Evaluate}(N) / 65536
+$$
 
-If no modulation envelope exists, *f* defaults to 65536 / 65536 = 1.0.
+If no modulation envelope exists, $f = 1.0$.
 
 #### 11.1.2 Pole Amplitude
 
-For pole *p* in direction *d*, let *m*₀ = poleMagnitude[*d*][0][*p*] and *m*₁ = poleMagnitude[*d*][1][*p*]:
+For pole $p$ in direction $d$, let $m_0 = \text{poleMag}[d][0][p]$ and $m_1 = \text{poleMag}[d][1][p]$:
 
-> *m̂* ← *m*₀ + *f* · (*m*₁ − *m*₀) \
-> *r* ← 1 − 10^(−*m̂* · 0.0015258789)
+$$
+\hat{m} \leftarrow m_0 + f \cdot (m_1 - m_0)
+$$
 
-The constant 0.0015258789 ≈ 1/655.36 scales the raw magnitude into a decibel-like domain before conversion to linear amplitude.
+$$
+r \leftarrow 1 - 10^{-\hat{m} \cdot 0.0015258789 / 20}
+$$
+
+The constant $0.0015258789 \approx 1/655.36$ scales the raw magnitude into decibels; the $/20$ performs the standard dB-to-amplitude conversion ($10^{x/20}$).
 
 #### 11.1.3 Pole Phase (Frequency)
 
-For pole *p* in direction *d*, let *ψ*₀ = polePhase[*d*][0][*p*] and *ψ*₁ = polePhase[*d*][1][*p*]:
+For pole $p$ in direction $d$, let $\psi_0 = \text{polePhase}[d][0][p]$ and $\psi_1 = \text{polePhase}[d][1][p]$:
 
-> *ψ̂* ← *ψ*₀ + *f* · (*ψ*₁ − *ψ*₀) \
-> *s* ← *ψ̂* · 1.2207031 × 10⁻⁴ \
-> *f*_Hz ← 2^*s* · 32.703197 \
-> *θ* ← *f*_Hz · 2π / 22050
+$$
+\hat{\psi} \leftarrow \psi_0 + f \cdot (\psi_1 - \psi_0)
+$$
 
-The constant 1.2207031 × 10⁻⁴ ≈ 1/8192 maps the raw phase value to octaves above the reference frequency 32.703197 Hz (MIDI note C1).
+$$
+s \leftarrow \hat{\psi} \cdot 1.2207031 \times 10^{-4}
+$$
+
+$$
+f_\text{Hz} \leftarrow 2^s \cdot 32.703197
+$$
+
+$$
+\theta \leftarrow f_\text{Hz} \cdot 2\pi / 22050
+$$
+
+The constant $1.2207031 \times 10^{-4} \approx 1/8192$ maps the raw phase value to octaves above $32.703197$ Hz (MIDI note C1).
 
 #### 11.1.4 Unity Gain (Inverse A₀)
 
-Let *g*₀ = unityGain[0] and *g*₁ = unityGain[1]:
+Let $g_0 = \text{unityGain}[0]$ and $g_1 = \text{unityGain}[1]$:
 
-> *ĝ* ← *g*₀ + *f* · (*g*₁ − *g*₀) \
-> *g*_dB ← *ĝ* · 0.0030517578 \
-> *a*₀⁻¹ ← 10^(−*g*_dB / 20) \
-> inverseA0_Q16 ← ⌊*a*₀⁻¹ · 65536⌋
+$$
+\hat{g} \leftarrow g_0 + f \cdot (g_1 - g_0)
+$$
 
-The constant 0.0030517578 ≈ 1/327.68 maps the raw gain value to decibels.
+$$
+a_0^{-1} \leftarrow 10^{-\hat{g} \cdot 0.0030517578 / 20}
+$$
+
+$$
+\text{inverseA0\_Q16} \leftarrow \lfloor a_0^{-1} \cdot 65536 \rfloor
+$$
+
+The constant $0.0030517578 \approx 1/327.68$ maps the raw gain value to decibels.
 
 ### 11.2 SOS Cascade Construction
 
-The filter constructs its transfer function by cascading second-order sections. For direction `d` with `N` poles:
+The filter constructs its transfer function by cascading second-order sections. For direction $d$ with $N$ poles:
 
 **First section (pole 0):**
 
-> sos[0] ← −2 · *r*₀ · cos(*θ*₀) \
-> sos[1] ← *r*₀²
+$$
+\text{sos}[0] \leftarrow -2 \cdot r_0 \cdot \cos(\theta_0) \qquad \text{sos}[1] \leftarrow r_0^2
+$$
 
-**Cascade multiplication (poles 1 through *N*−1):**
+**Cascade multiplication (poles 1 through $N-1$):**
 
-> **for** *k* ← 1 **to** *N* − 1 **do** \
-> &emsp; *t*₁ ← −2 · *r*_k · cos(*θ*_k) \
-> &emsp; *t*₂ ← *r*_k² \
-> &emsp; sos[2*k* + 1] ← sos[2*k* − 1] · *t*₂ \
-> &emsp; sos[2*k*] ← sos[2*k* − 1] · *t*₁ + sos[2*k* − 2] · *t*₂ \
-> &emsp; **for** *j* ← 2*k* − 1 **downto** 2 **do** \
-> &emsp;&emsp; sos[*j*] ← sos[*j*] + sos[*j* − 1] · *t*₁ + sos[*j* − 2] · *t*₂ \
-> &emsp; sos[1] ← sos[1] + sos[0] · *t*₁ + *t*₂ \
-> &emsp; sos[0] ← sos[0] + *t*₁
+For each $k$, let $t_1 = -2 r_k \cos(\theta_k)$ and $t_2 = r_k^2$:
+
+$$
+\text{sos}[2k+1] \leftarrow \text{sos}[2k-1] \cdot t_2
+$$
+
+$$
+\text{sos}[2k] \leftarrow \text{sos}[2k-1] \cdot t_1 + \text{sos}[2k-2] \cdot t_2
+$$
+
+$$
+\textbf{for } j = 2k-1 \textbf{ downto } 2: \quad \text{sos}[j] \mathrel{+}= \text{sos}[j-1] \cdot t_1 + \text{sos}[j-2] \cdot t_2
+$$
+
+$$
+\text{sos}[1] \mathrel{+}= \text{sos}[0] \cdot t_1 + t_2 \qquad \text{sos}[0] \mathrel{+}= t_1
+$$
 
 ### 11.3 Coefficient Quantization
 
 After SOS cascade construction:
 
-- **Feedforward coefficients** (direction 0): scaled by the floating-point inverse A₀ before quantization.
-- **Feedback coefficients** (direction 1): used directly.
+- **Feedforward** (direction 0): scaled by floating-point inverse A₀ before quantization.
+- **Feedback** (direction 1): used directly.
 
-All coefficients are quantized to Q16 fixed-point: coeff_Q16[*i*] = ⌊sos[*d*, *i*] · 65536⌋. The total coefficient count per direction is 2 · *poleCount*.
+All coefficients quantized to Q16: $\text{coeff\_Q16}[i] = \lfloor \text{sos}[d, i] \cdot 65536 \rfloor$. Total per direction: $2 \cdot \text{poleCount}$.
 
 ### 11.4 Sample Processing
 
 The filter processes the buffer in three phases:
 
-**Phase 1 — Initial block** (samples 0 to `fbCount-1`):
-Limited feedback range due to insufficient history.
+- **Phase 1** (samples $0$ to $K_\text{fb}-1$): limited feedback range due to insufficient history.
+- **Phase 2** (samples $K_\text{fb}$ to $N - K_\text{ff} - 1$): full access, processed in 128-sample chunks.
+- **Phase 3** (samples $N - K_\text{ff}$ to $N - 1$): truncated feedforward window.
 
-**Phase 2 — Main blocks** (samples `fbCount` to `sampleCount - ffCount - 1`):
-Processed in chunks of 128 samples. Full feedforward and feedback access.
+For each sample $n$:
 
-**Phase 3 — Final block** (samples `sampleCount - ffCount` to `sampleCount - 1`):
-Truncated feedforward window (cannot look ahead past buffer end).
+$$
+\text{acc} \leftarrow \lfloor \text{input}[n + K_\text{ff}] \cdot \text{inverseA0\_Q16} / 2^{16} \rfloor + \sum_{k=0}^{K_\text{ff}-1} \lfloor \text{input}[n + K_\text{ff} - 1 - k] \cdot \text{ff}[k] / 2^{16} \rfloor
+$$
 
-For each sample *n*, with *K*_ff = feedforward count and *K*_fb = feedback count:
+$$
+\text{acc} \mathrel{-}= \sum_{k=0}^{\min(n, K_\text{fb})-1} \lfloor \text{output}[n - 1 - k] \cdot \text{fb}[k] / 2^{16} \rfloor
+$$
 
-> *acc* ← 0 &emsp; *(64-bit accumulator)* \
-> \
-> ▸ Feedforward (direction 0): \
-> &emsp; *acc* ← *acc* + ⌊input[*n* + *K*_ff] · inverseA0_Q16 / 2¹⁶⌋ \
-> &emsp; **for** *k* ← 0 **to** *K*_ff − 1 **do** \
-> &emsp;&emsp; *acc* ← *acc* + ⌊input[*n* + *K*_ff − 1 − *k*] · ff[*k*] / 2¹⁶⌋ \
-> \
-> ▸ Feedback (direction 1): \
-> &emsp; **for** *k* ← 0 **to** min(*n*, *K*_fb) − 1 **do** \
-> &emsp;&emsp; *acc* ← *acc* − ⌊output[*n* − 1 − *k*] · fb[*k*] / 2¹⁶⌋ \
-> \
-> output[*n*] ← (int)*acc*
+$$
+\text{output}[n] \leftarrow (\text{int})\,\text{acc}
+$$
 
-After each sample, the envelope is re-evaluated and coefficients are recomputed, making the filter time-varying when a modulation envelope is present.
+After each sample, the envelope is re-evaluated and coefficients recomputed, making the filter time-varying when a modulation envelope is present.
 
 ---
 
@@ -611,34 +625,30 @@ After each sample, the envelope is re-evaluated and coefficients are recomputed,
 
 ### 12.1 Voice Mixing
 
-Each voice is synthesized independently, then mixed additively into a shared output buffer:
+Each voice is synthesized independently, then mixed additively:
 
-> **for each** active voice *v* **do** \
-> &emsp; *buf*_v ← SynthesizeVoice(*v*) \
-> &emsp; *o* ← ⌊*v*.*offsetMs* · (*sampleRate* / 1000)⌋ \
-> &emsp; **for** *i* ← 0 **to** |*buf*_v| − 1 **do** \
-> &emsp;&emsp; **if** 0 ≤ *i* + *o* < *N*_total **then** \
-> &emsp;&emsp;&emsp; output[*i* + *o*] ← output[*i* + *o*] + *buf*_v[*i*]
+$$
+\text{output}[i + o] \mathrel{+}= \text{buf}_v[i] \quad \text{where } o = \lfloor \text{offsetMs} \cdot (\text{sampleRate} / 1000) \rfloor
+$$
 
 ### 12.2 Loop Expansion
 
-When `loopStart < loopEnd` and `loopCount > 1`:
+When $\text{loopStart} < \text{loopEnd}$ and $\text{loopCount} > 1$:
 
 1. Convert loop parameters from milliseconds to samples.
-2. Compute total output length: *N*_total = *N* + (*L*_end − *L*_start) · (*loopCount* − 1).
-3. Shift the tail (samples after *L*_end) to the end of the expanded buffer.
-4. Copy the loop region *loopCount* − 1 additional times:
+2. $N_\text{total} = N + (L_\text{end} - L_\text{start}) \cdot (\text{loopCount} - 1)$
+3. Shift tail (samples after $L_\text{end}$) to end of expanded buffer.
+4. Copy loop region $\text{loopCount} - 1$ additional times:
 
-> **for** *j* ← 1 **to** *loopCount* − 1 **do** \
-> &emsp; *o* ← (*L*_end − *L*_start) · *j* \
-> &emsp; **for** *n* ← *L*_start **to** *L*_end − 1 **do** \
-> &emsp;&emsp; buffer[*n* + *o*] ← buffer[*n*]
+$$
+\textbf{for } j = 1 \textbf{ to } \text{loopCount}-1,\; n \in [L_\text{start}, L_\text{end}): \quad \text{buffer}[n + (L_\text{end} - L_\text{start}) \cdot j] \leftarrow \text{buffer}[n]
+$$
 
 ### 12.3 Final Clipping
 
-After mixing and loop expansion, each sample *x* is clamped to the signed 16-bit range:
-
-> *x* ← max(−32768, min(*x*, 32767))
+$$
+x \leftarrow \max(-32768, \min(x, 32767))
+$$
 
 ---
 
