@@ -29,6 +29,12 @@ public class EnvelopeCanvas : Control
     public static readonly StyledProperty<double> ScrollOffsetProperty =
         AvaloniaProperty.Register<EnvelopeCanvas, double>(nameof(ScrollOffset));
 
+    public static readonly StyledProperty<bool> IsSnapEnabledProperty =
+        AvaloniaProperty.Register<EnvelopeCanvas, bool>(nameof(IsSnapEnabled));
+
+    public static readonly StyledProperty<EnvelopeDisplayMode> DisplayModeProperty =
+        AvaloniaProperty.Register<EnvelopeCanvas, EnvelopeDisplayMode>(nameof(DisplayMode), EnvelopeDisplayMode.FullScale);
+
     private static readonly int[] ZoomLevels = [1, 2, 4];
 
     private int _dragIndex = -1;
@@ -77,9 +83,21 @@ public class EnvelopeCanvas : Control
         set => SetValue(ScrollOffsetProperty, value);
     }
 
+    public bool IsSnapEnabled
+    {
+        get => GetValue(IsSnapEnabledProperty);
+        set => SetValue(IsSnapEnabledProperty, value);
+    }
+
+    public EnvelopeDisplayMode DisplayMode
+    {
+        get => GetValue(DisplayModeProperty);
+        set => SetValue(DisplayModeProperty, value);
+    }
+
     static EnvelopeCanvas()
     {
-        AffectsRender<EnvelopeCanvas>(EnvelopeProperty, LineColorProperty, IsSelectedProperty, IsThumbnailProperty, ZoomLevelProperty, ScrollOffsetProperty);
+        AffectsRender<EnvelopeCanvas>(EnvelopeProperty, LineColorProperty, IsSelectedProperty, IsThumbnailProperty, ZoomLevelProperty, ScrollOffsetProperty, DisplayModeProperty);
     }
 
     private double MaxScrollOffset
@@ -166,7 +184,7 @@ public class EnvelopeCanvas : Control
         var env = Envelope;
         if (env is null || env.Segments.Count == 0) return;
 
-        var geometry = EnvelopeGeometry.Compute(env, w, h, ZoomLevel, ScrollOffset);
+        var geometry = EnvelopeGeometry.Compute(env, w, h, ZoomLevel, ScrollOffset, DisplayMode);
         DrawEnvelope(context, geometry);
     }
 
@@ -265,8 +283,30 @@ public class EnvelopeCanvas : Control
         if (env is null || _dragIndex >= env.Segments.Count) return;
 
         var pos = e.GetPosition(this);
-        env.Segments[_dragIndex].TargetLevel = EnvelopeGeometry.YToPeakLevel(pos.Y, Bounds.Height, _dragMinLevel, _dragRange);
+        var level = EnvelopeGeometry.YToPeakLevel(pos.Y, Bounds.Height, _dragMinLevel, _dragRange);
+        if (IsSnapEnabled)
+            level = EnvelopeGeometry.SnapLevel(level, _dragMinLevel, _dragRange, ZoomLevel);
+        env.Segments[_dragIndex].TargetLevel = level;
         EnvelopeGeometry.AdjustDuration(pos.X, Bounds.Width, _dragIndex, env, _dragTotalDuration, ZoomLevel, ScrollOffset);
+        if (IsSnapEnabled)
+        {
+            var preDur = env.Segments[_dragIndex].Duration;
+            var snappedDur = EnvelopeGeometry.SnapDuration(preDur, _dragTotalDuration, ZoomLevel);
+            if (_dragIndex + 1 < env.Segments.Count)
+            {
+                var snapDelta = snappedDur - preDur;
+                var nextDur = env.Segments[_dragIndex + 1].Duration - snapDelta;
+                if (nextDur >= 1)
+                {
+                    env.Segments[_dragIndex].Duration = snappedDur;
+                    env.Segments[_dragIndex + 1].Duration = nextDur;
+                }
+            }
+            else
+            {
+                env.Segments[_dragIndex].Duration = snappedDur;
+            }
+        }
         var seg = env.Segments[_dragIndex];
         KnobControl.RaiseHint($"Segment {_dragIndex + 1}: Level={seg.TargetLevel}, Duration={seg.Duration}");
         InvalidateVisual();

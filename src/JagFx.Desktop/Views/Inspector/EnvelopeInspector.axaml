@@ -9,6 +9,7 @@
 
     <UserControl.Resources>
         <conv:RawToPercentConverter x:Key="RawToPercentConverter" />
+        <conv:IntToDoubleConverter x:Key="IntToDoubleConverter" />
     </UserControl.Resources>
 
     <Border IsVisible="{Binding SelectedEnvelope, Converter={x:Static ObjectConverters.IsNotNull}}">
@@ -20,15 +21,43 @@
                            Text="{Binding SelectedEnvelopeTitle, StringFormat='ENVELOPE: {0}'}" />
             </Border>
 
+            <!-- Waveform selector -->
+            <Border Padding="6,4">
+                <StackPanel Orientation="Horizontal" Spacing="2" HorizontalAlignment="Center">
+                    <ToggleButton Theme="{StaticResource JagCellToggle}"
+                                  IsChecked="{Binding SelectedEnvelope.IsOffActive, Mode=OneWay}"
+                                  Command="{Binding SelectedEnvelope.SetWaveformCommand}"
+                                  CommandParameter="0" Content="OFF" ToolTip.Tip="Off (0)" />
+                    <ToggleButton Theme="{StaticResource JagCellToggle}"
+                                  IsChecked="{Binding SelectedEnvelope.IsSquareActive, Mode=OneWay}"
+                                  Command="{Binding SelectedEnvelope.SetWaveformCommand}"
+                                  CommandParameter="1" Content="SQR" ToolTip.Tip="Square (1)" />
+                    <ToggleButton Theme="{StaticResource JagCellToggle}"
+                                  IsChecked="{Binding SelectedEnvelope.IsSineActive, Mode=OneWay}"
+                                  Command="{Binding SelectedEnvelope.SetWaveformCommand}"
+                                  CommandParameter="2" Content="SIN" ToolTip.Tip="Sine (2)" />
+                    <ToggleButton Theme="{StaticResource JagCellToggle}"
+                                  IsChecked="{Binding SelectedEnvelope.IsSawActive, Mode=OneWay}"
+                                  Command="{Binding SelectedEnvelope.SetWaveformCommand}"
+                                  CommandParameter="3" Content="SAW" ToolTip.Tip="Sawtooth (3)" />
+                    <ToggleButton Theme="{StaticResource JagCellToggle}"
+                                  IsChecked="{Binding SelectedEnvelope.IsNoiseActive, Mode=OneWay}"
+                                  Command="{Binding SelectedEnvelope.SetWaveformCommand}"
+                                  CommandParameter="4" Content="NSE" ToolTip.Tip="Noise (4)" />
+                </StackPanel>
+            </Border>
+
             <!-- Envelope start/end values -->
             <Border Padding="6,6">
                 <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
-                    <controls:KnobControl Value="{Binding SelectedEnvelope.StartValue, Converter={StaticResource RawToPercentConverter}, TargetNullValue=0, FallbackValue=0}"
-                                          Minimum="-100" Maximum="100" Label="START" Step="0.5"
-                                          FormatString="F1" Unit="%" Height="32" />
-                    <controls:KnobControl Value="{Binding SelectedEnvelope.EndValue, Converter={StaticResource RawToPercentConverter}, TargetNullValue=0, FallbackValue=0}"
-                                          Minimum="-100" Maximum="100" Label="END" Step="0.5"
-                                          FormatString="F1" Unit="%" Height="32" />
+                    <controls:KnobControl Value="{Binding SelectedEnvelope.StartValue, Converter={StaticResource IntToDoubleConverter}, TargetNullValue=0, FallbackValue=0}"
+                                          Minimum="{Binding StartEndMin}" Maximum="{Binding StartEndMax}"
+                                          Label="START" Step="1" FormatString="F0"
+                                          Unit="{Binding StartEndUnit}" Height="32" />
+                    <controls:KnobControl Value="{Binding SelectedEnvelope.EndValue, Converter={StaticResource IntToDoubleConverter}, TargetNullValue=0, FallbackValue=0}"
+                                          Minimum="{Binding StartEndMin}" Maximum="{Binding StartEndMax}"
+                                          Label="END" Step="1" FormatString="F0"
+                                          Unit="{Binding StartEndUnit}" Height="32" />
                 </StackPanel>
             </Border>
 

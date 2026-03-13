@@ -23,6 +23,21 @@ public partial class EnvelopeViewModel : ObservableObject
     [ObservableProperty]
     private Waveform _waveform = Waveform.Off;
 
+    public bool IsOffActive => Waveform == Waveform.Off;
+    public bool IsSquareActive => Waveform == Waveform.Square;
+    public bool IsSineActive => Waveform == Waveform.Sine;
+    public bool IsSawActive => Waveform == Waveform.Saw;
+    public bool IsNoiseActive => Waveform == Waveform.Noise;
+
+    partial void OnWaveformChanged(Waveform value)
+    {
+        OnPropertyChanged(nameof(IsOffActive));
+        OnPropertyChanged(nameof(IsSquareActive));
+        OnPropertyChanged(nameof(IsSineActive));
+        OnPropertyChanged(nameof(IsSawActive));
+        OnPropertyChanged(nameof(IsNoiseActive));
+    }
+
     [ObservableProperty]
     private int _startValue;
 

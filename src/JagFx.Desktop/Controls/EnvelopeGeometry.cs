@@ -3,6 +3,8 @@ using JagFx.Desktop.ViewModels;
 
 namespace JagFx.Desktop.Controls;
 
+public enum EnvelopeDisplayMode { AutoScale, FullScale, Normalized }
+
 /// <summary>
 /// Computes breakpoint positions for an envelope within a given plot area.
 /// Eliminates coordinate calculation duplication across rendering and hit testing.
@@ -23,7 +25,7 @@ public readonly struct EnvelopeGeometry
         PlotHeight = plotHeight;
     }
 
-    public static EnvelopeGeometry Compute(EnvelopeViewModel env, double canvasWidth, double canvasHeight, int zoomLevel = 1, double scrollOffset = 0)
+    public static EnvelopeGeometry Compute(EnvelopeViewModel env, double canvasWidth, double canvasHeight, int zoomLevel = 1, double scrollOffset = 0, EnvelopeDisplayMode displayMode = EnvelopeDisplayMode.FullScale)
     {
         var segments = env.Segments;
         var plotW = (canvasWidth - Padding * 2) * zoomLevel;
@@ -35,10 +37,20 @@ public readonly struct EnvelopeGeometry
         var totalDuration = segments.Sum(s => s.Duration);
         if (totalDuration <= 0) totalDuration = 1;
 
-        var minLevel = Math.Min(env.StartValue, segments.Min(s => s.TargetLevel));
-        var maxLevel = Math.Max(env.StartValue, segments.Max(s => s.TargetLevel));
-        var range = (double)(maxLevel - minLevel);
-        if (range <= 0) range = 1;
+        double minLevel, maxLevel, range;
+        if (displayMode is EnvelopeDisplayMode.FullScale or EnvelopeDisplayMode.Normalized)
+        {
+            minLevel = 0;
+            maxLevel = 65535;
+            range = 65535;
+        }
+        else
+        {
+            minLevel = Math.Min(env.StartValue, segments.Min(s => s.TargetLevel));
+            maxLevel = Math.Max(env.StartValue, segments.Max(s => s.TargetLevel));
+            range = maxLevel - minLevel;
+            if (range <= 0) range = 1;
+        }
 
         var points = new Point[segments.Count + 1];
         double xAccum = 0;
@@ -118,12 +130,21 @@ public readonly struct EnvelopeGeometry
     /// <summary>
     /// Converts a canvas Y position to a peak level value for the current envelope scaling.
     /// </summary>
-    public static int YToPeakLevel(double canvasY, double canvasHeight, EnvelopeViewModel env)
+    public static int YToPeakLevel(double canvasY, double canvasHeight, EnvelopeViewModel env, EnvelopeDisplayMode displayMode = EnvelopeDisplayMode.FullScale)
     {
-        var minLevel = Math.Min(env.StartValue, env.Segments.Min(s => s.TargetLevel));
-        var maxLevel = Math.Max(env.StartValue, env.Segments.Max(s => s.TargetLevel));
-        var range = (double)(maxLevel - minLevel);
-        if (range <= 0) range = 1;
+        double minLevel, range;
+        if (displayMode is EnvelopeDisplayMode.FullScale or EnvelopeDisplayMode.Normalized)
+        {
+            minLevel = 0;
+            range = 65535;
+        }
+        else
+        {
+            minLevel = Math.Min(env.StartValue, env.Segments.Min(s => s.TargetLevel));
+            var maxLevel = Math.Max(env.StartValue, env.Segments.Max(s => s.TargetLevel));
+            range = maxLevel - minLevel;
+            if (range <= 0) range = 1;
+        }
         return YToPeakLevel(canvasY, canvasHeight, minLevel, range);
     }
 
@@ -137,5 +158,31 @@ public readonly struct EnvelopeGeometry
         var plotH = canvasHeight - Padding * 2;
         var normalizedY = 1.0 - (canvasY - Padding) / plotH;
         return Math.Clamp((int)(normalizedY * range + minLevel), -65535, 65535);
+    }
+
+    /// <summary>
+    /// Snaps a raw level value to the nearest grid step based on zoom level.
+    /// </summary>
+    public static int SnapLevel(int raw, double minLevel, double range, int zoomLevel)
+    {
+        if (range <= 0) return raw;
+        var step = range / (4.0 * zoomLevel);
+        if (step <= 0) return raw;
+        var snapped = Math.Round((raw - minLevel) / step) * step + minLevel;
+        return Math.Clamp((int)snapped, -65535, 65535);
+    }
+
+    /// <summary>
+    /// Snaps a raw duration value to the nearest grid step based on zoom level.
+    /// </summary>
+    public static int SnapDuration(int raw, double totalDuration, int zoomLevel)
+    {
+        if (totalDuration <= 0) return raw;
+        // Grid has 8*zoomLevel divisions across visibleW, but plotW = visibleW * zoomLevel,
+        // so the total grid cells across the plot is 8 * zoomLevel². Match snap to that.
+        var step = totalDuration / (8.0 * zoomLevel * zoomLevel);
+        if (step <= 0) return raw;
+        var snapped = Math.Max(1, (int)(Math.Round(raw / step) * step));
+        return snapped;
     }
 }
