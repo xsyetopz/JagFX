@@ -35,7 +35,6 @@ public partial class SignalChainPanel : UserControl
     private WaveformCanvas? _outCanvas;
     private PoleZeroCanvas? _pzCanvas;
     private FrequencyResponseCanvas? _bodeCanvas;
-    private ToggleButton? _activeSoloButton;
 
     public SignalChainPanel()
     {
@@ -58,7 +57,7 @@ public partial class SignalChainPanel : UserControl
                     Text = slot.DisplayName(),
                     FontSize = 10,
                     FontWeight = FontWeight.Bold,
-                    Foreground = new SolidColorBrush(Color.Parse(color)),
+                    Foreground = new SolidColorBrush(Color.Parse("#f0f0f0")),
                     Opacity = 0.7,
                     Margin = new Thickness(4, 1, 0, 0),
                     TextTrimming = TextTrimming.CharacterEllipsis,
@@ -127,7 +126,7 @@ public partial class SignalChainPanel : UserControl
 
         var container = new Border
         {
-            BorderBrush = SolidColorBrush.Parse("#272727"),
+            BorderBrush = SolidColorBrush.Parse("#4a4a4a"),
             BorderThickness = new Thickness(1),
             Padding = new Thickness(2, 1),
             Child = innerGrid,
@@ -165,17 +164,17 @@ public partial class SignalChainPanel : UserControl
             toolbar.Children.Add(zoomGroup);
         }
 
-        // Envelope cells get [S] solo button
+        // Envelope cells get [S] snap button
         if (slotType == SlotType.Envelope)
         {
-            var soloBtn = CreateSoloButton(slot);
-            toolbar.Children.Add(soloBtn);
+            var snapBtn = CreateSnapButton(canvas);
+            toolbar.Children.Add(snapBtn);
         }
 
-        // All except P/Z and BODE get M..▼ dropdown
+        // All except P/Z and BODE get MODE ▾ dropdown
         if (slotType != SlotType.PoleZero && slotType != SlotType.Bode)
         {
-            var modeBtn = CreateModeDropdown(slot, slotType);
+            var modeBtn = CreateModeDropdown(canvas, slot, slotType);
             toolbar.Children.Add(modeBtn);
         }
 
@@ -223,6 +222,7 @@ public partial class SignalChainPanel : UserControl
                 SetCanvasZoom(canvas, zoomLevel);
             };
 
+            ToolTip.SetTip(btn, $"Zoom {level}x");
             group.Children.Add(btn);
         }
 
@@ -262,7 +262,7 @@ public partial class SignalChainPanel : UserControl
         }
     }
 
-    private ToggleButton CreateSoloButton(SignalChainSlot slot)
+    private static ToggleButton CreateSnapButton(Control canvas)
     {
         var btn = new ToggleButton
         {
@@ -270,35 +270,20 @@ public partial class SignalChainPanel : UserControl
             Theme = (ControlTheme?)Application.Current!.FindResource("JagCellToggle"),
             Margin = new Thickness(3, 0, 0, 0),
         };
-        btn.Classes.Add("solo");
+        btn.Classes.Add("snap");
+        ToolTip.SetTip(btn, "Snap to grid (S)");
 
         btn.Click += (s, _) =>
         {
             if (s is not ToggleButton toggled) return;
-
-            if (toggled.IsChecked == true)
-            {
-                // Deactivate previous solo
-                if (_activeSoloButton is not null && _activeSoloButton != toggled)
-                    _activeSoloButton.IsChecked = false;
-
-                _activeSoloButton = toggled;
-                if (_subscribedVm is not null)
-                    _subscribedVm.SoloedSlot = slot;
-            }
-            else
-            {
-                if (_activeSoloButton == toggled)
-                    _activeSoloButton = null;
-                if (_subscribedVm is not null)
-                    _subscribedVm.SoloedSlot = null;
-            }
+            if (canvas is EnvelopeCanvas ec)
+                ec.IsSnapEnabled = toggled.IsChecked == true;
         };
 
         return btn;
     }
 
-    private Button CreateModeDropdown(SignalChainSlot slot, SlotType slotType)
+    private Button CreateModeDropdown(Control canvas, SignalChainSlot slot, SlotType slotType)
     {
         var btn = new Button
         {
@@ -306,6 +291,7 @@ public partial class SignalChainPanel : UserControl
             Theme = (ControlTheme?)Application.Current!.FindResource("JagCellButton"),
             Margin = new Thickness(3, 0, 0, 0),
         };
+        ToolTip.SetTip(btn, "Display mode");
 
         btn.Click += (s, _) =>
         {
@@ -313,42 +299,31 @@ public partial class SignalChainPanel : UserControl
 
             var menu = new ContextMenu();
 
-            if (slotType == SlotType.Envelope)
+            if (slotType == SlotType.Envelope && canvas is EnvelopeCanvas ec)
             {
-                // Map to Waveform enum
-                var waveforms = new (string Label, Waveform Value)[]
+                var modes = new (string Label, EnvelopeDisplayMode Mode)[]
                 {
-                    ("Off", Waveform.Off),
-                    ("Square", Waveform.Square),
-                    ("Sine", Waveform.Sine),
-                    ("Saw", Waveform.Saw),
-                    ("Noise", Waveform.Noise),
+                    ("Auto", EnvelopeDisplayMode.AutoScale),
+                    ("Full", EnvelopeDisplayMode.FullScale),
+                    ("Norm", EnvelopeDisplayMode.Normalized),
                 };
 
-                foreach (var (label, wfValue) in waveforms)
+                var ecRef = ec;
+                foreach (var (label, modeValue) in modes)
                 {
                     var item = new MenuItem { Header = label };
-                    var wf = wfValue;
-                    item.Click += (_, _) =>
-                    {
-                        var env = FindEnvelopeForSlot(slot);
-                        if (env is not null)
-                            env.Waveform = wf;
-                    };
+                    var mode = modeValue;
+                    item.Click += (_, _) => ecRef.DisplayMode = mode;
                     menu.Items.Add(item);
                 }
 
-                // Update check marks based on current waveform
                 menu.Opening += (_, _) =>
                 {
-                    var env = FindEnvelopeForSlot(slot);
-                    if (env is null) return;
                     for (var i = 0; i < menu.Items.Count; i++)
                     {
                         if (menu.Items[i] is MenuItem mi)
                         {
-                            var wf = waveforms[i].Value;
-                            mi.Icon = env.Waveform == wf
+                            mi.Icon = ecRef.DisplayMode == modes[i].Mode
                                 ? new TextBlock { Text = "\u2713", FontSize = 9 }
                                 : null;
                         }
@@ -357,9 +332,8 @@ public partial class SignalChainPanel : UserControl
             }
             else if (slotType == SlotType.Waveform)
             {
-                // Stub display mode options
-                var modes = new[] { "Wave", "Spectrum" };
-                foreach (var mode in modes)
+                var waveformModes = new[] { "Wave", "Spectrum" };
+                foreach (var mode in waveformModes)
                 {
                     var item = new MenuItem { Header = mode, IsEnabled = mode == "Wave" };
                     menu.Items.Add(item);
@@ -513,7 +487,7 @@ public partial class SignalChainPanel : UserControl
         foreach (var slot in _slots)
         {
             var selected = slot.Slot == selectedSlot;
-            slot.Container.BorderBrush = SolidColorBrush.Parse(selected ? "#009E73" : "#272727");
+            slot.Container.BorderBrush = SolidColorBrush.Parse(selected ? "#009E73" : "#4a4a4a");
             slot.Container.BorderThickness = new Thickness(1.5, 0.5, 0.5, 0.5);
         }
     }

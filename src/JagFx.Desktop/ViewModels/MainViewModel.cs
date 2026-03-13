@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using Avalonia.Threading;
@@ -61,9 +60,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private bool _playSingleVoice;
 
     [ObservableProperty]
-    private SignalChainSlot? _soloedSlot;
-
-    [ObservableProperty]
     private bool _isLooping;
 
     [ObservableProperty]
@@ -87,12 +83,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             var dirty = IsDirty ? " *" : "";
             if (string.IsNullOrEmpty(FilePath))
-                return $"JagFx - {PatchName}{dirty}";
+                return $"JagFx: {PatchName}{dirty}";
             var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             var display = FilePath.StartsWith(home)
                 ? "~" + FilePath[home.Length..]
                 : FilePath;
-            return $"JagFx - {display}{dirty}";
+            return $"JagFx: {display}{dirty}";
         }
     }
 
@@ -144,8 +140,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
     partial void OnPlaySingleVoiceChanged(bool value) => ScheduleRerender();
     partial void OnIsLoopingChanged(bool value) => ScheduleRerender();
     partial void OnLoopCountChanged(int value) => ScheduleRerender();
-    partial void OnSoloedSlotChanged(SignalChainSlot? value) => ScheduleRerender();
-
     partial void OnTrueWaveEnabledChanged(bool value)
     {
         if (value) ScheduleRerender();
@@ -181,9 +175,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             var model = Patch.ToModel();
             var voiceFilter = PlaySingleVoice ? Patch.SelectedVoiceIndex : -1;
-
-            if (SoloedSlot is not null)
-                model = ApplySolo(model, voiceFilter >= 0 ? voiceFilter : Patch.SelectedVoiceIndex);
 
             // Always render single pass for waveform display
             var buffer = await SynthesisService.RenderAsync(model, loopCount: 1, voiceFilter: voiceFilter, ct: cts.Token);
@@ -248,44 +239,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
 
         OutputSamples = output;
-    }
-
-    private Patch ApplySolo(Patch model, int voiceIndex)
-    {
-        if (voiceIndex < 0 || voiceIndex >= model.Voices.Count) return model;
-        var voice = model.Voices[voiceIndex];
-        if (voice is null) return model;
-
-        var soloSlot = SoloedSlot;
-        if (soloSlot is null) return model;
-
-        // Start from a fully-neutralized base, then restore the soloed component
-        var neutralAmp = new Envelope(Waveform.Off, 65535, 65535,
-            ImmutableList.Create(new Segment(voice.DurationMs, 65535)));
-
-        var baseVoice = voice with
-        {
-            AmplitudeEnvelope = neutralAmp,
-            PitchLfo = null,
-            AmplitudeLfo = null,
-            GapOffEnvelope = null,
-            GapOnEnvelope = null,
-            Filter = null,
-        };
-
-        var soloedVoice = soloSlot switch
-        {
-            SignalChainSlot.Pitch => baseVoice,
-            SignalChainSlot.Volume => baseVoice with { AmplitudeEnvelope = voice.AmplitudeEnvelope },
-            SignalChainSlot.VibratoRate or SignalChainSlot.VibratoDepth => baseVoice with { PitchLfo = voice.PitchLfo },
-            SignalChainSlot.TremoloRate or SignalChainSlot.TremoloDepth => baseVoice with { AmplitudeLfo = voice.AmplitudeLfo },
-            SignalChainSlot.GapOff or SignalChainSlot.GapOn => baseVoice with { GapOffEnvelope = voice.GapOffEnvelope, GapOnEnvelope = voice.GapOnEnvelope },
-            SignalChainSlot.Filter => baseVoice with { Filter = voice.Filter },
-            _ => voice
-        };
-
-        var voices = model.Voices.SetItem(voiceIndex, soloedVoice);
-        return model with { Voices = voices };
     }
 
     private void OnFileChanged()
@@ -421,6 +374,21 @@ public partial class MainViewModel : ObservableObject, IDisposable
         (SignalChainSlot.Filter,        v => v.FilterEnvelope),
     ];
 
+    private static (string Unit, double Min, double Max) GetStartEndMeta(SignalChainSlot slot) => slot switch
+    {
+        SignalChainSlot.Pitch or SignalChainSlot.VibratoRate or SignalChainSlot.TremoloRate
+            => ("Hz", -5000, 5000),
+        SignalChainSlot.Volume or SignalChainSlot.VibratoDepth or SignalChainSlot.TremoloDepth
+            => ("%", -100, 100),
+        SignalChainSlot.GapOff or SignalChainSlot.GapOn
+            => ("Gap", -65535, 65535),
+        _ => ("", -65535, 65535),
+    };
+
+    public string StartEndUnit => GetStartEndMeta(SelectedSlot).Unit;
+    public double StartEndMin => GetStartEndMeta(SelectedSlot).Min;
+    public double StartEndMax => GetStartEndMeta(SelectedSlot).Max;
+
     public void SelectEnvelope(SignalChainSlot slot)
     {
         var voice = Patch.SelectedVoice;
@@ -436,6 +404,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             SelectedEnvelope = null;
         }
+
+        OnPropertyChanged(nameof(StartEndUnit));
+        OnPropertyChanged(nameof(StartEndMin));
+        OnPropertyChanged(nameof(StartEndMax));
     }
 
     public void SelectEnvelopeByOffset(int offset)
@@ -499,9 +471,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         var model = Patch.ToModel();
         var voiceFilter = PlaySingleVoice ? Patch.SelectedVoiceIndex : -1;
-
-        if (SoloedSlot is not null)
-            model = ApplySolo(model, voiceFilter >= 0 ? voiceFilter : Patch.SelectedVoiceIndex);
 
         // Default loop region to full patch when looping with no valid loop markers
         if (IsLooping && model.Loop.BeginMs >= model.Loop.EndMs && model.ActiveVoices.Any())
