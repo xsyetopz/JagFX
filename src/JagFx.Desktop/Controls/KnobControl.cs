@@ -104,11 +104,11 @@ public class KnobControl : Control
         if (r < 6) r = 6;
 
         var dimmed = !IsEffectivelyEnabled;
-        var arcBrush = dimmed ? new SolidColorBrush(Color.Parse("#222222")) : ThemeColors.AccentBrush;
+        var arcBrush = dimmed ? new SolidColorBrush(Color.Parse("#555555")) : ThemeColors.AccentBrush;
 
         // Track arc background
         DrawArc(context, cx, cy, r + 2, StartAngleDeg, SweepDeg,
-            new Pen(new SolidColorBrush(Color.Parse("#2a2a2a")), 3));
+            new Pen(new SolidColorBrush(Color.Parse("#505050")), 3));
 
         // Filled arc
         var range = Maximum - Minimum;
@@ -121,8 +121,8 @@ public class KnobControl : Control
 
         // Knob body
         context.DrawEllipse(
-            new SolidColorBrush(Color.Parse("#1e1e1e")),
-            new Pen(new SolidColorBrush(Color.Parse("#383838")), 1),
+            new SolidColorBrush(Color.Parse("#4a4a4a")),
+            new Pen(new SolidColorBrush(Color.Parse("#666666")), 1),
             new Point(cx, cy), r, r);
 
         // Indicator line
@@ -144,7 +144,7 @@ public class KnobControl : Control
                 FlowDirection.LeftToRight,
                 new Typeface("Consolas, Monaco, Courier New, monospace"),
                 7,
-                new SolidColorBrush(Color.Parse("#666666")));
+                new SolidColorBrush(Color.Parse("#888888")));
             var labelX = cx - labelText.Width / 2;
             var labelY = h - labelText.Height;
             context.DrawText(labelText, new Point(labelX, labelY));
