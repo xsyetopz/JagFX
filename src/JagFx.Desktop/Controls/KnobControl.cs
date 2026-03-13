@@ -29,6 +29,9 @@ public class KnobControl : Control
     public static readonly StyledProperty<string> UnitProperty =
         AvaloniaProperty.Register<KnobControl, string>(nameof(Unit), defaultValue: string.Empty);
 
+    public static readonly StyledProperty<double> DefaultValueProperty =
+        AvaloniaProperty.Register<KnobControl, double>(nameof(DefaultValue), defaultValue: double.NaN);
+
     public double Value
     {
         get => GetValue(ValueProperty);
@@ -71,10 +74,23 @@ public class KnobControl : Control
         set => SetValue(UnitProperty, value);
     }
 
+    public double DefaultValue
+    {
+        get => GetValue(DefaultValueProperty);
+        set => SetValue(DefaultValueProperty, value);
+    }
+
     static KnobControl()
     {
         AffectsRender<KnobControl>(ValueProperty, MinimumProperty, MaximumProperty,
             LabelProperty, FormatStringProperty, UnitProperty);
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == IsEnabledProperty)
+            InvalidateVisual();
     }
 
     private Point _lastPointerPos;
@@ -108,7 +124,7 @@ public class KnobControl : Control
 
         // Track arc background
         DrawArc(context, cx, cy, r + 2, StartAngleDeg, SweepDeg,
-            new Pen(new SolidColorBrush(Color.Parse("#505050")), 3));
+            new Pen(new SolidColorBrush(Color.Parse("#333333")), 3));
 
         // Filled arc
         var range = Maximum - Minimum;
@@ -121,8 +137,8 @@ public class KnobControl : Control
 
         // Knob body
         context.DrawEllipse(
-            new SolidColorBrush(Color.Parse("#4a4a4a")),
-            new Pen(new SolidColorBrush(Color.Parse("#666666")), 1),
+            new SolidColorBrush(Color.Parse("#1a1a1a")),
+            new Pen(new SolidColorBrush(Color.Parse("#444444")), 1),
             new Point(cx, cy), r, r);
 
         // Indicator line
@@ -144,7 +160,7 @@ public class KnobControl : Control
                 FlowDirection.LeftToRight,
                 new Typeface("Consolas, Monaco, Courier New, monospace"),
                 7,
-                new SolidColorBrush(Color.Parse("#888888")));
+                new SolidColorBrush(Color.Parse("#aaaaaa")));
             var labelX = cx - labelText.Width / 2;
             var labelY = h - labelText.Height;
             context.DrawText(labelText, new Point(labelX, labelY));
@@ -205,6 +221,14 @@ public class KnobControl : Control
         }
 
         if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
+
+        if (e.ClickCount == 2)
+        {
+            Value = double.IsNaN(DefaultValue) ? Minimum : DefaultValue;
+            HintChanged?.Invoke(FormatHint());
+            e.Handled = true;
+            return;
+        }
 
         _lastPointerPos = e.GetPosition(this);
         _isDragging = true;
